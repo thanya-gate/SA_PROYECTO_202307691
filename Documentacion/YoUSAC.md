@@ -10,10 +10,10 @@
 ---
 
 ## Introducción
-> La Universidad San Carlos de Guatemala desea
+La Universidad San Carlos de Guatemala desea
 
 ## Descripción del problema
-> La Universidad San Carlos de Guatemala crear un sistema para centralizar el acceso a su acervo académico digital mediante una plataforma web de streaming de video bajo demanda (VOD) orientada al entorno universitario. El sistema permitirá a los estudiantes explorar, buscar y visualizar las grabaciones de las clases impartidas en semestres anteriores, facilitando el repaso de contenidos de cara a exámenes, laboratorios y autoformación.
+La Universidad San Carlos de Guatemala crear un sistema para centralizar el acceso a su acervo académico digital mediante una plataforma web de streaming de video bajo demanda (VOD) orientada al entorno universitario. El sistema permitirá a los estudiantes explorar, buscar y visualizar las grabaciones de las clases impartidas en semestres anteriores, facilitando el repaso de contenidos de cara a exámenes, laboratorios y autoformación.
 
 Dado el elevado número de estudiantes conectados de forma concurrente en
 periodos de evaluaciones y el volumen de contenido multimedia administrado, la
@@ -68,3 +68,18 @@ almacenados, vistas, funciones y triggers).
 | RF-13 | El sistema debe cachear en Redis las consultas frecuentes de catálogo y tendencias | Media |
 | RF-14 | El sistema debe enviar correos automáticos de confirmación de registro y de nuevas clases publicadas | Alta |
 | RF-15 | El sistema debe permitir la carga masiva de contenido/metadata del catálogo mediante archivos CSV | Media |
+
+### Requerimientos No Funcionales (RNF)
+| # | Atributo de calidad | Especificación cuantitativa | Prioridad |
+|---|---|---|---|
+| RNF-01 | Rendimiento | El 95% de las peticiones al API Gateway deben responder en menos de 300ms | Alta |
+| RNF-02 | Escalabilidad | El sistema debe soportar un número elevado de estudiantes, sobretodo en periodos de examenes | Alta |
+| RNF-03 | Disponibilidad | El sistema debe mantenerse activo el 99% del tiempo.| Media |
+| RNF-04 | Seguridad | Toda comunicación cliente-servidor debe usar HTTPS/TLS | Alta |
+| RNF-05 | Seguridad | Las contraseñas/tokens no deben almacenarse en texto plano, debe usarse JWT con expiración ≤ 10 min | Alta |
+| RNF-06 | Comunicación interna | El 100% del tráfico east-west entre microservicios debe usar gRPC | Alta |
+| RNF-07 | Caché | Las consultas de catálogo/tendencias cacheadas deben tener TTL ≤ 10 minutos | Media |
+| RNF-08 | Mantenibilidad | Código debe seguir principios SOLID y cada microservicio debe mantener cobertura de pruebas bastante considerable | Media |
+| RNF-09 | Portabilidad | El sistema debe desplegarse mediante Docker Compose en entorno local y en la nube sin cambios de código | Alta |
+| RNF-10 | Despliegue | El despliegue se debe realizar de forma obligatoria en Google Cloud Platform | Alta |
+
