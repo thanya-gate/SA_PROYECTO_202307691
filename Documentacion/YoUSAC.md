@@ -7,6 +7,10 @@
 4. [Requerimientos del sistema](#requerimientos-del-sistema)
    - 4.1 [Requerimientos Funcionales (RF)](#requerimientos-funcionales-rf)
    - 4.2 [Requerimientos No Funcionales (RNF)](#requerimientos-no-funcionales-rnf)
+5. [Modelo de Casos de Uso](#modelo-de-casos-de-uso)
+   - 5.1 [Diagrama de alto nivel](#diagrama-de-alto-nivel)
+   - 5.2 [Descomposición por módulo](#descomposición-por-módulo)
+   - 5.3 [Casos de uso expandidos](#casos-de-uso-expandidos)
 ---
 
 ## Introducción
@@ -51,7 +55,6 @@ almacenados, vistas, funciones y triggers).
 
 ## Requerimientos del sistema
 ### Requerimientos Funcionales (RF)
-### Requerimientos Funcionales (RF)
 
 | ID | Requerimiento | Descripción | Prioridad |
 |---|---|---|---|
@@ -85,3 +88,26 @@ almacenados, vistas, funciones y triggers).
 | RNF-09 | Portabilidad | El sistema debe desplegarse mediante Docker Compose en entorno local y en la nube sin cambios de código | Alta |
 | RNF-10 | Despliegue | El despliegue se debe realizar de forma obligatoria en Google Cloud Platform | Alta |
 
+## Modelo de Casos de Uso
+ 
+### Diagrama de alto nivel
+![Diagrama alto nivel](CDU/CDU_AltoNivel_202307691.drawio.svg)
+
+### Primera Descomposición por módulo
+#### Módulo de Autenticación
+![Diagrama primera descomposición módulo 1](CDU/CDU_PrimeraDescomposicion_M1_202307691.drawio.svg)
+
+#### Módulo de Inscripciones
+![Diagrama primera descomposición módulo 2](CDU/CDU_PrimeraDescomposicion_M2_202307691.drawio.svg)
+
+#### Módulo de Contenido
+![Diagrama primera descomposición módulo 3](CDU/CDU_PrimeraDescomposicion_M3_202307691.drawio.svg)
+
+#### Módulo de Métricas
+![Diagrama primera descomposición módulo 4](CDU/CDU_PrimeraDescomposicion_M4_202307691.drawio.svg)
+
+#### Módulo de Reproducción
+![Diagrama primera descomposición módulo 5](CDU/CDU_PrimeraDescomposicion_M5_202307691.drawio.svg)
+
+#### Módulo de Notificaciones
+![Diagrama primera descomposición módulo 6](CDU/CDU_PrimeraDescomposicion_M6_202307691.drawio.svg)
