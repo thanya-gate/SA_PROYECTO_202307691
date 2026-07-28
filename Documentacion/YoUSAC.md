@@ -51,26 +51,28 @@ almacenados, vistas, funciones y triggers).
 
 ## Requerimientos del sistema
 ### Requerimientos Funcionales (RF)
-| ID | Requerimiento | Prioridad |
-|---|---|---|
-| RF-01 | El sistema debe permitir registro y acceso únicamente con correo institucional de la Facultad de Ingeniería (@ingenieria.usac.edu.gt /@ing.usac.edu.gt) | Alta |
-| RF-02 | El sistema debe rechazar el acceso con correos personales y comerciales (gmail, hotmail, etc.) | Alta |
-| RF-03 | El sistema debe emitir y validar sesiones mediante JWT y Session Cookies (HttpOnly y Secure)  | Alta |
-| RF-04 | El sistema debe soportar login mediante OAuth 2.0 institucional | Media |
-| RF-05 | El sistema debe permitir al estudiante consultar sus cursos asignados/inscritos por semestre, el estado de su matriculación y credenciales académicas | Alta |
-| RF-06 | El sistema debe controlar el acceso según rol correspondiente (RBAC): Estudiante, Catedrático/Docente, Auxiliar y Administrador| Alta |
-| RF-07 | El sistema debe permitir una búsqueda avanzada y filtrado de grabaciones por Semestre/Año, Escuela, Curso, Catedrático y Temas | Alta |
-| RF-08 | El sistema debe mostrar una vista detallada de la clase grabada con su respectiva ficha técnica de cada clase (unidad, fecha, sílabo/material adjunto, docentes/auxiliares) | Media |
-| RF-09 | El sistema debe calcular y mostrar el porcentaje de recomendación de una clase según valoraciones | Media |
-| RF-10 | El sistema debe guardar el checkpoint exacto donde el estudiante detuvo el video | Alta |
-| RF-11 | El sistema debe reanudar la reproducción desde el último checkpoint guardado | Alta |
-| RF-12 | El sistema debe calcular las clases más vistas por semana y el ranking de mejor valoradas | Media |
-| RF-13 | El sistema debe cachear en Redis las consultas frecuentes de catálogo y tendencias | Media |
-| RF-14 | El sistema debe enviar correos automáticos de confirmación de registro y de nuevas clases publicadas | Alta |
-| RF-15 | El sistema debe permitir la carga masiva de contenido/metadata del catálogo mediante archivos CSV | Media |
+### Requerimientos Funcionales (RF)
+
+| ID | Requerimiento | Descripción | Prioridad |
+|---|---|---|---|
+| RF-01 | Autenticación institucional exclusiva | El sistema debe permitir registro y acceso únicamente con correo institucional de la Facultad de Ingeniería (@ingenieria.usac.edu.gt / @ing.usac.edu.gt) | Alta |
+| RF-02 | Rechazo de correos personales/comerciales | El sistema debe rechazar el acceso con correos personales y comerciales (gmail, hotmail, etc.) | Alta |
+| RF-03 | Gestión de sesiones (JWT + Session Cookies) | El sistema debe emitir y validar sesiones mediante JWT y Session Cookies (HttpOnly y Secure) | Alta |
+| RF-04 | Login mediante OAuth 2.0 institucional | El sistema debe soportar login mediante OAuth 2.0 institucional | Media |
+| RF-05 | Consulta de cursos, matrícula y credenciales | El sistema debe permitir al estudiante consultar sus cursos asignados/inscritos por semestre, el estado de su matriculación y credenciales académicas | Alta |
+| RF-06 | Control de acceso basado en roles (RBAC) | El sistema debe controlar el acceso según rol correspondiente (RBAC): Estudiante, Catedrático/Docente, Auxiliar y Administrador | Alta |
+| RF-07 | Búsqueda avanzada y filtrado de grabaciones | El sistema debe permitir una búsqueda avanzada y filtrado de grabaciones por Semestre/Año, Escuela, Curso, Catedrático y Temas | Alta |
+| RF-08 | Vista detallada / ficha técnica de la clase | El sistema debe mostrar una vista detallada de la clase grabada con su respectiva ficha técnica de cada clase (unidad, fecha, sílabo/material adjunto, docentes/auxiliares) | Media |
+| RF-09 | Cálculo de porcentaje de recomendación | El sistema debe calcular y mostrar el porcentaje de recomendación de una clase según valoraciones | Media |
+| RF-10 | Registro de checkpoint de reproducción | El sistema debe guardar el checkpoint exacto donde el estudiante detuvo el video | Alta |
+| RF-11 | Reanudación desde el último checkpoint | El sistema debe reanudar la reproducción desde el último checkpoint guardado | Alta |
+| RF-12 | Cálculo de clases más vistas y mejor valoradas | El sistema debe calcular las clases más vistas por semana y el ranking de mejor valoradas | Media |
+| RF-13 | Caché de consultas frecuentes (Redis) | El sistema debe cachear en Redis las consultas frecuentes de catálogo y tendencias | Media |
+| RF-14 | Notificaciones automáticas por correo | El sistema debe enviar correos automáticos de confirmación de registro y de nuevas clases publicadas | Alta |
+| RF-15 | Carga masiva de catálogo vía CSV | El sistema debe permitir la carga masiva de contenido/metadata del catálogo mediante archivos CSV | Media |
 
 ### Requerimientos No Funcionales (RNF)
-| # | Atributo de calidad | Especificación cuantitativa | Prioridad |
+| ID | Atributo de calidad | Especificación cuantitativa | Prioridad |
 |---|---|---|---|
 | RNF-01 | Rendimiento | El 95% de las peticiones al API Gateway deben responder en menos de 300ms | Alta |
 | RNF-02 | Escalabilidad | El sistema debe soportar un número elevado de estudiantes, sobretodo en periodos de examenes | Alta |
