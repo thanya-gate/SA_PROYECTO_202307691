@@ -111,3 +111,152 @@ almacenados, vistas, funciones y triggers).
 
 #### Módulo de Notificaciones
 ![Diagrama primera descomposición módulo 6](CDU/CDU_PrimeraDescomposicion_M6_202307691.drawio.svg)
+
+# Casos de uso expandidos
+## Módulo 1: Autenticación, Gestión de Sesiones y Multiperfil
+
+![Diagrama expandido módulo 1](CDU/CDU_Expandido_M1_202307691.drawio.svg)
+---
+ 
+### CDU0001.1: Autenticar usuario institucional
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0001.1 |
+| Nombre | Iniciar sesión con correo institucional |
+| Actor | Estudiante, Docente, Auxiliar, Administrador |
+| Descripción | Permite a usuarios con correo institucional autenticarse en la plataforma, estableciendo una sesión segura. |
+| Precondiciones | El usuario ya debe tener una cuenta registrada. |
+| Postcondiciones | El usuario tiene una sesión activa con su rol identificado. |
+ 
+**Flujo principal:**
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Accede a la pantalla de login. |
+| 2 | Usuario | Ingresa correo institucional y contraseña. |
+| 3 | Sistema | Validar que se tenga un dominio institucional. |
+| 4 | Sistema | Valida las credenciales contra la base de datos. |
+| 5 | Sistema | Genera un JWT y una Session Cookie. |
+| 6 | Sistema | Redirige al usuario al catálogo principal según su rol. |
+ 
+**Flujos alternativos:**
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FA-01 | El usuario elige ingresar con cuenta institucional usando el servicio OAuth | El sistema extiende hace la validación con el proveedor y se sigue el flujo principal desde el paso 5. |
+ 
+**Flujos de excepción:**
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El correo no pertenece al dominio institucional | El sistema rechaza el intento y muestra "Correo no autorizado". |
+| FE-02 | La contraseña no coincide | El sistema incrementa el contador de intentos fallidos y muestra "Credenciales incorrectas". |
+ 
+---
+ 
+### CDU0001.2: Validar dominio institucional
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0001.2 |
+| Nombre | Validar dominio institucional |
+| Actor | include |
+| Descripción | Verifica que el correo ingresado pertenezca al dominio autorizado de la Facultad de Ingeniería. |
+| Precondiciones | Se recibió un correo electrónico como parte de un login o registro. |
+| Postcondiciones | Se confirma o rechaza la validez del dominio del correo. |
+ 
+**Flujo principal:**
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Recibe el correo electrónico a validar. |
+| 2 | Sistema | Compara el dominio permitido con el ingresado. |
+| 3 | Sistema | Retorna "dominio válido" al caso de uso que lo invocó. |
+ 
+**Flujos alternativos:**
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+**Flujos de excepción:**
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El dominio no está autorizado | El sistema retorna "dominio inválido" y el caso de uso invocador aborta el flujo. |
+ 
+---
+ 
+### CDU0001.3: Autenticarse vía OAuth institucional
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0001.3 |
+| Nombre | Autenticarse vía OAuth institucional |
+| Actor | Estudiante, Docente, Auxiliar, Administrador, OAuth Institucional |
+| Descripción | Ruta alternativa (extend) de autenticación delegando la verificación de identidad al proveedor OAuth institucional. |
+| Precondiciones | El usuario cuenta con una identidad federada en el sistema OAuth de la universidad. |
+| Postcondiciones | El usuario queda autenticado mediante identidad federada. |
+ 
+**Flujo principal:**
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Selecciona "Ingresar con cuenta institucional" en el login. |
+| 2 | Sistema | Redirige al usuario al proveedor OAuth institucional. |
+| 3 | Usuario | Se autentica en el proveedor OAuth. |
+| 4 | OAuth Institucional | Retorna un token de identidad al sistema. |
+| 5 | Sistema | Valida el token y continúa el flujo de principal desde su paso 5. |
+ 
+**Flujos alternativos:**
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+**Flujos de excepción:**
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El usuario cancela o falla la autenticación en el proveedor | El sistema retorna al login mostrando "No se pudo completar el inicio de sesión". |
+| FE-02 | El token recibido es inválido o expiró | El sistema rechaza el intento y solicita reintentar. |
+ 
+---
+ 
+### CDU0001.4: Registrar cuenta nueva
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0001.4 |
+| Nombre | Registrar cuenta nueva |
+| Actor | Estudiante, Docente/Catedrático, Auxiliar, Microservicio de Notificaciones |
+| Descripción | Permite a un usuario con correo institucional crear su cuenta por primera vez en la plataforma. |
+| Precondiciones | El usuario no tiene una cuenta previamente creada. |
+| Postcondiciones | Se crea una nueva cuenta de usuario y se notifica por correo. |
+ 
+**Flujo principal:**
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Accede a la pantalla de registro. |
+| 2 | Usuario | Ingresa su correo institucional y define una contraseña. |
+| 3 | Sistema | Ejecuta CDU0001.2 (Validar dominio institucional). |
+| 4 | Sistema | Crea el registro de usuario con rol por defecto (Estudiante). |
+| 5 | Sistema | Dispara un evento hacia el Microservicio de Notificaciones para enviar el correo de confirmación de registro. |
+| 6 | Sistema | Redirige al usuario al login. |
+ 
+**Flujos alternativos:**
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+**Flujos de excepción:**
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El correo no pertenece al dominio institucional | El registro se rechaza mostrando "Correo no autorizado". |
+| FE-02 | El correo ya está registrado | El sistema muestra "Ya existe una cuenta con este correo" y sugiere iniciar sesión. |
+ 
+---
