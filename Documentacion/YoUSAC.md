@@ -260,3 +260,175 @@ almacenados, vistas, funciones y triggers).
 | FE-02 | El correo ya está registrado | El sistema muestra "Ya existe una cuenta con este correo" y sugiere iniciar sesión. |
  
 ---
+## Módulo 2: Gestión de Inscripción y Permisos
+ 
+![Diagrama expandido módulo 2](CDU/CDU_Expandido_M2_202307691.drawio.svg)
+ 
+---
+ 
+### CDU0002.1: Consultar cursos asignados/inscritos
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0002.1 |
+| Nombre | Consultar cursos asignados/inscritos |
+| Actor | Estudiante, Docente/Catedrático, Auxiliar |
+| Descripción | Permite a cualquier usuario institucional consultar los cursos en los que está inscrito o asignado durante el semestre vigente. |
+| Precondiciones | El usuario tiene una sesión activa. |
+| Postcondiciones | Se muestra al usuario el listado de cursos correspondiente a su rol. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Accede al panel de cursos/asignaciones. |
+| 2 | Sistema | Identifica el rol del usuario mediante el Microservicio de Autenticación. |
+| 3 | Sistema | Ejecuta consultar estado de matriculación. |
+| 4 | Sistema | Muestra el listado de cursos según el rol. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El usuario no tiene cursos registrados para el semestre vigente | El sistema muestra "No hay cursos asociados a tu cuenta este semestre". |
+| FE-02 | Error de comunicación con el Microservicio de Autenticación | El sistema muestra un mensaje de error genérico y solicita reintentar. |
+ 
+---
+ 
+### CDU0002.2: Consultar estado de matriculación
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0002.2 |
+| Nombre | Consultar estado de matriculación |
+| Actor | include |
+| Descripción | Verifica y retorna el estado de matriculación vigente del usuario (activo, pendiente, cerrado). |
+| Precondiciones | El usuario ya fue identificado por rol. |
+| Postcondiciones | Se retorna el estado de matriculación al caso de uso que lo invocó. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Consulta la base de datos de matriculación del usuario. |
+| 2 | Sistema | Retorna el estado vigente. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| — | Ninguno | — |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | No existe registro de matriculación | El sistema retorna "sin matrícula" al caso de uso invocador. |
+ 
+---
+ 
+### CDU0002.3: Gestionar control de acceso por roles (RBAC)
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0002.3 |
+| Nombre | Gestionar control de acceso por roles (RBAC) |
+| Actor | Administrador |
+| Descripción | Permite al administrador visualizar y administrar los roles existentes en la plataforma (Estudiante, Docente/Catedrático, Auxiliar, Administrador). |
+| Precondiciones | El administrador tiene una sesión activa. |
+| Postcondiciones | El administrador puede ver y gestionar los roles del sistema. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Administrador | Accede al panel de gestión de roles. |
+| 2 | Sistema | Muestra el listado de usuarios con su rol actual. |
+| 3 | Administrador | Selecciona un usuario para modificar su rol. |
+| 4 | Sistema | Ejecuta asignar/editar rol de usuario. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El administrador no tiene permisos suficientes | El sistema muestra "Acceso denegado". |
+ 
+---
+ 
+### CDU0002.4: Asignar/editar rol de usuario
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0002.4 |
+| Nombre | Asignar/editar rol de usuario |
+| Actor | Administrador |
+| Descripción | Permite modificar el rol asignado a un usuario específico dentro del sistema. |
+| Precondiciones | El usuario a modificar existe en el sistema. |
+| Postcondiciones | El rol del usuario queda actualizado. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Administrador | Selecciona el nuevo rol para el usuario. |
+| 2 | Sistema | Actualiza el rol del usuario en la base de datos. |
+| 3 | Sistema | Ejecuta auditar cambio de permisos. |
+| 4 | Sistema | Confirma el cambio al administrador. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El rol seleccionado no es válido | El sistema rechaza el cambio y muestra "Rol inválido". |
+ 
+---
+ 
+### CDU0002.5: Auditar cambio de permisos
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0002.5 |
+| Nombre | Auditar cambio de permisos |
+| Actor | ejecutado automáticamente como trigger de base de datos |
+| Descripción | Registra en la bitácora de auditoría cada cambio de rol/permiso realizado sobre un usuario. |
+| Precondiciones | Se realizó un cambio de rol. |
+| Postcondiciones | Queda un registro de auditoría del cambio. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema (trigger) | Detecta el cambio de rol en la base de datos. |
+| 2 | Sistema (trigger) | Inserta un registro de auditoría con el detalle del cambio. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | Falla la escritura del registro de auditoría | El sistema revierte el cambio de rol y notifica el error al administrador. |
+ 
+---
