@@ -432,3 +432,174 @@ Flujos de excepción:
 | FE-01 | Falla la escritura del registro de auditoría | El sistema revierte el cambio de rol y notifica el error al administrador. |
  
 ---
+## Módulo 3: Catálogo, Búsqueda y Detalle de Contenido
+
+![Diagrama expandido módulo 3](CDU/CDU_Expandido_M3_202307691.drawio.svg)
+---
+ 
+### CDU0003.1: Buscar grabaciones
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0003.1 |
+| Nombre | Buscar grabaciones |
+| Actor | Estudiante, Docente, Auxiliar |
+| Descripción | Permite a cualquier usuario institucional buscar grabaciones de clases dentro del catálogo académico. |
+| Precondiciones | El usuario tiene una sesión activa. |
+| Postcondiciones | Se muestra al usuario el listado de grabaciones que coinciden con la búsqueda. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Accede al catálogo de grabaciones. |
+| 2 | Usuario | Ingresa un término de búsqueda o abre el panel de filtros. |
+| 3 | Sistema | Ejecuta aplicar filtros de búsqueda. |
+| 4 | Sistema | Muestra el listado de resultados. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FA-01 | El usuario selecciona un resultado del listado | El sistema extiende hacia ver ficha técnica de clase. |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | No hay resultados que coincidan con la búsqueda | El sistema muestra "No se encontraron grabaciones para tu búsqueda". |
+| FE-02 | Error de comunicación con el catálogo | El sistema muestra un mensaje de error genérico y solicita reintentar. |
+ 
+---
+ 
+### CDU0003.2: Aplicar filtros de búsqueda
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0003.2 |
+| Nombre | Aplicar filtros de búsqueda |
+| Actor | include |
+| Descripción | Filtra las grabaciones del catálogo por semestre/año, escuela/área, curso, catedrático y tema/etiqueta. |
+| Precondiciones | Se recibió un criterio de búsqueda o filtro. |
+| Postcondiciones | Se retorna el subconjunto de grabaciones que cumple los filtros. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Recibe los criterios de filtro seleccionados. |
+| 2 | Sistema | Consulta la base de datos del catálogo aplicando los filtros. |
+| 3 | Sistema | Retorna el listado filtrado al caso de uso invocador. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | Combinación de filtros inválida  | El sistema ignora el filtro inválido y aplica el resto. |
+ 
+---
+ 
+### CDU0003.3: Ver ficha técnica de clase
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0003.3 |
+| Nombre | Ver ficha técnica de clase |
+| Actor | Estudiante, Docente, Auxiliar |
+| Descripción | Muestra el detalle de una grabación: unidad del programa, fecha de impartición, catedráticos/auxiliares participantes. |
+| Precondiciones | El usuario seleccionó una grabación. |
+| Postcondiciones | Se muestra la ficha técnica completa de la clase. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Selecciona una grabación del listado de resultados. |
+| 2 | Sistema | Consulta los datos de la ficha técnica de la clase. |
+| 3 | Sistema | Muestra la ficha técnica al usuario. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FA-01 | La clase tiene material adjunto | El sistema extiende hacia ver material adjunto. |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | La grabación ya no está disponible | El sistema muestra "Esta grabación ya no se encuentra disponible". |
+ 
+---
+ 
+### CDU0003.4: Ver material adjunto
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0003.4 |
+| Nombre | Ver material adjunto |
+| Actor | Estudiante, Docente, Auxiliar |
+| Descripción | Permite consultar y descargar el material adjunto asociado a una clase grabada. |
+| Precondiciones | La ficha técnica de la clase tiene material adjunto disponible. |
+| Postcondiciones | El usuario visualiza o descarga el material adjunto. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Selecciona el material adjunto desde la ficha técnica. |
+| 2 | Sistema | Recupera el archivo asociado. |
+| 3 | Sistema | Muestra o descarga el archivo al usuario. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El archivo no se pudo recuperar | El sistema muestra "No se pudo cargar el material adjunto". |
+ 
+---
+ 
+### CDU0003.5: Notificar publicación de nueva clase
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0003.5 |
+| Nombre | Notificar publicación de nueva clase |
+| Actor | Microservicio de Notificaciones |
+| Descripción | Cuando se agrega una nueva grabación al catálogo, dispara un evento hacia el Microservicio de Notificaciones para avisar a los estudiantes inscritos en el curso correspondiente. |
+| Precondiciones | Se publicó una nueva grabación en el catálogo. |
+| Postcondiciones | Los estudiantes inscritos reciben la notificación de la nueva clase disponible. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Detecta la publicación de una nueva grabación en el catálogo. |
+| 2 | Sistema | Identifica a los estudiantes inscritos en el curso correspondiente. |
+| 3 | Sistema | Dispara el evento hacia el Microservicio de Notificaciones. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | Falla la comunicación con el Microservicio de Notificaciones | El sistema registra el evento en una cola de reintentos. |
+ 
+---
