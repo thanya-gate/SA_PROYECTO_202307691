@@ -1042,6 +1042,7 @@ Describe los casos de uso o situaciones en las que interactúan los usuarios con
 ### Vista Lógica
 Muestra la estructura funcional del sistema, es decir, las clases, módulos, servicios o entidades y cómo se relacionan entre sí para implementar la lógica del negocio.
 
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_202307691.drawio.svg)
 
 ### Vista de Procesos (gRPC)
 ### Vista de Componentes
