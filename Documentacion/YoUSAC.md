@@ -18,6 +18,7 @@
    - 6.4 [Vista de Componentes](#vista-de-componentes)
    - 6.5 [Vista de Despliegue](#vista-de-despliegue)
 7. [Diseño del Modelado de Datos (DER)](#diseño-del-modelado-de-datos-der)
+8. [Diseño UI/UX (Mockups)](#diseño-uiux-mockups)
 ---
 
 ## Introducción
@@ -1161,3 +1162,34 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 | Trigger | trg_encolar_notificacion | AFTER INSERT ON notificacion → inserta automáticamente el registro correspondiente en cola_envio. |
 | Trigger | trg_reintento_fallido | AFTER UPDATE OF ultimo_error ON cola_envio → incrementa intentos y calcula fecha_proximo_intento con backoff. |
 
+## Diseño del Modelado de Datos (DER)
+
+### Login Institucional
+Este mockup representa la pantalla de autenticación del sistema. Permite a estudiantes y docentes iniciar sesión utilizando exclusivamente su correo institucional de la Facultad de Ingeniería, validando el dominio permitido y garantizando un acceso seguro a la plataforma.
+
+![M1](Mockups/Mockups_Login_202307691.drawio.svg)
+
+### Catálogo
+Corresponde a la interfaz principal donde los usuarios pueden explorar el contenido disponible. Incluye herramientas de búsqueda y filtros por semestre, curso, escuela, catedrático y temas específicos, facilitando la localización de las grabaciones académicas.
+
+![M2](Mockups/Mockups_Catalogo_202307691.drawio.svg)
+
+### Reproductor
+Muestra la pantalla destinada a la reproducción de las clases grabadas. Además del reproductor multimedia, presenta información de la clase, el progreso de visualización (checkpoint), la opción de calificar el contenido y el porcentaje de recomendación generado por el sistema.
+
+![M3](Mockups/Mockups_Reproductor_202307691.drawio.svg)
+
+### Asignaciones
+Este mockup permite al usuario consultar los cursos en los que está inscrito y visualizar la información relacionada con sus asignaciones académicas. También refleja los permisos disponibles según el rol del usuario dentro de la plataforma.
+
+![M4](Mockups/Mockups_Asignaciones_202307691.drawio.svg)
+
+### Configuración
+Representa la sección donde el usuario puede administrar la información de su perfil, modificar preferencias personales, gestionar la seguridad de su cuenta y visualizar los datos asociados a su sesión.
+
+![M5](Mockups/Mockups_Configuracion_202307691.drawio.svg)
+
+### Panel Admin
+Corresponde a la interfaz exclusiva para administradores del sistema. Desde este panel es posible gestionar usuarios, cursos, grabaciones, permisos y otros elementos administrativos necesarios para el funcionamiento de la plataforma.
+
+![M6](Mockups/Mockups_Admin_202307691.drawio.svg)
