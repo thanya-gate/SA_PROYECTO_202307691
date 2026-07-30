@@ -1104,12 +1104,25 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 | Trigger | trg_validar_auxiliar_unico_catedratico | BEFORE INSERT ON asignacion_auxiliar → evita asignaciones duplicadas del mismo auxiliar al mismo catedrático. |
 
 ### Catálogo Service
-![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
+![D3](ER/DER_MicroservicioCatalogo_202307691.drawio.svg)
+
+### Objetos programables
+ 
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_publicar_clase | Inserta la clase y dispara el trigger de evento de publicación. |
+| SP | sp_asociar_etiquetas | Inserta múltiples relaciones clase_etiqueta en una sola transacción. |
+| Vista | vw_ficha_tecnica_clase | Combina clase_grabada, curso_catalogo, docente_clase y clase_etiqueta en una sola proyección lista para el frontend. |
+| Vista | vw_catalogo_por_semestre | Listado de clases agrupado por semestre/año/escuela. |
+| Función | fn_buscar_clases | Búsqueda avanzada con filtros opcionales combinables (semestre, escuela, curso, catedrático, tema). |
+| Trigger | trg_evento_clase_publicada | AFTER INSERT ON clase_grabada → inserta un registro en evento_publicacion_pendiente, consumido por el Notificaciones Service vía gRPC. |
+
+
 ### Reproducción Service
-![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
+![D4](ER/DER_MicroservicioAuth_202307691.drawio.svg)
 ### Analítica Service
-![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
+![D5](ER/DER_MicroservicioAuth_202307691.drawio.svg)
 ### Notificaciones Service
-![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
+![D6](ER/DER_MicroservicioAuth_202307691.drawio.svg)
 
 
