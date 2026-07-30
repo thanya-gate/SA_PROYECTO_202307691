@@ -1165,6 +1165,10 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 ## Diseño del Modelado de Datos (DER)
 
 ### Login Institucional
+Este mockup representa la pantalla de autenticación del sistema. Permite a estudiantes y docentes iniciar sesión utilizando exclusivamente su correo institucional de la Facultad de Ingeniería, validando el dominio permitido y garantizando un acceso seguro a la plataforma.
+
+![M1](Mockups/Mockups_Login_202307691.drawio.svg)
+
 ### Catálogo
 ### Reproductor
 ### Asignaciones
