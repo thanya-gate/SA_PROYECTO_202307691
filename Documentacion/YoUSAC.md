@@ -1175,6 +1175,10 @@ Corresponde a la interfaz principal donde los usuarios pueden explorar el conten
 ![M2](Mockups/Mockups_Catalogo_202307691.drawio.svg)
 
 ### Reproductor
+Muestra la pantalla destinada a la reproducción de las clases grabadas. Además del reproductor multimedia, presenta información de la clase, el progreso de visualización (checkpoint), la opción de calificar el contenido y el porcentaje de recomendación generado por el sistema.
+
+![M3](Mockups/Mockups_Reproductor_202307691.drawio.svg)
+
 ### Asignaciones
 ### Configuración
 ### Panel Admin
