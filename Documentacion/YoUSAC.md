@@ -734,3 +734,162 @@ Flujos de excepción:
 | FE-01 | No hay suficientes datos históricos para calcular la recomendación | El sistema asigna un valor por defecto y marca la clase como "sin suficiente información". |
  
 ---
+
+## Módulo 5: Historial de Reproducción y Checkpoint de Avance
+ 
+ ![Diagrama expandido módulo 5](CDU/CDU_Expandido_M5_202307691.drawio.svg)
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0005.1 |
+| Nombre | Reproducir grabación |
+| Actor | Estudiante |
+| Descripción | Permite al estudiante reproducir el video de una clase grabada. |
+| Precondiciones | El estudiante tiene una sesión activa. |
+| Postcondiciones | El video se reproduce y el sistema comienza a registrar el avance. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Selecciona una grabación desde su ficha técnica. |
+| 2 | Sistema | Carga el video y comienza la reproducción. |
+| 3 | Sistema | Registra periódicamente el minuto exacto de avance. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FA-01 | El estudiante pausa o cierra el video antes de terminar | El sistema extiende hacia guardar checkpoint de avance. |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El video no se puede cargar | El sistema muestra "No se pudo cargar la grabación" y solicita reintentar. |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0005.2 |
+| Nombre | Guardar checkpoint de avance |
+| Actor | include |
+| Descripción | Almacena con precisión el semestre, curso, unidad, tema y segundo/minuto exacto donde el estudiante detuvo la reproducción. |
+| Precondiciones | El estudiante estaba reproduciendo una grabación. |
+| Postcondiciones | Queda registrado el punto exacto de avance para esa clase y ese estudiante. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Captura el punto exacto de reproducción. |
+| 2 | Sistema | Almacena o actualiza el checkpoint asociado a la cuenta del estudiante. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | Falla el guardado del checkpoint | El sistema reintenta en segundo plano sin interrumpir al usuario. |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0005.3 |
+| Nombre | Reanudar reproducción |
+| Actor | Estudiante |
+| Descripción | Permite al estudiante continuar viendo una clase exactamente desde el punto donde la dejó. |
+| Precondiciones | Existe un checkpoint previo guardado para esa clase y ese estudiante. |
+| Postcondiciones | El video se reanuda desde el minuto exacto del checkpoint. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Selecciona una clase que ya había visto parcialmente. |
+| 2 | Sistema | Ejecuta guardar checkpoint de avance para recuperar el último punto guardado. |
+| 3 | Sistema | Reanuda la reproducción desde ese punto. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | No existe checkpoint previo para esa clase | El sistema inicia la reproducción desde el minuto 0. |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0005.4 |
+| Nombre | Consultar historial de reproducción reciente |
+| Actor | Estudiante |
+| Descripción | Muestra al estudiante el listado de clases vistas recientemente y su avance en cada una. |
+| Precondiciones | El estudiante tiene una sesión activa. |
+| Postcondiciones | Se muestra el historial reciente con el progreso de cada clase. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Accede a la sección de historial reciente. |
+| 2 | Sistema | Consulta los checkpoints más recientes del estudiante. |
+| 3 | Sistema | Muestra el listado con el porcentaje de avance de cada clase. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El estudiante no tiene historial reciente | El sistema muestra "Aún no has visto ninguna clase". |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0005.5 |
+| Nombre | Enviar datos de checkpoint a analítica |
+| Actor | Microservicio de Analítica |
+| Descripción | Envía de forma periódica los datos de reproducción y checkpoints hacia el módulo de Analítica para el cálculo de tendencias y recomendaciones. |
+| Precondiciones | Existen checkpoints nuevos o actualizados desde la última sincronización. |
+| Postcondiciones | El Microservicio de Analítica recibe los datos actualizados de reproducción. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Identifica los checkpoints nuevos o actualizados. |
+| 2 | Sistema | Envía el lote de datos hacia el Microservicio de Analítica. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | Falla la comunicación con el Microservicio de Analítica | El sistema encola el envío para reintentarlo más tarde. |
+ 
+---
