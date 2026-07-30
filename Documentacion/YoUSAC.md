@@ -1088,10 +1088,28 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 
 ### Inscripción Service
 
+![D2](ER/DER_MicroservicioInscripcion_202307691.drawio.svg)
+
+### Objetos programables
+ 
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_inscribir_estudiante | Valida cupo/duplicidad e inserta la inscripción con estado inicial PENDIENTE. |
+| SP | sp_asignar_catedratico_curso | Asigna un catedrático como titular de un curso. |
+| SP | sp_asignar_auxiliar_catedratico | Vincula un auxiliar a un catedrático específico (no directamente al curso). |
+| Vista | vw_panel_estudiante | Cursos inscritos, estado de matrícula y catedrático asignado, por estudiante. |
+| Vista | vw_cursos_por_catedratico | Cursos asignados junto con los auxiliares que apoyan a cada catedrático. |
+| Función | fn_estado_matricula(estudiante_id_ref, curso_id) | Calcula el estado vigente de matrícula (ACTIVA, PENDIENTE, RETIRADA). |
+| Trigger | trg_auditoria_inscripcion | AFTER UPDATE OF estado_matricula ON inscripcion → registra el cambio de estado en una tabla de auditoría local. |
+| Trigger | trg_validar_auxiliar_unico_catedratico | BEFORE INSERT ON asignacion_auxiliar → evita asignaciones duplicadas del mismo auxiliar al mismo catedrático. |
 
 ### Catálogo Service
+![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
 ### Reproducción Service
+![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
 ### Analítica Service
+![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
 ### Notificaciones Service
+![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
 
 
