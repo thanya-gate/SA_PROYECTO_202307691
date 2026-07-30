@@ -17,6 +17,7 @@
    - 6.3 [Vista de Procesos](#vista-de-procesos)
    - 6.4 [Vista de Componentes](#vista-de-componentes)
    - 6.5 [Vista de Despliegue](#vista-de-despliegue)
+7. [Diseño del Modelado de Datos (DER)](#diseño-del-modelado-de-datos-der)
 ---
 
 ## Introducción
@@ -1058,3 +1059,14 @@ Describe la organización del software en componentes o módulos, mostrando cóm
 Explica cómo se distribuye el sistema en la infraestructura física o virtual, indicando servidores, contenedores, dispositivos, redes y dónde se ejecuta cada componente.
 
 ![DVista5](Vistas4+1/VistaDespliegue_DiagramaComponentes_202307691.drawio.svg)
+
+## Diseño del Modelado de Datos (DER)
+
+### Auth Service
+### Inscripción Service
+### Catálogo Service
+### Reproducción Service
+### Analítica Service
+### Notificaciones Service
+
+
