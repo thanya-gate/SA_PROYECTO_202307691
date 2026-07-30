@@ -1180,5 +1180,9 @@ Muestra la pantalla destinada a la reproducción de las clases grabadas. Además
 ![M3](Mockups/Mockups_Reproductor_202307691.drawio.svg)
 
 ### Asignaciones
+Este mockup permite al usuario consultar los cursos en los que está inscrito y visualizar la información relacionada con sus asignaciones académicas. También refleja los permisos disponibles según el rol del usuario dentro de la plataforma.
+
+![M4](Mockups/Mockups_Asignaciones_202307691.drawio.svg)
+
 ### Configuración
 ### Panel Admin
