@@ -1133,8 +1133,31 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 | Trigger | trg_validar_rango_puntuacion | BEFORE INSERT OR UPDATE ON calificacion → valida que puntuacion esté entre 1 y 5. |
 
 ### Analítica Service
-![D5](ER/DER_MicroservicioAuth_202307691.drawio.svg)
-### Notificaciones Service
-![D6](ER/DER_MicroservicioAuth_202307691.drawio.svg)
+![D5](ER/DER_MicroservicioAnalitica_202307691.drawio.svg)
 
+### Objetos programables
+ 
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_registrar_evento_vista | Hace *upsert* de clase_metrica (si es la primera vez que se ve esa clase) e inserta el evento_vista. Alimentado por Reproducción Service. |
+| SP | sp_recalcular_tendencias | Agrega evento_vista por clase para una semana dada y regenera tendencia_semanal (job programado). |
+| Vista | vw_ranking_clases | Top de clases por total_vistas y promedio_calificacion. |
+| Vista | vw_tendencias_examenes | Temas con mayor crecimiento de vistas en las últimas semanas. |
+| Función | fn_calcular_porcentaje_recomendacion(clase_metrica_id) | Combina calificacion_agregada y tendencia_semanal en un puntaje ponderado de recomendación. |
+| Trigger | trg_actualizar_calificacion_agregada | AFTER INSERT ON evento_vista (o al sincronizar calificaciones desde Reproducción Service) → recalcula promedio_calificacion y total_calificaciones. |
+| Trigger | trg_invalidar_cache_ranking | AFTER INSERT OR UPDATE ON tendencia_semanal → marca bandera de control para invalidar (TTL forzado) la clave correspondiente en Redis. |
+
+### Notificaciones Service
+![D6](ER/DER_MicroservicioNotificaciones_202307691.drawio.svg)
+
+### Objetos programables
+ 
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_registrar_notificacion | Inserta la notificación con estado PENDIENTE (dispara trigger de encolado). |
+| SP | sp_marcar_enviada | Actualiza estado a ENVIADA y sincroniza fecha_envio. |
+| Vista | vw_notificaciones_pendientes | Notificaciones con estado = 'PENDIENTE' listas para procesar por el worker de correo. |
+| Función | fn_renderizar_plantilla(plantilla_id, datos_contexto) | Sustituye variables dinámicas dentro del cuerpo_html de la plantilla. |
+| Trigger | trg_encolar_notificacion | AFTER INSERT ON notificacion → inserta automáticamente el registro correspondiente en cola_envio. |
+| Trigger | trg_reintento_fallido | AFTER UPDATE OF ultimo_error ON cola_envio → incrementa intentos y calcula fecha_proximo_intento con backoff. |
 
