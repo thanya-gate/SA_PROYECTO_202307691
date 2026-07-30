@@ -1044,6 +1044,10 @@ Muestra la estructura funcional del sistema, es decir, las clases, módulos, ser
 
 ![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_202307691.drawio.svg)
 
-### Vista de Procesos (gRPC)
+### Vista de Procesos 
+Representa cómo se comunican y coordinan los procesos o servicios del sistema durante la ejecución. Esta vista muestra las llamadas remotas entre servicios, el intercambio de datos y la concurrencia.
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_202307691.drawio.svg)
+
 ### Vista de Componentes
 ### Vista de Despliegue
