@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="wuH6cG9MMJXAa1Ko4fJa">
+    <mxGraphModel dx="1239" dy="697" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="q3boJyQylVty_BRNaJ5P-1" parent="1" style="html=1;whiteSpace=wrap;" value="" vertex="1">
+          <mxGeometry height="290" width="810" x="520" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-3" edge="1" parent="1" source="q3boJyQylVty_BRNaJ5P-3" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="YSVhIgpmbLpjISWH6Er8-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="q3boJyQylVty_BRNaJ5P-3" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Estudiante" vertex="1">
+          <mxGeometry height="60" width="30" x="410" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-4" edge="1" parent="1" source="q3boJyQylVty_BRNaJ5P-4" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="YSVhIgpmbLpjISWH6Er8-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="q3boJyQylVty_BRNaJ5P-4" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Docente" vertex="1">
+          <mxGeometry height="60" width="30" x="410" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-6" edge="1" parent="1" source="q3boJyQylVty_BRNaJ5P-5" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="YSVhIgpmbLpjISWH6Er8-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="q3boJyQylVty_BRNaJ5P-5" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Administrdor" vertex="1">
+          <mxGeometry height="60" width="30" x="410" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-5" edge="1" parent="1" source="q3boJyQylVty_BRNaJ5P-8" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="YSVhIgpmbLpjISWH6Er8-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="q3boJyQylVty_BRNaJ5P-8" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Auxiliar" vertex="1">
+          <mxGeometry height="60" width="30" x="410" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="q3boJyQylVty_BRNaJ5P-10" parent="1" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="CDU0002: Inscripción y Permisos" vertex="1">
+          <mxGeometry height="26" width="80" x="890" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="w_fmPZZ1WRP1xif7Ic8n-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Microservicio de&lt;div&gt;Inscripción y roles&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="30" x="620" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="YSVhIgpmbLpjISWH6Er8-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;&lt;div&gt;CDU0002.1&lt;/div&gt;&lt;div&gt;Consultar cursos asignados&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="190" x="570" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="YSVhIgpmbLpjISWH6Er8-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;&lt;div&gt;CDU0002.4&lt;/div&gt;&lt;div&gt;Asignar/editar rol de usuario&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="190" x="860" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="YSVhIgpmbLpjISWH6Er8-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;&lt;div&gt;CDU0002.2&lt;/div&gt;&lt;div&gt;Consultar estado de matriculación&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="190" x="865" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="YSVhIgpmbLpjISWH6Er8-14" edge="1" parent="1" source="YSVhIgpmbLpjISWH6Er8-6" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;dashPattern=8 8;dashed=1;" target="YSVhIgpmbLpjISWH6Er8-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YSVhIgpmbLpjISWH6Er8-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;&lt;div&gt;CDU0002.3&lt;/div&gt;&lt;div&gt;Gestionar control de acceso (RBAC)&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="190" x="560" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="YSVhIgpmbLpjISWH6Er8-16" edge="1" parent="1" source="YSVhIgpmbLpjISWH6Er8-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="YSVhIgpmbLpjISWH6Er8-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YSVhIgpmbLpjISWH6Er8-22" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;rotation=0;" value="«include»" vertex="1">
+          <mxGeometry height="30" width="60" x="780" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;&lt;div&gt;CDU0002.5&lt;/div&gt;&lt;div&gt;Auditar cambio de permisos&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="190" x="1130" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-9" edge="1" parent="1" source="YSVhIgpmbLpjISWH6Er8-4" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="U-fCjr4r-AuyVByfZCuT-2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1050" y="410" as="sourcePoint" />
+            <mxPoint x="1155" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;rotation=0;" value="«include»" vertex="1">
+          <mxGeometry height="30" width="60" x="780" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-11" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;rotation=0;" value="«include»" vertex="1">
+          <mxGeometry height="30" width="60" x="1055" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="U-fCjr4r-AuyVByfZCuT-12" edge="1" parent="1" source="YSVhIgpmbLpjISWH6Er8-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.531;entryY=0.748;entryDx=0;entryDy=0;entryPerimeter=0;" target="w_fmPZZ1WRP1xif7Ic8n-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
