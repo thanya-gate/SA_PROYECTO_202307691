@@ -17,10 +17,15 @@
    - 6.3 [Vista de Procesos](#vista-de-procesos)
    - 6.4 [Vista de Componentes](#vista-de-componentes)
    - 6.5 [Vista de Despliegue](#vista-de-despliegue)
+7. [Diseño del Modelado de Datos (DER)](#diseño-del-modelado-de-datos-der)
 ---
 
 ## Introducción
-La Universidad San Carlos de Guatemala desea
+El presente documento describe el análisis, diseño y planificación de la arquitectura del proyecto YoUSAC, una plataforma web de video bajo demanda (VOD) orientada al entorno universitario. Su principal objetivo es centralizar el acceso a las grabaciones de clases impartidas en semestres anteriores, permitiendo a los estudiantes consultar contenido académico, reforzar conocimientos y dar continuidad a su proceso de aprendizaje mediante una experiencia de navegación eficiente y segura.
+
+Para satisfacer los requerimientos de escalabilidad, disponibilidad y alto rendimiento, el sistema se desarrolla siguiendo una arquitectura de microservicios políglota, distribuyendo las responsabilidades entre servicios implementados en Go, TypeScript y Python, cada uno especializado en un dominio específico del negocio. La comunicación entre los microservicios se realiza mediante gRPC y contratos definidos con Protocol Buffers, mientras que el acceso desde el cliente web se centraliza a través de un API Gateway, garantizando un punto de entrada único y seguro.
+
+Asimismo, la solución incorpora mecanismos modernos de autenticación y autorización utilizando JWT, Session Cookies y OAuth 2.0, además de aplicar el patrón Database per Microservice, almacenamiento en caché con Redis, contenedores Docker y despliegue en Google Cloud Platform (GCP). Estas tecnologías permiten construir una plataforma desacoplada, mantenible y preparada para soportar un gran número de usuarios concurrentes.
 
 ## Descripción del problema
 La Universidad San Carlos de Guatemala crear un sistema para centralizar el acceso a su acervo académico digital mediante una plataforma web de streaming de video bajo demanda (VOD) orientada al entorno universitario. El sistema permitirá a los estudiantes explorar, buscar y visualizar las grabaciones de las clases impartidas en semestres anteriores, facilitando el repaso de contenidos de cara a exámenes, laboratorios y autoformación.
@@ -1058,3 +1063,101 @@ Describe la organización del software en componentes o módulos, mostrando cóm
 Explica cómo se distribuye el sistema en la infraestructura física o virtual, indicando servidores, contenedores, dispositivos, redes y dónde se ejecuta cada componente.
 
 ![DVista5](Vistas4+1/VistaDespliegue_DiagramaComponentes_202307691.drawio.svg)
+
+## Diseño del Modelado de Datos (DER)
+
+### Auth Service
+![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
+
+### Objetos programables
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_registrar_usuario | Valida el dominio institucional (llama a fn_validar_dominio_correo) e inserta el usuario junto con su rol por defecto (Estudiante). |
+| SP | sp_asignar_rol | Agrega un nuevo perfil/rol a un usuario existente (soporta multiperfil). |
+| SP | sp_cambiar_password | Actualiza credenciales dentro de una transacción; dispara el trigger de auditoría. |
+| SP | sp_vincular_cuenta_oauth | Vincula un proveedor OAuth institucional a un usuario existente (o lo crea si no existe). |
+| SP | sp_solicitar_reset_password | Genera un token_verificacion de tipo RESET_PASSWORD con fecha de expiración. |
+| SP | sp_confirmar_verificacion | Valida un token (VERIFICACION_CORREO o RESET_PASSWORD), lo marca como usado y aplica el efecto correspondiente. |
+| Vista | vw_usuarios_activos_roles | Usuarios activos con el listado agregado de todos sus roles/perfiles disponibles. |
+| Vista | vw_sesiones_activas | Sesiones vigentes (no expiradas) por usuario, usadas por el API Gateway para validación rápida. |
+| Función | fn_validar_dominio_correo(correo) | Valida que el correo pertenezca a @ingenieria.usac.edu.gt o @ing.usac.edu.gt. |
+| Función | fn_tiene_permiso(rol_id, recurso, accion) | Evalúa la matriz RBAC contra permiso_rbac. |
+| Trigger | trg_auditoria_password | AFTER UPDATE OF hash_password ON usuario → inserta un registro en auditoria_credenciales. |
+| Trigger | trg_auditoria_rol | AFTER INSERT OR DELETE ON usuario_rol → registra cambios de permisos/roles en auditoria_credenciales. |
+| Trigger | trg_marcar_verificado | AFTER UPDATE OF usado ON token_verificacion (tipo VERIFICACION_CORREO) → marca usuario.email_verificado = true. |
+
+### Inscripción Service
+
+![D2](ER/DER_MicroservicioInscripcion_202307691.drawio.svg)
+
+### Objetos programables
+ 
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_inscribir_estudiante | Valida cupo/duplicidad e inserta la inscripción con estado inicial PENDIENTE. |
+| SP | sp_asignar_catedratico_curso | Asigna un catedrático como titular de un curso. |
+| SP | sp_asignar_auxiliar_catedratico | Vincula un auxiliar a un catedrático específico (no directamente al curso). |
+| Vista | vw_panel_estudiante | Cursos inscritos, estado de matrícula y catedrático asignado, por estudiante. |
+| Vista | vw_cursos_por_catedratico | Cursos asignados junto con los auxiliares que apoyan a cada catedrático. |
+| Función | fn_estado_matricula(estudiante_id_ref, curso_id) | Calcula el estado vigente de matrícula (ACTIVA, PENDIENTE, RETIRADA). |
+| Trigger | trg_auditoria_inscripcion | AFTER UPDATE OF estado_matricula ON inscripcion → registra el cambio de estado en una tabla de auditoría local. |
+| Trigger | trg_validar_auxiliar_unico_catedratico | BEFORE INSERT ON asignacion_auxiliar → evita asignaciones duplicadas del mismo auxiliar al mismo catedrático. |
+
+### Catálogo Service
+![D3](ER/DER_MicroservicioCatalogo_202307691.drawio.svg)
+
+### Objetos programables
+ 
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_publicar_clase | Inserta la clase y dispara el trigger de evento de publicación. |
+| SP | sp_asociar_etiquetas | Inserta múltiples relaciones clase_etiqueta en una sola transacción. |
+| Vista | vw_ficha_tecnica_clase | Combina clase_grabada, curso_catalogo, docente_clase y clase_etiqueta en una sola proyección lista para el frontend. |
+| Vista | vw_catalogo_por_semestre | Listado de clases agrupado por semestre/año/escuela. |
+| Función | fn_buscar_clases | Búsqueda avanzada con filtros opcionales combinables (semestre, escuela, curso, catedrático, tema). |
+| Trigger | trg_evento_clase_publicada | AFTER INSERT ON clase_grabada → inserta un registro en evento_publicacion_pendiente, consumido por el Notificaciones Service vía gRPC. |
+
+
+### Reproducción Service
+![D4](ER/DER_MicroservicioReproduccion_202307691.drawio.svg)
+
+### Objetos programables
+
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_guardar_checkpoint | Hace *upsert* de historial_reproduccion y checkpoint en una sola transacción (alta concurrencia). |
+| SP | sp_registrar_calificacion | Inserta o actualiza la calificación asociada a un historial_id existente. |
+| Vista | vw_historial_reciente | Últimas clases vistas por estudiante ordenadas por fecha_ultima_visualizacion, con el porcentaje de avance. |
+| Función | fn_calcular_progreso(segundo_actual, duracion_total_segundos) | Calcula el porcentaje de avance del video. |
+| Trigger | trg_actualizar_historial | AFTER INSERT OR UPDATE ON checkpoint → actualiza fecha_ultima_visualizacion en historial_reproduccion. |
+| Trigger | trg_validar_rango_puntuacion | BEFORE INSERT OR UPDATE ON calificacion → valida que puntuacion esté entre 1 y 5. |
+
+### Analítica Service
+![D5](ER/DER_MicroservicioAnalitica_202307691.drawio.svg)
+
+### Objetos programables
+ 
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_registrar_evento_vista | Hace *upsert* de clase_metrica (si es la primera vez que se ve esa clase) e inserta el evento_vista. Alimentado por Reproducción Service. |
+| SP | sp_recalcular_tendencias | Agrega evento_vista por clase para una semana dada y regenera tendencia_semanal (job programado). |
+| Vista | vw_ranking_clases | Top de clases por total_vistas y promedio_calificacion. |
+| Vista | vw_tendencias_examenes | Temas con mayor crecimiento de vistas en las últimas semanas. |
+| Función | fn_calcular_porcentaje_recomendacion(clase_metrica_id) | Combina calificacion_agregada y tendencia_semanal en un puntaje ponderado de recomendación. |
+| Trigger | trg_actualizar_calificacion_agregada | AFTER INSERT ON evento_vista (o al sincronizar calificaciones desde Reproducción Service) → recalcula promedio_calificacion y total_calificaciones. |
+| Trigger | trg_invalidar_cache_ranking | AFTER INSERT OR UPDATE ON tendencia_semanal → marca bandera de control para invalidar (TTL forzado) la clave correspondiente en Redis. |
+
+### Notificaciones Service
+![D6](ER/DER_MicroservicioNotificaciones_202307691.drawio.svg)
+
+### Objetos programables
+ 
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_registrar_notificacion | Inserta la notificación con estado PENDIENTE (dispara trigger de encolado). |
+| SP | sp_marcar_enviada | Actualiza estado a ENVIADA y sincroniza fecha_envio. |
+| Vista | vw_notificaciones_pendientes | Notificaciones con estado = 'PENDIENTE' listas para procesar por el worker de correo. |
+| Función | fn_renderizar_plantilla(plantilla_id, datos_contexto) | Sustituye variables dinámicas dentro del cuerpo_html de la plantilla. |
+| Trigger | trg_encolar_notificacion | AFTER INSERT ON notificacion → inserta automáticamente el registro correspondiente en cola_envio. |
+| Trigger | trg_reintento_fallido | AFTER UPDATE OF ultimo_error ON cola_envio → incrementa intentos y calcula fecha_proximo_intento con backoff. |
+
