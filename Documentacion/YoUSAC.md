@@ -1119,7 +1119,19 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 
 
 ### Reproducción Service
-![D4](ER/DER_MicroservicioAuth_202307691.drawio.svg)
+![D4](ER/DER_MicroservicioReproduccion_202307691.drawio.svg)
+
+### Objetos programables
+
+| Tipo | Nombre | Descripción |
+|---|---|---|
+| SP | sp_guardar_checkpoint | Hace *upsert* de historial_reproduccion y checkpoint en una sola transacción (alta concurrencia). |
+| SP | sp_registrar_calificacion | Inserta o actualiza la calificación asociada a un historial_id existente. |
+| Vista | vw_historial_reciente | Últimas clases vistas por estudiante ordenadas por fecha_ultima_visualizacion, con el porcentaje de avance. |
+| Función | fn_calcular_progreso(segundo_actual, duracion_total_segundos) | Calcula el porcentaje de avance del video. |
+| Trigger | trg_actualizar_historial | AFTER INSERT OR UPDATE ON checkpoint → actualiza fecha_ultima_visualizacion en historial_reproduccion. |
+| Trigger | trg_validar_rango_puntuacion | BEFORE INSERT OR UPDATE ON calificacion → valida que puntuacion esté entre 1 y 5. |
+
 ### Analítica Service
 ![D5](ER/DER_MicroservicioAuth_202307691.drawio.svg)
 ### Notificaciones Service
