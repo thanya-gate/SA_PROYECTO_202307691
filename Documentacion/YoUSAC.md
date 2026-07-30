@@ -603,3 +603,134 @@ Flujos de excepción:
 | FE-01 | Falla la comunicación con el Microservicio de Notificaciones | El sistema registra el evento en una cola de reintentos. |
  
 ---
+
+## Módulo 4: Analítica, Tendencias y Recomendaciones
+ 
+ ![Diagrama expandido módulo 4](CDU/CDU_Expandido_M4_202307691.drawio.svg)
+
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0004.1 |
+| Nombre | Consultar tendencias y ranking de clases |
+| Actor | Estudiante, Administrador |
+| Descripción | Permite consultar las clases más vistas por semana, los temas de mayor tendencia y el ranking de clases mejor valoradas. |
+| Precondiciones | El usuario tiene una sesión activa. |
+| Postcondiciones | Se muestra al usuario el listado de tendencias y ranking vigente. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Accede a la sección de tendencias. |
+| 2 | Sistema | Ejecuta consultar caché de tendencias (Redis). |
+| 3 | Sistema | Muestra el ranking y las tendencias vigentes. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | La caché no tiene datos vigentes  | El sistema recalcula las tendencias desde la base de datos y actualiza la caché. |
+| FE-02 | Error de comunicación con Redis | El sistema muestra un mensaje de error genérico y solicita reintentar. |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0004.2 |
+| Nombre | Consultar caché de tendencias (Redis) |
+| Actor | include |
+| Descripción | Recupera desde Redis las consultas frecuentes de catálogo y tendencias, evitando sobrecargar la base de datos. |
+| Precondiciones | Se solicitó una consulta de tendencias o recomendaciones. |
+| Postcondiciones | Se retorna el dato solicitado desde la caché o se señala que expiró. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Consulta la clave correspondiente en Redis. |
+| 2 | Sistema | Retorna el valor cacheado al caso de uso invocador. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | La clave no existe o expiró| El sistema retorna "caché vacía" al caso de uso invocador. |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0004.3 |
+| Nombre | Calificar clase |
+| Actor | Estudiante |
+| Descripción | Permite a un estudiante calificar una clase vista, alimentando el cálculo dinámico del ranking y las recomendaciones. |
+| Precondiciones | El estudiante consultó la ficha técnica de la clase. |
+| Postcondiciones | Se registra la calificación y se actualiza el porcentaje de recomendación de la clase. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Usuario | Selecciona una puntuación desde la ficha técnica de la clase. |
+| 2 | Sistema | Registra la calificación en la base de datos. |
+| 3 | Sistema | Recalcula el porcentaje de recomendación de la clase. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FA-01 | El estudiante ya había calificado la clase | El sistema actualiza la calificación previa en lugar de crear una nueva. |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | Error al registrar la calificación | El sistema muestra un mensaje de error genérico y solicita reintentar. |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0004.4 |
+| Nombre | Calcular recomendaciones académicas |
+| Actor | Microservicio de Reproducción |
+| Descripción | Calcula dinámicamente un porcentaje de recomendación para cada clase, a partir del historial de reproducción y las calificaciones registradas. |
+| Precondiciones | Existen datos de reproducción y/o calificaciones disponibles. |
+| Postcondiciones | Se actualiza el porcentaje de recomendación de las clases procesadas. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Recibe los datos de reproducción/checkpoint desde el microservicio de historial. |
+| 2 | Sistema | Ejecuta consultar caché de tendencias (Redis). |
+| 3 | Sistema | Calcula el porcentaje de recomendación de cada clase. |
+| 4 | Sistema | Actualiza los resultados en la base de datos y en la caché. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | No hay suficientes datos históricos para calcular la recomendación | El sistema asigna un valor por defecto y marca la clase como "sin suficiente información". |
+ 
+---
