@@ -1185,4 +1185,8 @@ Este mockup permite al usuario consultar los cursos en los que está inscrito y 
 ![M4](Mockups/Mockups_Asignaciones_202307691.drawio.svg)
 
 ### Configuración
+Representa la sección donde el usuario puede administrar la información de su perfil, modificar preferencias personales, gestionar la seguridad de su cuenta y visualizar los datos asociados a su sesión.
+
+![M5](Mockups/Mockups_Configuracion_202307691.drawio.svg)
+
 ### Panel Admin
