@@ -1170,6 +1170,10 @@ Este mockup representa la pantalla de autenticación del sistema. Permite a estu
 ![M1](Mockups/Mockups_Login_202307691.drawio.svg)
 
 ### Catálogo
+Corresponde a la interfaz principal donde los usuarios pueden explorar el contenido disponible. Incluye herramientas de búsqueda y filtros por semestre, curso, escuela, catedrático y temas específicos, facilitando la localización de las grabaciones académicas.
+
+![M2](Mockups/Mockups_Catalogo_202307691.drawio.svg)
+
 ### Reproductor
 ### Asignaciones
 ### Configuración
