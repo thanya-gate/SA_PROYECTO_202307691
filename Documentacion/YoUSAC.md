@@ -18,6 +18,7 @@
    - 6.4 [Vista de Componentes](#vista-de-componentes)
    - 6.5 [Vista de Despliegue](#vista-de-despliegue)
 7. [Diseño del Modelado de Datos (DER)](#diseño-del-modelado-de-datos-der)
+8. [Diseño UI/UX (Mockups)](#diseño-uiux-mockups)
 ---
 
 ## Introducción
@@ -1161,3 +1162,11 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 | Trigger | trg_encolar_notificacion | AFTER INSERT ON notificacion → inserta automáticamente el registro correspondiente en cola_envio. |
 | Trigger | trg_reintento_fallido | AFTER UPDATE OF ultimo_error ON cola_envio → incrementa intentos y calcula fecha_proximo_intento con backoff. |
 
+## Diseño del Modelado de Datos (DER)
+
+### Login Institucional
+### Catálogo
+### Reproductor
+### Asignaciones
+### Configuración
+### Panel Admin
