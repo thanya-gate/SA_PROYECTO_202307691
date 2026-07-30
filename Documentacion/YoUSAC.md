@@ -893,3 +893,133 @@ Flujos de excepción:
 | FE-01 | Falla la comunicación con el Microservicio de Analítica | El sistema encola el envío para reintentarlo más tarde. |
  
 ---
+
+## Módulo 6: Sistema de Notificaciones por Correo
+ 
+  ![Diagrama expandido módulo 6](CDU/CDU_Expandido_M6_202307691.drawio.svg)
+
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0006.1 |
+| Nombre | Enviar confirmación de registro |
+| Actor | Microservicio de Autenticación |
+| Descripción | Envía un correo de confirmación cuando un usuario completa su registro en la plataforma. |
+| Precondiciones | Se creó una cuenta nueva. |
+| Postcondiciones | El usuario recibe el correo de confirmación de registro. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Recibe el evento de registro exitoso. |
+| 2 | Sistema | Genera el contenido del correo de confirmación. |
+| 3 | Sistema | Ejecuta enviar correo vía proveedor SMTP. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El evento de registro llega incompleto  | El sistema descarta la notificación y registra el error. |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0006.2 |
+| Nombre | Enviar alerta de nueva clase publicada |
+| Actor | Microservicio de Catálogo |
+| Descripción | Notifica a los estudiantes inscritos en un curso cuando se publica una nueva grabación de clase. |
+| Precondiciones | Se publicó una grabación nueva en el catálogo. |
+| Postcondiciones | Los estudiantes inscritos reciben el correo de alerta. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Recibe el evento de publicación de nueva clase. |
+| 2 | Sistema | Genera el contenido del correo de alerta con los datos de la clase. |
+| 3 | Sistema | Ejecuta enviar correo vía proveedor SMTP para cada destinatario. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | No hay estudiantes inscritos en el curso | El sistema descarta el envío sin generar correos. |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0006.3 |
+| Nombre | Enviar aviso general del sistema |
+| Actor | Administrador |
+| Descripción | Permite al administrador enviar un aviso general a todos los usuarios o a un grupo específico. |
+| Precondiciones | El administrador tiene una sesión activa. |
+| Postcondiciones | Los destinatarios seleccionados reciben el correo de aviso. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Administrador | Redacta el aviso y selecciona los destinatarios. |
+| 2 | Sistema | Genera el contenido del correo de aviso. |
+| 3 | Sistema | Ejecuta enviar correo vía proveedor SMTP para cada destinatario. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | No se seleccionó ningún destinatario | El sistema rechaza el envío y muestra "Selecciona al menos un destinatario". |
+ 
+---
+ 
+| Campo | Descripción |
+|-------|-------------|
+| ID | CDU0006.4 |
+| Nombre | Enviar correo vía proveedor SMTP |
+| Actor | Proveedor SMTP |
+| Descripción | Envía el correo electrónico ya generado hacia el destinatario final utilizando el proveedor SMTP configurado. |
+| Precondiciones | Existe un contenido de correo listo para enviar. |
+| Postcondiciones | El correo queda enviado. |
+ 
+Flujo principal:
+ 
+| Paso | Actor | Acción |
+|------|-------|--------|
+| 1 | Sistema | Envía la solicitud al proveedor SMTP. |
+| 2 | Proveedor SMTP | Entrega el correo al destinatario. |
+| 3 | Sistema | Registra el envío como exitoso. |
+ 
+Flujos alternativos:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| - | - | - |
+ 
+Flujos de excepción:
+ 
+| ID | Condición | Acción |
+|----|-----------|--------|
+| FE-01 | El proveedor SMTP no responde o rechaza el envío | El sistema encola el correo para reintento posterior. |
+ 
+---
