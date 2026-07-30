@@ -1190,3 +1190,6 @@ Representa la sección donde el usuario puede administrar la información de su 
 ![M5](Mockups/Mockups_Configuracion_202307691.drawio.svg)
 
 ### Panel Admin
+Corresponde a la interfaz exclusiva para administradores del sistema. Desde este panel es posible gestionar usuarios, cursos, grabaciones, permisos y otros elementos administrativos necesarios para el funcionamiento de la plataforma.
+
+![M6](Mockups/Mockups_Admin_202307691.drawio.svg)
