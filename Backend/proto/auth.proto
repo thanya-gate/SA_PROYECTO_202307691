@@ -5,6 +5,15 @@ package yousac.auth.v1;
 option java_multiple_files = true;
 option go_package = "yousac/auth/v1;authv1";
 
+// =====================================================================
+// Microservicio de Autenticación (YoUSAC)
+// Contrato gRPC para el tráfico east-west entre microservicios (RNF-06).
+// El API Gateway expone el north-south (HTTP) al cliente web y traduce
+// cada petición a una llamada gRPC de este contrato.
+// =====================================================================
+
+// Enumeraciones compartidas
+
 enum Role {
   ROLE_UNSPECIFIED = 0;
   ROLE_ESTUDIANTE = 1;
@@ -19,6 +28,8 @@ enum SessionStatus {
   SESSION_STATUS_EXPIRADA = 2;
   SESSION_STATUS_REVOCADA = 3;
 }
+
+// Mensajes de dominio
 
 message User {
   string user_id = 1;
@@ -41,40 +52,14 @@ message SessionInfo {
   string user_agent = 9;
 }
 
+// ---- Sesión / validación ----
+
 message ValidateSessionRequest {
-  string token = 1; 
+  string token = 1; // JWT (Authorization: Bearer o cookie HttpOnly)
 }
 
 message ValidateSessionResponse {
   SessionInfo session = 1;
-}
-
-message GetUserRequest {
-  string user_id = 1;
-}
-
-message GetUserResponse {
-  User user = 1;
-}
-
-message GetProfilesRequest {
-  string user_id = 1;
-}
-
-message GetProfilesResponse {
-  string user_id = 1;
-  string email = 2;
-  repeated Role roles = 3; 
-}
-
-message CheckPermissionRequest {
-  string user_id = 1;
-  string resource = 2;
-  string action = 3;
-}
-
-message CheckPermissionResponse {
-  bool allowed = 1;
 }
 
 message RevokeSessionRequest {
@@ -93,17 +78,216 @@ message HealthResponse {
   string version = 3;
 }
 
+// ---- Usuarios / perfiles ----
 
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetProfilesRequest {
+  string user_id = 1;
+}
+
+message GetProfilesResponse {
+  string user_id = 1;
+  string email = 2;
+  repeated Role roles = 3; // perfiles activos (multiperfil)
+}
+
+message CheckPermissionRequest {
+  string user_id = 1;
+  string resource = 2;
+  string action = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
+}
+
+// ---- Autenticación (registro / login / logout) ----
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string confirm_password = 3;
+  string ip = 4;
+  string user_agent = 5;
+}
+
+message RegisterResponse {
+  User user = 1;
+  string access_token = 2;
+  string expires_at = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+  string ip = 3;
+  string user_agent = 4;
+}
+
+message LoginResponse {
+  User user = 1;
+  string access_token = 2;
+  string expires_at = 3;
+}
+
+message LogoutRequest {
+  string session_id = 1;
+}
+
+message LogoutResponse {
+  bool revoked = 1;
+}
+
+message GetCurrentUserRequest {
+  string session_id = 1;
+}
+
+message GetCurrentUserResponse {
+  User user = 1;
+  string session_id = 2;
+}
+
+// ---- Cuenta (verificación de correo y contraseña) ----
+
+message RequestEmailVerificationRequest {
+  string email = 1;
+}
+
+message RequestEmailVerificationResponse {
+  string token = 1;
+}
+
+message ConfirmEmailVerificationRequest {
+  string token = 1;
+}
+
+message ConfirmEmailVerificationResponse {
+  bool verified = 1;
+}
+
+message RequestPasswordResetRequest {
+  string email = 1;
+}
+
+message RequestPasswordResetResponse {
+  string token = 1;
+}
+
+message ConfirmPasswordResetRequest {
+  string token = 1;
+  string new_password = 2;
+}
+
+message ConfirmPasswordResetResponse {
+  bool reset = 1;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string current_password = 2;
+  string new_password = 3;
+}
+
+message ChangePasswordResponse {
+  bool changed = 1;
+}
+
+// ---- Perfiles / RBAC (multiperfil) ----
+
+message AssignRoleRequest {
+  string user_id = 1;
+  Role role = 2;
+}
+
+message AssignRoleResponse {
+  GetProfilesResponse profiles = 1;
+}
+
+message RemoveRoleRequest {
+  string user_id = 1;
+  Role role = 2;
+}
+
+message RemoveRoleResponse {
+  GetProfilesResponse profiles = 1;
+}
+
+message SwitchProfileRequest {
+  string user_id = 1;
+  Role role = 2;
+  string session_id = 3;
+}
+
+message SwitchProfileResponse {
+  bool switched = 1;
+  string pending_role = 2;
+}
+
+// ---- OAuth 2.0 institucional (mock) ----
+
+message OAuthAuthorizeRequest {
+  string email = 1;
+  repeated Role roles = 2;
+}
+
+message OAuthAuthorizeResponse {
+  string redirect_uri = 1;
+  string code = 2;
+}
+
+message OAuthCallbackRequest {
+  string code = 1;
+  string ip = 2;
+  string user_agent = 3;
+}
+
+message OAuthCallbackResponse {
+  User user = 1;
+  string access_token = 2;
+  string expires_at = 3;
+  string provider = 4;
+}
+
+// =====================================================================
+// Servicio
+// =====================================================================
 service AuthService {
+  // --- Sesión / validación (lo consume el API Gateway y otros servicios) ---
   rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
 
+  // --- Usuarios / perfiles ---
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
-
   rpc GetProfiles(GetProfilesRequest) returns (GetProfilesResponse);
-
   rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
 
-  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  // --- Autenticación ---
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
 
-  rpc Health(HealthRequest) returns (HealthResponse);
+  // --- Cuenta ---
+  rpc RequestEmailVerification(RequestEmailVerificationRequest) returns (RequestEmailVerificationResponse);
+  rpc ConfirmEmailVerification(ConfirmEmailVerificationRequest) returns (ConfirmEmailVerificationResponse);
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
+  rpc ConfirmPasswordReset(ConfirmPasswordResetRequest) returns (ConfirmPasswordResetResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+
+  // --- Perfiles / RBAC ---
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
+  rpc RemoveRole(RemoveRoleRequest) returns (RemoveRoleResponse);
+  rpc SwitchProfile(SwitchProfileRequest) returns (SwitchProfileResponse);
+
+  // --- OAuth 2.0 ---
+  rpc OAuthAuthorize(OAuthAuthorizeRequest) returns (OAuthAuthorizeResponse);
+  rpc OAuthCallback(OAuthCallbackRequest) returns (OAuthCallbackResponse);
 }

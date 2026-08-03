@@ -2,7 +2,6 @@ import { config } from './config/env';
 import { container } from './container';
 import { seedDevData } from './seed';
 import { pingDb, closeDb } from './infrastructure/persistence/postgres/db';
-import { createHttpServer, listenHttp } from './interfaces/http/server';
 import { createGrpcServer, listenGrpc } from './interfaces/grpc/server';
 
 async function bootstrap(): Promise<void> {
@@ -16,13 +15,13 @@ async function bootstrap(): Promise<void> {
     console.log('[auth-service] Datos de desarrollo sembrados');
   }
 
-  const httpApp = createHttpServer();
-  listenHttp(httpApp);
-
   if (config.OAUTH_MOCK_ENABLED) {
     console.log(`[auth-service] OAuth mock institucional habilitado (issuer: ${config.OAUTH_MOCK_ISSUER})`);
   }
 
+  // RNF-06 / enunciado: el tráfico interno (east-west) es 100% gRPC.
+  // El auth-service NO expone superficie REST: solo habla por gRPC en :50051
+  // y el API Gateway es el único punto de entrada hacia el cliente web.
   const grpcServer = createGrpcServer();
   await listenGrpc(grpcServer);
 }

@@ -25,24 +25,53 @@ services:
       context: .
       dockerfile: services/auth-service/Dockerfile
     container_name: yousac-auth-service
-    ports:
-      - "3000:3000"  
-      - "50051:50051" 
+    # Sin puertos publicados: el punto de entrada único es el API Gateway.
+    # Solo gRPC (east-west) en 50051; sin superficie REST interna.
     environment:
       NODE_ENV: development
-      PORT: 3000
       GRPC_PORT: 50051
       JWT_SECRET: ${JWT_SECRET:-dev-secret-cambiar-en-produccion-1234567890abcdef}
       COOKIE_SECURE: "false"
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
       OAUTH_MOCK_ENABLED: "true"
+      # El OAuth mock redirige hacia el API Gateway (único punto de entrada).
+      OAUTH_MOCK_ISSUER: http://api-gateway:8080/mock-oauth
+      OAUTH_REDIRECT_URI: http://localhost:8080/auth/oauth/callback
+      # Database per Microservice: la BD de Auth es independiente de las demás.
       DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@auth-db:5432/${POSTGRES_DB:-yousac_auth}
     depends_on:
       auth-db:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: yousac-api-gateway
+    ports:
+      - "8080:8080" # Único punto de entrada norte-sur para el cliente web
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      AUTH_GRPC_ADDR: auth-service:50051
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
+      SESSION_COOKIE_NAME: yousac_session
+      COOKIE_SECURE: "false"
+      COOKIE_SAME_SITE: lax
+      COOKIE_PATH: /
+      SESSION_TTL_MS: "3600000"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 15s
       timeout: 5s
       retries: 5

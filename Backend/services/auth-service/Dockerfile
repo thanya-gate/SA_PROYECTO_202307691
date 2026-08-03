@@ -21,6 +21,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/proto ./proto
 
-EXPOSE 3000 50051
+# Solo gRPC (east-west). El auth-service no expone HTTP: el API Gateway
+# es el punto de entrada único hacia el cliente web.
+EXPOSE 50051
 
 CMD ["node", "dist/index.js"]
