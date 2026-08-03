@@ -1,0 +1,150 @@
+import { randomUUID } from 'crypto';
+import { createUser, User } from '../../domain/entities/user';
+import { Session } from '../../domain/entities/session';
+import { Role } from '../../domain/enums/role';
+import { EmailDomainValidator } from '../../domain/services/email-domain-validator';
+import { DomainError } from '../../domain/errors/domain-error';
+import { UserRepository } from '../ports/user-repository';
+import { PasswordService, TokenService } from '../ports/token-service';
+import { SessionService } from './session.service';
+import { LoginInput, RegisterInput } from '../dto/auth-schemas';
+
+export interface LoginResult {
+  user: User;
+  session: Session;
+  accessToken: string;
+  expiresAt: Date;
+}
+
+export interface OAuthProfile {
+  sub: string;
+  email: string;
+  emailVerified: boolean;
+  roles?: Role[];
+}
+
+export class AuthService {
+  constructor(
+    private readonly users: UserRepository,
+    private readonly sessions: SessionService,
+    private readonly password: PasswordService,
+    private readonly tokens: TokenService,
+    private readonly domainValidator: EmailDomainValidator,
+    private readonly sessionTtlMs: number,
+  ) {}
+
+  async register(
+    input: RegisterInput,
+    meta: { ip?: string; userAgent?: string },
+  ): Promise<LoginResult> {
+    const email = this.domainValidator.validate(input.email);
+
+    const existing = await this.users.findByEmail(email);
+    if (existing) {
+      throw new DomainError(
+        'CORREO_YA_REGISTRADO',
+        'Ya existe una cuenta con este correo',
+        409,
+      );
+    }
+
+    const passwordHash = await this.password.hash(input.password);
+    const user = createUser({
+      userId: randomUUID(),
+      email,
+      passwordHash,
+    });
+
+    await this.users.save(user);
+
+
+    return this.establishSession(user, meta);
+  }
+
+  async login(
+    input: LoginInput,
+    meta: { ip?: string; userAgent?: string },
+  ): Promise<LoginResult> {
+    const email = this.domainValidator.validate(input.email);
+
+    const user = await this.users.findByEmail(email);
+    if (!user) {
+      throw new DomainError(
+        'CREDENCIALES_INVALIDAS',
+        'Credenciales incorrectas',
+        401,
+      );
+    }
+
+    const valid = await this.password.verify(input.password, user.passwordHash);
+    if (!valid) {
+      throw new DomainError(
+        'CREDENCIALES_INVALIDAS',
+        'Credenciales incorrectas',
+        401,
+      );
+    }
+
+    return this.establishSession(user, meta);
+  }
+
+  async loginWithOAuth(
+    profile: OAuthProfile,
+    meta: { ip?: string; userAgent?: string },
+  ): Promise<LoginResult> {
+    const email = this.domainValidator.validate(profile.email);
+
+    let user = await this.users.findByEmail(email);
+
+    if (!user) {
+      const passwordHash = await this.password.hash(randomUUID());
+      user = createUser({
+        userId: randomUUID(),
+        email,
+        passwordHash,
+        emailVerified: profile.emailVerified,
+        roles: profile.roles,
+      });
+      await this.users.save(user);
+      await this.users.linkOAuthProvider(user.userId, 'institucional');
+    } else {
+      const hasProvider = user.oauthProviders.includes('institucional');
+      if (!hasProvider) {
+        await this.users.linkOAuthProvider(user.userId, 'institucional');
+      }
+    }
+
+    return this.establishSession(user, meta);
+  }
+
+  async logout(sessionId: string): Promise<void> {
+    await this.sessions.revoke(sessionId);
+  }
+
+  async validateSession(sessionId: string): Promise<User | null> {
+    const validated = await this.sessions.validate(sessionId);
+    if (!validated) return null;
+    return this.users.findById(validated.user.userId);
+  }
+
+  private async establishSession(
+    user: User,
+    meta: { ip?: string; userAgent?: string },
+  ): Promise<LoginResult> {
+    const session = await this.sessions.create({
+      userId: user.userId,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      ttlMs: this.sessionTtlMs,
+    });
+
+    const { token, expiresAt } = await this.tokens.signAccessToken({
+      sub: user.userId,
+      email: user.email,
+      roles: user.roles,
+      sessionId: session.sessionId,
+    });
+
+    return { user, session, accessToken: token, expiresAt };
+  }
+}

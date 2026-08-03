@@ -1,0 +1,54 @@
+name: yousac-local
+
+#   docker compose -f docker-compose.local.yml up --build
+
+
+services:
+  auth-db:
+    image: postgres:16-alpine
+    container_name: yousac-auth-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yousac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yousac_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-yousac_auth}
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+      - ./sql/auth.sql:/docker-entrypoint-initdb.d/001-auth.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yousac} -d ${POSTGRES_DB:-yousac_auth}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    container_name: yousac-auth-service
+    ports:
+      - "3000:3000"   # HTTP 
+      - "50051:50051" ##gRPC 
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      GRPC_PORT: 50051
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-cambiar-en-produccion-1234567890abcdef}
+      COOKIE_SECURE: "false"
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
+      OAUTH_MOCK_ENABLED: "true"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@auth-db:5432/${POSTGRES_DB:-yousac_auth}
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  auth-db-data:

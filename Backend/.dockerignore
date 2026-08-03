@@ -1,0 +1,9 @@
+# Excluye del contexto de build de Docker (contexto = ./Backend)
+.git
+node_modules
+**/node_modules
+**/dist
+**/.env
+**/src/interfaces/grpc/generated
+*.log
+.DS_Store

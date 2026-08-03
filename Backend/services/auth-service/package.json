@@ -1,0 +1,41 @@
+{
+  "name": "@yousac/auth-service",
+  "version": "1.0.0",
+  "description": "Microservicio de Autenticación, Gestión de Sesiones y Multiperfil (YoUSAC) - TypeScript/Express/gRPC",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "proto:gen": "grpc_tools_node_protoc --js_out=import_style=commonjs,binary:src/interfaces/grpc/generated --grpc_out=grpc_js:src/interfaces/grpc/generated --ts_out=grpc_js:src/interfaces/grpc/generated -I ../proto ../proto/auth.proto"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.5",
+    "@grpc/proto-loader": "^0.7.13",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.22.0",
+    "uuid": "^11.0.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.5",
+    "@types/pg": "^8.20.3",
+    "@types/uuid": "^10.0.0",
+    "grpc_tools_node_protoc_ts": "^5.3.3",
+    "grpc-tools": "^1.12.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
