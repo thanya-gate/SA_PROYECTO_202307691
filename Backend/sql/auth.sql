@@ -31,10 +31,12 @@ CREATE TABLE sesion (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     usuario_id          UUID NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
     perfil_activo_rol_id INT REFERENCES rol(id),
-    token_jwt           TEXT NOT NULL,
+    token_jwt           TEXT DEFAULT NULL,
     fecha_inicio        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     fecha_fin           TIMESTAMPTZ,
-    activa              BOOLEAN NOT NULL DEFAULT TRUE
+    activa              BOOLEAN NOT NULL DEFAULT TRUE,
+    ip                  TEXT,
+    user_agent          TEXT
 );
 
 CREATE TABLE auditoria (
@@ -302,14 +304,19 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     v_nombre VARCHAR(50);
+    v_usuario_existe BOOLEAN;
 BEGIN
-    SELECT nombre INTO v_nombre FROM rol WHERE id = COALESCE(NEW.rol_id, OLD.rol_id);
     IF TG_OP = 'INSERT' THEN
+        SELECT nombre INTO v_nombre FROM rol WHERE id = NEW.rol_id;
         INSERT INTO auditoria (usuario_id, tipo_cambio, valor_nuevo, ejecutado_por)
         VALUES (NEW.usuario_id, 'ROL', v_nombre, NEW.usuario_id);
     ELSIF TG_OP = 'DELETE' THEN
-        INSERT INTO auditoria (usuario_id, tipo_cambio, valor_anterior, ejecutado_por)
-        VALUES (OLD.usuario_id, 'ROL', v_nombre, OLD.usuario_id);
+        SELECT nombre INTO v_nombre FROM rol WHERE id = OLD.rol_id;
+        SELECT EXISTS(SELECT 1 FROM usuario WHERE id = OLD.usuario_id) INTO v_usuario_existe;
+        IF v_usuario_existe THEN
+            INSERT INTO auditoria (usuario_id, tipo_cambio, valor_anterior, ejecutado_por)
+            VALUES (OLD.usuario_id, 'ROL', v_nombre, OLD.usuario_id);
+        END IF;
     END IF;
     RETURN COALESCE(NEW, OLD);
 END;
