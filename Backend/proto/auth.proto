@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package yousac.auth.v1;
+
+option java_multiple_files = true;
+option go_package = "yousac/auth/v1;authv1";
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_ESTUDIANTE = 1;
+  ROLE_CATEDRATICO = 2;
+  ROLE_AUXILIAR = 3;
+  ROLE_ADMIN = 4;
+}
+
+enum SessionStatus {
+  SESSION_STATUS_UNSPECIFIED = 0;
+  SESSION_STATUS_ACTIVA = 1;
+  SESSION_STATUS_EXPIRADA = 2;
+  SESSION_STATUS_REVOCADA = 3;
+}
+
+message User {
+  string user_id = 1;
+  string email = 2;
+  bool email_verified = 3;
+  repeated Role roles = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message SessionInfo {
+  string session_id = 1;
+  string user_id = 2;
+  string email = 3;
+  repeated Role roles = 4;
+  SessionStatus status = 5;
+  string issued_at = 6;
+  string expires_at = 7;
+  string ip = 8;
+  string user_agent = 9;
+}
+
+message ValidateSessionRequest {
+  string token = 1; 
+}
+
+message ValidateSessionResponse {
+  SessionInfo session = 1;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetProfilesRequest {
+  string user_id = 1;
+}
+
+message GetProfilesResponse {
+  string user_id = 1;
+  string email = 2;
+  repeated Role roles = 3; 
+}
+
+message CheckPermissionRequest {
+  string user_id = 1;
+  string resource = 2;
+  string action = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
+}
+
+message RevokeSessionRequest {
+  string session_id = 1;
+}
+
+message RevokeSessionResponse {
+  bool revoked = 1;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+}
+
+
+service AuthService {
+  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+
+  rpc GetProfiles(GetProfilesRequest) returns (GetProfilesResponse);
+
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
