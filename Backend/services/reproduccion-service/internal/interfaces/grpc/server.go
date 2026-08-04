@@ -13,7 +13,6 @@ import (
 	"yousac.com/yousac/reproduccion-service/internal/domain"
 )
 
-// Server implementa el contrato ReproduccionService (proto yousac.reproduccion.v1).
 type Server struct {
 	reproduccionv1.UnimplementedReproduccionServiceServer
 	svc     *service.ReproduccionService

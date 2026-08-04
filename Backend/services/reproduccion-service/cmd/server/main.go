@@ -56,7 +56,6 @@ func main() {
 	}
 }
 
-// runHealthcheck verifica la salud del servicio vía gRPC (usado por Docker).
 func runHealthcheck() {
 	conn, err := grpc.NewClient(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

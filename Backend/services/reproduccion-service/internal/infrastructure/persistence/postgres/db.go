@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Connect abre el pool de PostgreSQL (Database per Microservice).
 func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, databaseURL)
 	if err != nil {

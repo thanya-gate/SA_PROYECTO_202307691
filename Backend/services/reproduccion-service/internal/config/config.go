@@ -7,14 +7,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config reúne las variables de entorno del microservicio.
 type Config struct {
 	GRPCPort    string
 	DatabaseURL string
 	Version     string
 }
 
-// Load lee la configuración desde el entorno (.env opcional en local).
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 

@@ -12,10 +12,7 @@ import (
 	"yousac.com/yousac/reproduccion-service/internal/domain"
 )
 
-// ReproduccionRepository implementa la persistencia sobre PostgreSQL.
-// Patrón probado en el ecosistema: el SP expone un parámetro INOUT que no se
-// lee en el protocolo extendido, por lo que se invoca con NULL y el resultado
-// se obtiene re-consultando por la clave única (estudiante_id, clase_id).
+
 type ReproduccionRepository struct {
 	pool *pgxpool.Pool
 }
@@ -28,8 +25,6 @@ func (r *ReproduccionRepository) Ping(ctx context.Context) error {
 	return r.pool.Ping(ctx)
 }
 
-// mapearError traduce los códigos de negocio emitidos por los objetos
-// programables de la BD (RAISE EXCEPTION 'CODIGO: mensaje') a errores de dominio.
 func mapearError(err error) error {
 	if err == nil {
 		return nil
