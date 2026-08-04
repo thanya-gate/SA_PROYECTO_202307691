@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './auth/auth-context';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
+import CatalogPage from './pages/CatalogPage';
+import ClasePage from './pages/ClasePage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -33,6 +35,22 @@ export default function App() {
             element={
               <RequireAuth>
                 <HomePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/catalogo"
+            element={
+              <RequireAuth>
+                <CatalogPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/catalogo/clase/:claseId"
+            element={
+              <RequireAuth>
+                <ClasePage />
               </RequireAuth>
             }
           />

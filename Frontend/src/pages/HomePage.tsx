@@ -4,10 +4,10 @@ import { Logo } from '../components/Logo';
 import { Button } from '../components/ui/Button';
 
 const MODULES = [
-  { name: 'Catálogo', description: 'Explorar grabaciones por semestre, curso y catedrático' },
-  { name: 'Reproductor', description: 'Ver clases con checkpoint de avance' },
-  { name: 'Asignaciones', description: 'Cursos inscritos y permisos por rol' },
-  { name: 'Analítica', description: 'Tendencias y recomendaciones' },
+  { name: 'Catálogo', description: 'Explorar grabaciones por semestre, curso y catedrático', to: '/catalogo' },
+  { name: 'Reproductor', description: 'Ver clases con checkpoint de avance', to: '' },
+  { name: 'Asignaciones', description: 'Cursos inscritos y permisos por rol', to: '' },
+  { name: 'Analítica', description: 'Tendencias y recomendaciones', to: '' },
 ];
 
 export default function HomePage() {
@@ -24,11 +24,17 @@ export default function HomePage() {
       <header className="home__header">
         <Logo size="small" />
         <nav className="home__nav" aria-label="Módulos">
-          {MODULES.map((m) => (
-            <button key={m.name} type="button" className="home__nav-link" disabled title={m.description}>
-              {m.name}
-            </button>
-          ))}
+          {MODULES.map((m) =>
+            m.to ? (
+              <button key={m.name} type="button" className="home__nav-link home__nav-link--link" onClick={() => navigate(m.to)}>
+                {m.name}
+              </button>
+            ) : (
+              <button key={m.name} type="button" className="home__nav-link" disabled title={m.description}>
+                {m.name}
+              </button>
+            ),
+          )}
         </nav>
         <div className="home__session">
           <span className="home__email">{user?.email}</span>
