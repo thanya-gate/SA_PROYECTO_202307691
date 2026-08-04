@@ -19,6 +19,7 @@
    - 6.5 [Vista de Despliegue](#vista-de-despliegue)
 7. [Diseño del Modelado de Datos (DER)](#diseño-del-modelado-de-datos-der)
 8. [Diseño UI/UX (Mockups)](#diseño-uiux-mockups)
+9. [Conclusión](#conclusion)
 ---
 
 ## Introducción
@@ -1193,3 +1194,11 @@ Representa la sección donde el usuario puede administrar la información de su 
 Corresponde a la interfaz exclusiva para administradores del sistema. Desde este panel es posible gestionar usuarios, cursos, grabaciones, permisos y otros elementos administrativos necesarios para el funcionamiento de la plataforma.
 
 ![M6](Mockups/Mockups_Admin_202307691.drawio.svg)
+
+
+## Conclusión
+El desarrollo de este proyecto permitió establecer una propuesta integral para una plataforma de streaming académico orientada al entorno universitario, aplicando principios modernos de ingeniería de software y arquitectura de microservicios. A través del análisis, se definió una solución escalable, segura y preparada para atender una alta concurrencia de usuarios.
+
+La propuesta incorpora una arquitectura políglota basada en los lenguajes Go, TypeScript y Python, comunicados mediante gRPC y administrados a través de un API Gateway, permitiendo separar responsabilidades y facilitar el mantenimiento del sistema. Asimismo, la integración de mecanismos de autenticación institucional, almacenamiento en caché con Redis, contenedores Docker y despliegue en la nube fortalece la disponibilidad, el rendimiento y la seguridad de la plataforma.
+
+Finalmente, la documentación desarrollada constituye una base sólida para la implementación del sistema. Esto facilita el trabajo colaborativo del equipo de desarrollo y reduce los riesgos durante las fases de implementación, integración y despliegue del proyecto.
