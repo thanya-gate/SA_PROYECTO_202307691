@@ -92,7 +92,7 @@ BEGIN
     LEFT JOIN clase_etiqueta ce ON ce.clase_id = cg.id
     LEFT JOIN etiqueta et ON et.id = ce.etiqueta_id
     WHERE (p_semestre IS NULL OR cg.semestre = p_semestre)
-      AND (p_escuela IS NULL OR cc.escuela = p_escuela)
+      AND (p_escuela IS NULL OR cc.escuela ILIKE '%' || p_escuela || '%')
       AND (p_curso IS NULL OR cc.nombre ILIKE '%' || p_curso || '%' OR cc.codigo ILIKE '%' || p_curso || '%')
       AND (p_catedratico IS NULL OR pc.nombre_participante ILIKE '%' || p_catedratico || '%')
       AND (p_tema IS NULL OR et.nombre ILIKE '%' || p_tema || '%' OR cg.tema ILIKE '%' || p_tema || '%')
