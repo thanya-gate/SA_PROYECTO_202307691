@@ -8,6 +8,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   AUTH_GRPC_ADDR: z.string().default('localhost:50051'),
+  CATALOG_GRPC_ADDR: z.string().default('localhost:50052'),
 
   ALLOWED_EMAIL_DOMAINS: z
     .string()

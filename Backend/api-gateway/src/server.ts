@@ -2,10 +2,11 @@ import express, { Express } from 'express';
 import cookieParser from 'cookie-parser';
 import { config } from './config/env';
 import { authGrpc } from './grpc/auth-client';
+import { catalogGrpc } from './grpc/catalog-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
 import { authenticate } from './middleware/authenticate';
-import { requireRole } from './middleware/requireRole';
+import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
 import { errorHandler } from './middleware/error-handler';
 
@@ -35,7 +36,20 @@ export function createGateway(): Express {
     } catch {
       authStatus = 'unavailable';
     }
-    res.json({ status: 'ok', service: 'api-gateway', version: '1.0.0', authService: authStatus });
+    let catalogStatus = 'unknown';
+    try {
+      const health = await catalogGrpc.health();
+      catalogStatus = health.status;
+    } catch {
+      catalogStatus = 'unavailable';
+    }
+    res.json({
+      status: 'ok',
+      service: 'api-gateway',
+      version: '1.0.0',
+      authService: authStatus,
+      catalogService: catalogStatus,
+    });
   });
 
   // ===== Autenticación =====
@@ -264,6 +278,94 @@ export function createGateway(): Express {
     }
   });
 
+//catalogo
+  app.get('/catalog/classes', authenticate, async (req, res, next) => {
+    try {
+      const { semestre, escuela, curso, catedratico, tema } = req.query as Record<
+        string,
+        string | undefined
+      >;
+      const result = await catalogGrpc.search({
+        semestre: semestre ?? '',
+        escuela: escuela ?? '',
+        curso: curso ?? '',
+        catedratico: catedratico ?? '',
+        tema: tema ?? '',
+      });
+      res.json({ resultados: result.resultados });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/catalog/classes/:claseId', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.getClase(req.params.claseId);
+      res.json({ clase: result.clase });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/catalog/semestres', authenticate, async (req, res, next) => {
+    try {
+      const semestre = (req.query.semestre as string | undefined) ?? '';
+      const result = await catalogGrpc.listarPorSemestre(semestre);
+      res.json({ semestres: result.semestres });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/catalog/classes', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const body = req.body as Record<string, unknown>;
+      if (typeof body.cursoId !== 'string' || typeof body.semestre !== 'string' || typeof body.urlVideo !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'cursoId, semestre y urlVideo son obligatorios', 400);
+      }
+      const participantes = Array.isArray(body.participantes)
+        ? (body.participantes as Array<{ nombre?: unknown; rol?: unknown }>)
+            .filter((p) => typeof p.nombre === 'string' && typeof p.rol === 'string')
+            .map((p) => ({ nombre: p.nombre as string, rol: p.rol as string }))
+        : [];
+      const result = await catalogGrpc.publicarClase({
+        cursoId: body.cursoId,
+        unidad: typeof body.unidad === 'string' ? body.unidad : '',
+        tema: typeof body.tema === 'string' ? body.tema : '',
+        fechaImparticion: typeof body.fechaImparticion === 'string' ? body.fechaImparticion : '',
+        semestre: body.semestre,
+        anio: Number(body.anio ?? 0),
+        urlVideo: body.urlVideo,
+        urlMaterial: typeof body.urlMaterial === 'string' ? body.urlMaterial : '',
+        duracion: Number(body.duracion ?? 0),
+        etiquetas: Array.isArray(body.etiquetas)
+          ? (body.etiquetas as unknown[]).filter((e): e is string => typeof e === 'string')
+          : [],
+        participantes,
+      });
+      res.status(201).json({
+        message: 'Clase publicada',
+        claseId: result.claseId,
+        fechaPublicacion: result.fechaPublicacion,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/catalog/courses', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { codigo, nombre, escuela } = req.body as Record<string, unknown>;
+      if (typeof codigo !== 'string' || typeof nombre !== 'string' || typeof escuela !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'codigo, nombre y escuela son obligatorios', 400);
+      }
+      const result = await catalogGrpc.registrarCurso({ codigo, nombre, escuela });
+      res.status(201).json({ message: 'Curso registrado en el catálogo', curso: result.curso });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use((req, res) => {
     res.status(404).json({ error: { code: 'RUTA_NO_ENCONTRADA', message: `${req.method} ${req.path}` } });
   });
@@ -277,5 +379,6 @@ export function listenGateway(app: Express): ReturnType<typeof app.listen> {
   return app.listen(config.PORT, () => {
     console.log(`[api-gateway] HTTP escuchando en http://localhost:${config.PORT}`);
     console.log(`[api-gateway] gRPC -> auth-service en ${config.AUTH_GRPC_ADDR}`);
+    console.log(`[api-gateway] gRPC -> catalog-service en ${config.CATALOG_GRPC_ADDR}`);
   });
 }

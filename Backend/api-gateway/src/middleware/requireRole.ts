@@ -23,3 +23,20 @@ export function requireRole(requiredRole: string) {
     next();
   };
 }
+
+
+export function requireAnyRole(...requiredRoles: string[]) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const roles = (req.context?.roles ?? []).map((r) => (r.startsWith('ROLE_') ? r : `ROLE_${r}`));
+    if (!requiredRoles.some((role) => roles.includes(role))) {
+      return next(
+        new DomainError(
+          'PERMISO_DENEGADO',
+          'No tienes permisos para realizar esta acción',
+          403,
+        ),
+      );
+    }
+    next();
+  };
+}
