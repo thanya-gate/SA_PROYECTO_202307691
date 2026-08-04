@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import { config } from './config/env';
 import { authGrpc } from './grpc/auth-client';
 import { catalogGrpc } from './grpc/catalog-client';
+import { reproductionGrpc } from './grpc/reproduction-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
 import { authenticate } from './middleware/authenticate';
@@ -43,12 +44,20 @@ export function createGateway(): Express {
     } catch {
       catalogStatus = 'unavailable';
     }
+    let reproductionStatus = 'unknown';
+    try {
+      const health = await reproductionGrpc.health();
+      reproductionStatus = health.status;
+    } catch {
+      reproductionStatus = 'unavailable';
+    }
     res.json({
       status: 'ok',
       service: 'api-gateway',
       version: '1.0.0',
       authService: authStatus,
       catalogService: catalogStatus,
+      reproductionService: reproductionStatus,
     });
   });
 
@@ -366,6 +375,87 @@ export function createGateway(): Express {
     }
   });
 
+//reproduccion
+  app.post('/reproduccion/checkpoint', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { claseId, segundoActual, duracion } = req.body as Record<string, unknown>;
+      if (typeof claseId !== 'string' || typeof segundoActual !== 'number' || typeof duracion !== 'number') {
+        throw new DomainError('ENTRADA_INVALIDA', 'claseId, segundoActual y duracion son obligatorios', 400);
+      }
+      const result = await reproductionGrpc.guardarCheckpoint({
+        estudianteId: req.context!.userId,
+        claseId,
+        segundoActual,
+        duracion,
+      });
+      res.json({
+        message: 'Checkpoint guardado',
+        historialId: result.historialId,
+        porcentajeAvance: result.porcentajeAvance,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/reproduccion/checkpoint/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.obtenerCheckpoint({
+        estudianteId: req.context!.userId,
+        claseId: req.params.claseId,
+      });
+      res.json({ checkpoint: result.checkpoint ?? null });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/reproduccion/historial', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.historialReciente({ estudianteId: req.context!.userId });
+      const items = await Promise.all(
+        (result.items ?? []).map(async (item: Record<string, unknown>) => {
+          let contexto: Record<string, unknown> = {};
+          try {
+            const clase = await catalogGrpc.getClase(String(item.claseId));
+            contexto = {
+              codigo: clase.clase?.codigo ?? '',
+              curso: clase.clase?.curso ?? '',
+              escuela: clase.clase?.escuela ?? '',
+              unidad: clase.clase?.unidad ?? '',
+              tema: clase.clase?.tema ?? '',
+              semestre: clase.clase?.semestre ?? '',
+              anio: clase.clase?.anio ?? 0,
+              urlVideo: clase.clase?.urlVideo ?? '',
+            };
+          } catch {
+          }
+          return { ...item, ...contexto };
+        }),
+      );
+      res.json({ items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/reproduccion/calificaciones', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { historialId, puntuacion, comentario } = req.body as Record<string, unknown>;
+      if (typeof historialId !== 'string' || typeof puntuacion !== 'number') {
+        throw new DomainError('ENTRADA_INVALIDA', 'historialId y puntuacion son obligatorios', 400);
+      }
+      const result = await reproductionGrpc.registrarCalificacion({
+        historialId,
+        puntuacion,
+        comentario: typeof comentario === 'string' ? comentario : '',
+      });
+      res.status(201).json({ message: 'Calificación registrada', registrada: result.registrada });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use((req, res) => {
     res.status(404).json({ error: { code: 'RUTA_NO_ENCONTRADA', message: `${req.method} ${req.path}` } });
   });
@@ -380,5 +470,6 @@ export function listenGateway(app: Express): ReturnType<typeof app.listen> {
     console.log(`[api-gateway] HTTP escuchando en http://localhost:${config.PORT}`);
     console.log(`[api-gateway] gRPC -> auth-service en ${config.AUTH_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> catalog-service en ${config.CATALOG_GRPC_ADDR}`);
+    console.log(`[api-gateway] gRPC -> reproduccion-service en ${config.REPRODUCTION_GRPC_ADDR}`);
   });
 }
