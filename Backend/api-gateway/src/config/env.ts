@@ -9,6 +9,7 @@ const envSchema = z.object({
 
   AUTH_GRPC_ADDR: z.string().default('localhost:50051'),
   CATALOG_GRPC_ADDR: z.string().default('localhost:50052'),
+  REPRODUCTION_GRPC_ADDR: z.string().default('localhost:50053'),
 
   ALLOWED_EMAIL_DOMAINS: z
     .string()

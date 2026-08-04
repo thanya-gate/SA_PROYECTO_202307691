@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package yousac.reproduccion.v1;
+
+option java_multiple_files = true;
+option go_package = "yousac.com/yousac/reproduccion-service/gen/reproduccionv1;reproduccionv1";
+
+// =====================================================================
+// Microservicio de Reproducción (YoUSAC) — Go
+// Contrato gRPC para el tráfico east-west entre microservicios (RNF-06).
+// Registra la reproducción, marcas de tiempo (checkpoints de avance) y
+// el historial reciente ligado a la cuenta institucional del estudiante.
+// El API Gateway expone el north-south (HTTP) al cliente web y traduce
+// cada petición a una llamada gRPC de este contrato.
+// =====================================================================
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+}
+
+// Punto de reanudación de una clase (segundo exacto donde se pausó).
+message Checkpoint {
+  string historial_id = 1;
+  string clase_id = 2;
+  int32 segundo_actual = 3;
+  int32 duracion = 4;
+  double porcentaje_avance = 5; // 0.00 - 100.00
+  string fecha_actualizacion = 6;
+}
+
+message GuardarCheckpointRequest {
+  string estudiante_id = 1;
+  string clase_id = 2;
+  int32 segundo_actual = 3;
+  int32 duracion = 4;
+}
+
+message GuardarCheckpointResponse {
+  string historial_id = 1;
+  double porcentaje_avance = 2;
+}
+
+message ObtenerCheckpointRequest {
+  string estudiante_id = 1;
+  string clase_id = 2;
+}
+
+message ObtenerCheckpointResponse {
+  Checkpoint checkpoint = 1;
+}
+
+message HistorialItem {
+  string clase_id = 1;
+  string fecha_ultima_visualizacion = 2;
+  int32 segundo_actual = 3;
+  int32 duracion = 4;
+  double porcentaje_avance = 5;
+  bool tiene_checkpoint = 6;
+}
+
+message HistorialRecienteRequest {
+  string estudiante_id = 1;
+}
+
+message HistorialRecienteResponse {
+  repeated HistorialItem items = 1;
+}
+
+message RegistrarCalificacionRequest {
+  string historial_id = 1;
+  int32 puntuacion = 2; // 1..5
+  string comentario = 3;
+}
+
+message RegistrarCalificacionResponse {
+  bool registrada = 1;
+}
+
+service ReproduccionService {
+  rpc Health(HealthRequest) returns (HealthResponse);
+
+  // --- Reproducción / checkpoint ---
+  rpc GuardarCheckpoint(GuardarCheckpointRequest) returns (GuardarCheckpointResponse);
+  rpc ObtenerCheckpoint(ObtenerCheckpointRequest) returns (ObtenerCheckpointResponse);
+
+  // --- Historial de reproducción reciente ---
+  rpc HistorialReciente(HistorialRecienteRequest) returns (HistorialRecienteResponse);
+
+  // --- Valoraciones ---
+  rpc RegistrarCalificacion(RegistrarCalificacionRequest) returns (RegistrarCalificacionResponse);
+}

@@ -11,7 +11,7 @@ CREATE TABLE historial_reproduccion (
 
 CREATE TABLE checkpoint (
     id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    historial_id       UUID NOT NULL REFERENCES historial_reproduccion(id) ON DELETE CASCADE,
+    historial_id       UUID NOT NULL UNIQUE REFERENCES historial_reproduccion(id) ON DELETE CASCADE,
     segundo_actual     INT NOT NULL DEFAULT 0,
     duracion           INT NOT NULL DEFAULT 0,
     porcentaje_avance  NUMERIC(5,2) NOT NULL DEFAULT 0,
@@ -105,7 +105,7 @@ SELECT
     COALESCE(cp.segundo_actual, 0) AS segundo_actual,
     COALESCE(cp.duracion, 0) AS duracion,
     COALESCE(cp.porcentaje_avance, 0) AS porcentaje_avance,
-    CASE WHEN cp.id IS NULL THEN 0 ELSE 1 END AS tiene_checkpoint
+    (cp.id IS NOT NULL) AS tiene_checkpoint
 FROM historial_reproduccion h
 LEFT JOIN checkpoint cp ON cp.historial_id = h.id
 ORDER BY h.fecha_ultima_visualizacion DESC;
