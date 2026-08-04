@@ -20,11 +20,11 @@ CREATE TABLE clase_grabada (
     unidad           VARCHAR(200),
     tema             VARCHAR(200),
     fecha_imparticion DATE,
-    semestre         VARCHAR(10) NOT NULL,   -- p.ej. '2026-1'
+    semestre         VARCHAR(10) NOT NULL,   
     año              INT NOT NULL,
     url_video        TEXT NOT NULL,
     url_material     TEXT,
-    duracion         INT NOT NULL DEFAULT 0, -- segundos
+    duracion         INT NOT NULL DEFAULT 0, 
     fecha_publicacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -32,7 +32,8 @@ CREATE TABLE participante_clase (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     clase_id          UUID NOT NULL REFERENCES clase_grabada(id) ON DELETE CASCADE,
     nombre_participante VARCHAR(200) NOT NULL,
-    rol_participante  VARCHAR(30) NOT NULL   -- CATEDRATICO | AUXILIAR
+    rol_participante  VARCHAR(30) NOT NULL,  
+    UNIQUE (clase_id, nombre_participante, rol_participante)
 );
 
 CREATE TABLE clase_etiqueta (
@@ -52,6 +53,7 @@ CREATE TABLE evento_publicacion_pendiente (
 
 CREATE INDEX idx_clase_busqueda ON clase_grabada (semestre, año, curso_id);
 CREATE INDEX idx_clase_etiqueta ON clase_etiqueta (etiqueta_id);
+CREATE INDEX idx_participante_clase ON participante_clase (clase_id);
 
 --funciones
 CREATE OR REPLACE FUNCTION fn_buscar_clases(
@@ -94,10 +96,21 @@ BEGIN
       AND (p_curso IS NULL OR cc.nombre ILIKE '%' || p_curso || '%' OR cc.codigo ILIKE '%' || p_curso || '%')
       AND (p_catedratico IS NULL OR pc.nombre_participante ILIKE '%' || p_catedratico || '%')
       AND (p_tema IS NULL OR et.nombre ILIKE '%' || p_tema || '%' OR cg.tema ILIKE '%' || p_tema || '%')
-    ORDER BY cg.semestre, cg.año DESC;
+    ORDER BY cg.año DESC, cg.semestre;
 END;
 $$;
--- procedommientos
+-- procedimientos
+-- Valida el formato de semestre (AAAA-1 | AAAA-2). Se reutiliza en la
+-- capa de aplicación y en los SPs de escritura del catálogo.
+CREATE OR REPLACE FUNCTION fn_validar_semestre(p_semestre VARCHAR(10))
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN p_semestre IS NOT NULL AND p_semestre ~ '^\d{4}-[12]$';
+END;
+$$;
+
 CREATE OR REPLACE PROCEDURE sp_publicar_clase(
     p_curso_id UUID,
     p_unidad VARCHAR(200),
@@ -112,7 +125,26 @@ CREATE OR REPLACE PROCEDURE sp_publicar_clase(
 )
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_semestre_valido BOOLEAN;
 BEGIN
+    IF NOT EXISTS (SELECT 1 FROM curso_catalogo WHERE id = p_curso_id) THEN
+        RAISE EXCEPTION 'CURSO_NO_ENCONTRADO: El curso no existe en el catálogo';
+    END IF;
+
+    IF p_url_video IS NULL OR length(trim(p_url_video)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: url_video es obligatorio';
+    END IF;
+
+    IF p_duracion IS NULL OR p_duracion < 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: duracion no puede ser negativa';
+    END IF;
+
+    SELECT fn_validar_semestre(p_semestre) INTO v_semestre_valido;
+    IF NOT v_semestre_valido THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: semestre inválido (formato AAAA-1 o AAAA-2)';
+    END IF;
+
     INSERT INTO clase_grabada (
         curso_id, unidad, tema, fecha_imparticion, semestre, año,
         url_video, url_material, duracion
@@ -147,6 +179,55 @@ BEGIN
         VALUES (p_clase_id, v_etiqueta_id)
         ON CONFLICT (clase_id, etiqueta_id) DO NOTHING;
     END LOOP;
+END;
+$$;
+
+-- Asocia los participantesa la clase publicada.
+CREATE OR REPLACE PROCEDURE sp_asociar_participantes(
+    p_clase_id UUID,
+    p_nombres TEXT[],
+    p_roles TEXT[]
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    i INTEGER;
+BEGIN
+    FOR i IN 1..array_length(p_nombres, 1) LOOP
+        IF upper(trim(p_roles[i])) NOT IN ('CATEDRATICO', 'AUXILIAR') THEN
+            RAISE EXCEPTION 'ENTRADA_INVALIDA: rol participante inválido (%)', p_roles[i];
+        END IF;
+
+        INSERT INTO participante_clase (clase_id, nombre_participante, rol_participante)
+        VALUES (p_clase_id, trim(p_nombres[i]), upper(trim(p_roles[i])))
+        ON CONFLICT (clase_id, nombre_participante, rol_participante) DO NOTHING;
+    END LOOP;
+END;
+$$;
+
+-- Registra un curso en el catálogo (código único).
+CREATE OR REPLACE PROCEDURE sp_registrar_curso_catalogo(
+    p_codigo VARCHAR(20),
+    p_nombre VARCHAR(200),
+    p_escuela VARCHAR(100),
+    INOUT p_curso_id UUID
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_codigo IS NULL OR length(trim(p_codigo)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: codigo es obligatorio';
+    END IF;
+    IF p_nombre IS NULL OR length(trim(p_nombre)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: nombre es obligatorio';
+    END IF;
+    IF p_escuela IS NULL OR length(trim(p_escuela)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: escuela es obligatoria';
+    END IF;
+
+    INSERT INTO curso_catalogo (codigo, nombre, escuela)
+    VALUES (trim(p_codigo), trim(p_nombre), trim(p_escuela))
+    RETURNING id INTO p_curso_id;
 END;
 $$;
 
