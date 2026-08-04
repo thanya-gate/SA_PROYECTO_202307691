@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package yousac.catalogo.v1;
+
+option java_multiple_files = true;
+option go_package = "yousac/catalogo/v1;catalogov1";
+
+
+message CursoCatalogo {
+  string curso_id = 1;
+  string codigo = 2;
+  string nombre = 3;
+  string escuela = 4;
+}
+
+message ClaseResumen {
+  string clase_id = 1;
+  string codigo = 2;
+  string curso = 3;
+  string unidad = 4;
+  string tema = 5;
+  string semestre = 6;
+  int32 anio = 7;         
+  string url_video = 8;
+}
+
+message Participante {
+  string nombre = 1;
+  string rol = 2;         
+}
+
+message ClaseDetalle {
+  string clase_id = 1;
+  string codigo = 2;
+  string curso = 3;
+  string escuela = 4;
+  string unidad = 5;
+  string tema = 6;
+  string fecha_imparticion = 7;  
+  string semestre = 8;
+  int32 anio = 9;
+  int32 duracion = 10;           
+  string url_video = 11;
+  string url_material = 12;
+  string fecha_publicacion = 13;  
+  repeated Participante participantes = 14;
+  repeated string etiquetas = 15;
+}
+
+message SemestreResumen {
+  string semestre = 1;
+  int32 anio = 2;
+  string escuela = 3;
+  int32 total_clases = 4;
+}
+
+
+message SearchRequest {
+  string semestre = 1;     
+  string escuela = 2;      
+  string curso = 3;        
+  string catedratico = 4;  
+  string tema = 5;         
+}
+
+message SearchResponse {
+  repeated ClaseResumen resultados = 1;
+}
+
+
+message GetClaseRequest {
+  string clase_id = 1;
+}
+
+message GetClaseResponse {
+  ClaseDetalle clase = 1;
+}
+
+
+message ListarPorSemestreRequest {
+  string semestre = 1;    
+}
+
+message ListarPorSemestreResponse {
+  repeated SemestreResumen semestres = 1;
+}
+
+message PublicarClaseRequest {
+  string curso_id = 1;
+  string unidad = 2;
+  string tema = 3;
+  string fecha_imparticion = 4;  
+  string semestre = 5;           
+  int32 anio = 6;
+  string url_video = 7;
+  string url_material = 8;      
+  int32 duracion = 9;           
+  repeated string etiquetas = 10;
+  repeated Participante participantes = 11;
+}
+
+message PublicarClaseResponse {
+  string clase_id = 1;
+  string fecha_publicacion = 2; 
+}
+
+
+message RegistrarCursoRequest {
+  string codigo = 1;
+  string nombre = 2;
+  string escuela = 3;
+}
+
+message RegistrarCursoResponse {
+  CursoCatalogo curso = 1;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+}
+
+
+service CatalogoService {
+
+  rpc Search(SearchRequest) returns (SearchResponse);
+  rpc GetClase(GetClaseRequest) returns (GetClaseResponse);
+  rpc ListarPorSemestre(ListarPorSemestreRequest) returns (ListarPorSemestreResponse);
+
+  rpc PublicarClase(PublicarClaseRequest) returns (PublicarClaseResponse);
+  rpc RegistrarCurso(RegistrarCursoRequest) returns (RegistrarCursoResponse);
+
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
