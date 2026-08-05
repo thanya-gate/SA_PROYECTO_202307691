@@ -6,6 +6,7 @@ import { config } from './config/env';
 import { authGrpc } from './grpc/auth-client';
 import { catalogGrpc } from './grpc/catalog-client';
 import { reproductionGrpc } from './grpc/reproduction-client';
+import { analiticaGrpc } from './grpc/analitica-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
 import { authenticate } from './middleware/authenticate';
@@ -54,6 +55,13 @@ export function createGateway(): Express {
     } catch {
       reproductionStatus = 'unavailable';
     }
+    let analiticaStatus = 'unknown';
+    try {
+      const health = await analiticaGrpc.health();
+      analiticaStatus = health.status;
+    } catch {
+      analiticaStatus = 'unavailable';
+    }
     res.json({
       status: 'ok',
       service: 'api-gateway',
@@ -61,6 +69,7 @@ export function createGateway(): Express {
       authService: authStatus,
       catalogService: catalogStatus,
       reproductionService: reproductionStatus,
+      analiticaService: analiticaStatus,
     });
   });
 
@@ -497,6 +506,122 @@ export function createGateway(): Express {
     }
   });
 
+//analitica
+  app.get('/analitica/clases-mas-vistas', authenticate, async (req, res, next) => {
+    try {
+      const semana = (req.query.semana as string | undefined) ?? '';
+      const limite = Number(req.query.limite ?? 0);
+      const result = await analiticaGrpc.clasesMasVistas({
+        semana,
+        limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
+      });
+      res.json({ semana: result.semana, items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/analitica/tendencias-examenes', authenticate, async (req, res, next) => {
+    try {
+      const limite = Number(req.query.limite ?? 0);
+      const result = await analiticaGrpc.tendenciasExamenes({
+        limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
+      });
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/analitica/ranking-mejor-valoradas', authenticate, async (req, res, next) => {
+    try {
+      const limite = Number(req.query.limite ?? 0);
+      const result = await analiticaGrpc.rankingMejorValoradas({
+        limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
+      });
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/analitica/recomendaciones/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const limite = Number(req.query.limite ?? 0);
+      const result = await analiticaGrpc.recomendacionesEstudiante({
+        estudianteId: req.context!.userId,
+        limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
+      });
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/analitica/sincronizar/vista', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { claseId, duracionVista } = req.body as Record<string, unknown>;
+      if (typeof claseId !== 'string' || typeof duracionVista !== 'number') {
+        throw new DomainError('ENTRADA_INVALIDA', 'claseId y duracionVista son obligatorios', 400);
+      }
+      const result = await analiticaGrpc.sincronizarVista({
+        claseId,
+        estudianteId: req.context!.userId,
+        duracionVista,
+      });
+      res.status(201).json({ message: 'Vista registrada en analítica', registrada: result.registrada });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/analitica/sincronizar/calificacion', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { claseId, puntuacion } = req.body as Record<string, unknown>;
+      if (typeof claseId !== 'string' || typeof puntuacion !== 'number' || puntuacion < 1 || puntuacion > 5) {
+        throw new DomainError('ENTRADA_INVALIDA', 'claseId y puntuacion (1-5) son obligatorios', 400);
+      }
+      const result = await analiticaGrpc.sincronizarCalificacion({
+        claseId,
+        estudianteId: req.context!.userId,
+        puntuacion,
+      });
+      res.status(201).json({ message: 'Calificación sincronizada con analítica', registrada: result.registrada });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/analitica/csv', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { contenido, reemplazar } = req.body as Record<string, unknown>;
+      if (typeof contenido !== 'string' || contenido.length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'contenido CSV es obligatorio', 400);
+      }
+      const result = await analiticaGrpc.cargarEventosCSV({
+        contenido,
+        reemplazar: Boolean(reemplazar),
+      });
+      res.status(201).json({
+        message: 'Carga masiva CSV procesada',
+        registrosCargados: result.registrosCargados,
+        registrosOmitidos: result.registrosOmitidos,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/analitica/tendencias/recalcular', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const semana = (req.body as Record<string, unknown>).semana as string | undefined;
+      const result = await analiticaGrpc.recalcularTendencias({ semana: semana ?? '' });
+      res.json({ message: 'Tendencias recalculadas', recalculada: result.recalculada });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use((req, res) => {
     res.status(404).json({ error: { code: 'RUTA_NO_ENCONTRADA', message: `${req.method} ${req.path}` } });
   });
@@ -512,5 +637,6 @@ export function listenGateway(app: Express): ReturnType<typeof app.listen> {
     console.log(`[api-gateway] gRPC -> auth-service en ${config.AUTH_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> catalog-service en ${config.CATALOG_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> reproduccion-service en ${config.REPRODUCTION_GRPC_ADDR}`);
+    console.log(`[api-gateway] gRPC -> analitica-service en ${config.ANALITICA_GRPC_ADDR}`);
   });
 }
