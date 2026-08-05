@@ -9,6 +9,7 @@ import { authGrpc } from './grpc/auth-client';
 import { catalogGrpc } from './grpc/catalog-client';
 import { reproductionGrpc } from './grpc/reproduction-client';
 import { analiticaGrpc } from './grpc/analitica-client';
+import { inscripcionGrpc } from './grpc/inscripcion-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
 import { authenticate } from './middleware/authenticate';
@@ -105,6 +106,13 @@ export function createGateway(): Express {
     } catch {
       analiticaStatus = 'unavailable';
     }
+    let inscripcionStatus = 'unknown';
+    try {
+      const health = await inscripcionGrpc.health();
+      inscripcionStatus = health.status;
+    } catch {
+      inscripcionStatus = 'unavailable';
+    }
     res.json({
       status: 'ok',
       service: 'api-gateway',
@@ -113,6 +121,7 @@ export function createGateway(): Express {
       catalogService: catalogStatus,
       reproductionService: reproductionStatus,
       analiticaService: analiticaStatus,
+      inscripcionService: inscripcionStatus,
     });
   });
 
@@ -699,6 +708,132 @@ export function createGateway(): Express {
     }
   });
 
+//inscripcion
+  app.get('/inscripcion/panel/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const estudianteId = req.context!.roles?.includes('ROLE_ADMIN')
+        ? (req.query.estudianteId as string | undefined) ?? req.context!.userId
+        : req.context!.userId;
+      const result = await inscripcionGrpc.consultarPanelEstudiante(estudianteId);
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/inscripcion/cursos-catedratico', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const catedraticoId = req.context!.roles?.includes('ROLE_ADMIN')
+        ? (req.query.catedraticoId as string | undefined) ?? req.context!.userId
+        : req.context!.userId;
+      const result = await inscripcionGrpc.consultarCursosCatedratico(catedraticoId);
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/inscripcion/estado-matricula/:cursoId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.consultarEstadoMatricula(
+        req.context!.userId,
+        req.params.cursoId,
+      );
+      res.json({ estado: result.estado });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/inscripcion/cursos', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { codigo, nombre, escuela, semestre, anio } = req.body as Record<string, unknown>;
+      if (typeof codigo !== 'string' || typeof nombre !== 'string' || typeof escuela !== 'string' || typeof semestre !== 'string' || typeof anio !== 'number') {
+        throw new DomainError('ENTRADA_INVALIDA', 'codigo, nombre, escuela, semestre y anio son obligatorios', 400);
+      }
+      const result = await inscripcionGrpc.registrarCurso({ codigo, nombre, escuela, semestre, anio });
+      res.status(201).json({ message: 'Curso registrado', curso: result.curso });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/inscripcion/docentes', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { usuarioId } = req.body as Record<string, unknown>;
+      if (typeof usuarioId !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'usuarioId es obligatorio', 400);
+      }
+      const result = await inscripcionGrpc.registrarDocente(usuarioId);
+      res.status(201).json({ message: 'Docente registrado', docenteId: result.docenteId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/inscripcion/auxiliares', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { usuarioId } = req.body as Record<string, unknown>;
+      if (typeof usuarioId !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'usuarioId es obligatorio', 400);
+      }
+      const result = await inscripcionGrpc.registrarAuxiliar(usuarioId);
+      res.status(201).json({ message: 'Auxiliar registrado', auxiliarId: result.auxiliarId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/inscripcion/estudiantes/:estudianteId/cursos/:cursoId', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { semestre } = req.body as Record<string, unknown>;
+      if (typeof semestre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'semestre es obligatorio', 400);
+      }
+      const result = await inscripcionGrpc.inscribirEstudiante({
+        estudianteId: req.params.estudianteId,
+        cursoId: req.params.cursoId,
+        semestre,
+      });
+      res.status(201).json({
+        message: 'Estudiante inscrito',
+        inscripcionId: result.inscripcionId,
+        estadoMatricula: result.estadoMatricula,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/inscripcion/catedraticos/:docenteId/cursos/:cursoId', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { semestre } = req.body as Record<string, unknown>;
+      if (typeof semestre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'semestre es obligatorio', 400);
+      }
+      const result = await inscripcionGrpc.asignarCatedraticoCurso({
+        docenteId: req.params.docenteId,
+        cursoId: req.params.cursoId,
+        semestre,
+      });
+      res.status(201).json({ message: 'Catedrático asignado al curso', asignacionId: result.asignacionId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/inscripcion/auxiliares/:auxiliarId/asignaciones/:asignacionDocenteId', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.asignarAuxiliarCatedratico({
+        auxiliarId: req.params.auxiliarId,
+        asignacionDocenteId: req.params.asignacionDocenteId,
+      });
+      res.status(201).json({ message: 'Auxiliar vinculado al catedrático', asignacionAuxiliarId: result.asignacionAuxiliarId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use((req, res) => {
     res.status(404).json({ error: { code: 'RUTA_NO_ENCONTRADA', message: `${req.method} ${req.path}` } });
   });
@@ -715,5 +850,6 @@ export function listenGateway(app: Express): ReturnType<typeof app.listen> {
     console.log(`[api-gateway] gRPC -> catalog-service en ${config.CATALOG_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> reproduccion-service en ${config.REPRODUCTION_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> analitica-service en ${config.ANALITICA_GRPC_ADDR}`);
+    console.log(`[api-gateway] gRPC -> inscripcion-service en ${config.INSCRIPCION_GRPC_ADDR}`);
   });
 }
