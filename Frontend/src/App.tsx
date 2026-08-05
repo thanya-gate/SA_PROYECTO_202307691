@@ -3,10 +3,12 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/auth-context';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ClasePage from './pages/ClasePage';
 import HistorialPage from './pages/HistorialPage';
+import AnaliticaPage from './pages/AnaliticaPage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -31,6 +33,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
           <Route
             path="/"
             element={
@@ -60,6 +63,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <HistorialPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/analitica"
+            element={
+              <RequireAuth>
+                <AnaliticaPage />
               </RequireAuth>
             }
           />

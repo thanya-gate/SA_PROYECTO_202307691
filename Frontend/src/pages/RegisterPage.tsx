@@ -9,11 +9,16 @@ import { ApiError } from '../api/http';
 import { isInstitutionalEmail } from '../utils/domain';
 
 const MIN_PASSWORD_LENGTH = 8;
+const CARNET_PATTERN = /^\d{8,10}$/;
+const DPI_PATTERN = /^\d{13}$/;
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const [carnet, setCarnet] = useState('');
+  const [dpi, setDpi] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,6 +29,19 @@ export default function RegisterPage() {
     event.preventDefault();
     setError(null);
 
+    if (!CARNET_PATTERN.test(carnet)) {
+      setError('El carnet debe contener de 8 a 10 dígitos.');
+      return;
+    }
+    if (!DPI_PATTERN.test(dpi)) {
+      setError('El DPI debe contener exactamente 13 dígitos.');
+      return;
+    }
+    const fecha = new Date(`${fechaNacimiento}T00:00:00Z`);
+    if (!fechaNacimiento || Number.isNaN(fecha.getTime()) || fecha.getTime() > Date.now()) {
+      setError('Ingresa una fecha de nacimiento válida (no futura).');
+      return;
+    }
     if (!isInstitutionalEmail(email)) {
       setError('Correo no autorizado. Solo se permiten dominios @ing.usac.edu.gt y @ingenieria.usac.edu.gt.');
       return;
@@ -39,7 +57,7 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      await register(email, password, confirmPassword);
+      await register({ carnet, dpi, fechaNacimiento, email, password, confirmPassword });
       navigate('/login', { state: { registered: email } });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo crear la cuenta. Intenta de nuevo.');
@@ -61,6 +79,37 @@ export default function RegisterPage() {
         {error ? <Alert tone="error">{error}</Alert> : null}
 
         <form className="auth-card__form" onSubmit={handleSubmit} noValidate>
+          <TextField
+            id="register-carnet"
+            label="Carnet"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="202307691"
+            value={carnet}
+            onChange={(e) => setCarnet(e.target.value.replace(/\D/g, ''))}
+            required
+          />
+          <TextField
+            id="register-dpi"
+            label="DPI"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="1234567890123"
+            value={dpi}
+            onChange={(e) => setDpi(e.target.value.replace(/\D/g, ''))}
+            required
+          />
+          <TextField
+            id="register-birthdate"
+            label="Fecha de Nacimiento"
+            type="date"
+            max={new Date().toISOString().slice(0, 10)}
+            value={fechaNacimiento}
+            onChange={(e) => setFechaNacimiento(e.target.value)}
+            required
+          />
           <TextField
             id="register-email"
             label="Correo Institucional"

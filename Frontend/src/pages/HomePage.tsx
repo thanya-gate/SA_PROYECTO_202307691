@@ -7,7 +7,7 @@ const MODULES = [
   { name: 'Catálogo', description: 'Explorar grabaciones por semestre, curso y catedrático', to: '/catalogo' },
   { name: 'Reproductor', description: 'Ver clases con checkpoint de avance', to: '' },
   { name: 'Asignaciones', description: 'Cursos inscritos y permisos por rol', to: '' },
-  { name: 'Analítica', description: 'Tendencias y recomendaciones', to: '' },
+  { name: 'Analítica', description: 'Tendencias y recomendaciones', to: '/analitica' },
 ];
 
 export default function HomePage() {

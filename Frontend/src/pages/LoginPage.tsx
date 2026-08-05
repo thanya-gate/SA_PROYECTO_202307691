@@ -58,11 +58,11 @@ export default function LoginPage() {
 
     setOauthSubmitting(true);
     try {
+      // Redirige a la pantalla del proveedor institucional (IdP). El navegador
+      // volverá a /oauth/callback con el authorization code.
       await loginWithOAuth(oauthEmail);
-      navigate('/', { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo completar el inicio de sesión con cuenta institucional.');
-    } finally {
+      setError(err instanceof ApiError ? err.message : 'No se pudo iniciar el flujo de autenticación institucional.');
       setOauthSubmitting(false);
     }
   }
@@ -131,8 +131,11 @@ export default function LoginPage() {
                 required
               />
               <Button variant="oauth" type="submit" loading={oauthSubmitting}>
-                Autorizar con cuenta institucional
+                Ir a la cuenta institucional
               </Button>
+              <p className="auth-card__oauth-hint">
+                Serás redirigido a la pantalla del proveedor institucional para autenticarte.
+              </p>
             </form>
           )}
         </div>
