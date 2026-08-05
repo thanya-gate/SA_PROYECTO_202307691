@@ -55,4 +55,15 @@ export class CatalogService {
     const input = parse(registrarCursoSchema, raw);
     return this.repository.registrarCurso(input);
   }
+
+  async actualizarUrlVideo(claseId: string, urlVideo: string): Promise<ClaseDetalle> {
+    if (!urlVideo || urlVideo.trim().length === 0) {
+      throw new DomainError('ENTRADA_INVALIDA', 'url_video es obligatorio', 400);
+    }
+    const clase = await this.repository.actualizarUrlVideo(claseId, urlVideo.trim());
+    if (!clase) {
+      throw new DomainError('CLASE_NO_ENCONTRADA', 'Clase no encontrada', 404);
+    }
+    return clase;
+  }
 }

@@ -104,6 +104,15 @@ message PublicarClaseResponse {
   string fecha_publicacion = 2; 
 }
 
+message ActualizarUrlVideoRequest {
+  string clase_id = 1;
+  string url_video = 2;
+}
+
+message ActualizarUrlVideoResponse {
+  ClaseDetalle clase = 1;
+}
+
 
 message RegistrarCursoRequest {
   string codigo = 1;
@@ -131,6 +140,7 @@ service CatalogoService {
   rpc ListarPorSemestre(ListarPorSemestreRequest) returns (ListarPorSemestreResponse);
 
   rpc PublicarClase(PublicarClaseRequest) returns (PublicarClaseResponse);
+  rpc ActualizarUrlVideo(ActualizarUrlVideoRequest) returns (ActualizarUrlVideoResponse);
   rpc RegistrarCurso(RegistrarCursoRequest) returns (RegistrarCursoResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
