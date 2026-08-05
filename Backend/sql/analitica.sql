@@ -1,24 +1,30 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- =====================================================================
+-- BD del Microservicio de Analítica Académica (YoUSAC) — Python
+-- Database per Microservice: esquema, SP, vistas, funciones y triggers.
+-- =====================================================================
+
 --tablas
 CREATE TABLE clase_metrica (
     id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    clase_id              UUID NOT NULL UNIQUE,   
+    clase_id              UUID NOT NULL UNIQUE,
     fecha_primera_ingesta TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE evento_vista (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     clase_id       UUID NOT NULL,
-    estudiante_id  UUID NOT NULL,     
+    estudiante_id  UUID NOT NULL,
     fecha_evento   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     duracion_vista INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE sincronizacion_calificacion (
-    id               SERIAL PRIMARY KEY,
-    clase_id         UUID NOT NULL,
-    estudiante_id    UUID NOT NULL,
-    puntuacion       INT NOT NULL CHECK (puntuacion BETWEEN 1 AND 5),
+    id                   SERIAL PRIMARY KEY,
+    clase_id             UUID NOT NULL,
+    estudiante_id        UUID NOT NULL,
+    puntuacion           INT NOT NULL CHECK (puntuacion BETWEEN 1 AND 5),
     fecha_sincronizacion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (clase_id, estudiante_id)
 );
@@ -50,6 +56,16 @@ CREATE TABLE recomendacion (
     UNIQUE (clase_id, estudiante_id)
 );
 
+-- Bitácora de carga masiva en CSV (ingesta histórica de eventos).
+CREATE TABLE ingesta_csv (
+    id                 SERIAL PRIMARY KEY,
+    nombre_archivo     VARCHAR(255),
+    registros_cargados INT NOT NULL DEFAULT 0,
+    registros_omitidos INT NOT NULL DEFAULT 0,
+    usuario_carga      VARCHAR(255),
+    fecha_ingesta      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE cache_invalidacion (
     id         SERIAL PRIMARY KEY,
     clave      VARCHAR(200) NOT NULL UNIQUE,
@@ -58,9 +74,18 @@ CREATE TABLE cache_invalidacion (
 );
 
 CREATE INDEX idx_evento_vista_clase ON evento_vista (clase_id, fecha_evento);
+CREATE INDEX idx_evento_vista_fecha ON evento_vista (fecha_evento);
 CREATE INDEX idx_tendencia_semana ON tendencia_semanal (semana);
 
 --funciones
+CREATE OR REPLACE FUNCTION fn_inicio_semana(p_fecha DATE)
+RETURNS DATE
+LANGUAGE sql
+IMMUTABLE
+AS $$
+    SELECT (date_trunc('week', p_fecha))::date;
+$$;
+
 CREATE OR REPLACE FUNCTION fn_calcular_porcentaje_recomendacion(p_clase_metrica_id UUID)
 RETURNS NUMERIC(5,2)
 LANGUAGE plpgsql
@@ -79,8 +104,8 @@ BEGIN
     SELECT COALESCE(promedio_calificacion, 0) INTO v_promedio
     FROM calificacion_agregada WHERE clase_id = v_clase_id;
 
-    SELECT COALESCE(SUM(total_vistas), 0) INTO v_vistas
-    FROM tendencia_semanal WHERE clase_id = v_clase_id;
+    SELECT COALESCE(COUNT(*), 0) INTO v_vistas
+    FROM evento_vista WHERE clase_id = v_clase_id;
 
     v_resultado := (COALESCE(v_promedio, 0) / 5 * 70) +
                    LEAST(30, LOG(2, GREATEST(v_vistas + 1)) * 5);
@@ -110,6 +135,63 @@ BEGIN
 END;
 $$;
 
+-- Clases más vistas de una semana concreta (lunes de la semana).
+CREATE OR REPLACE FUNCTION fn_clases_mas_vistas_semana(p_semana DATE, p_limite INT DEFAULT 20)
+RETURNS TABLE (
+    clase_id               UUID,
+    total_vistas           INT,
+    promedio_calificacion  NUMERIC,
+    total_calificaciones   INT,
+    posicion               INT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        ev.clase_id,
+        COUNT(*)::INT AS total_vistas,
+        COALESCE(ca.promedio_calificacion, 0),
+        COALESCE(ca.total_calificaciones, 0),
+        ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC)::INT AS posicion
+    FROM evento_vista ev
+    LEFT JOIN calificacion_agregada ca ON ca.clase_id = ev.clase_id
+    WHERE ev.fecha_evento >= p_semana
+      AND ev.fecha_evento < p_semana + INTERVAL '7 days'
+    GROUP BY ev.clase_id, ca.promedio_calificacion, ca.total_calificaciones
+    ORDER BY COUNT(*) DESC
+    LIMIT p_limite;
+END;
+$$;
+
+-- Motor de recomendaciones por estudiante (% dinámico de recomendación).
+CREATE OR REPLACE FUNCTION fn_recomendaciones_estudiante(p_estudiante_id UUID, p_limite INT DEFAULT 10)
+RETURNS TABLE (
+    clase_id                 UUID,
+    porcentaje_recomendacion NUMERIC(5,2),
+    total_vistas             INT,
+    promedio_calificacion    NUMERIC(3,2),
+    fecha_calculo            TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_fecha TIMESTAMPTZ := NOW();
+BEGIN
+    RETURN QUERY
+    SELECT
+        cm.clase_id,
+        fn_calcular_porcentaje_recomendacion(cm.id),
+        COALESCE((SELECT COUNT(*) FROM evento_vista ev WHERE ev.clase_id = cm.clase_id), 0)::INT,
+        COALESCE(ca.promedio_calificacion, 0),
+        v_fecha
+    FROM clase_metrica cm
+    LEFT JOIN calificacion_agregada ca ON ca.clase_id = cm.clase_id
+    ORDER BY fn_calcular_porcentaje_recomendacion(cm.id) DESC, cm.fecha_primera_ingesta DESC
+    LIMIT p_limite;
+END;
+$$;
+
 --procedimientos
 
 CREATE OR REPLACE PROCEDURE sp_registrar_evento_vista(
@@ -129,7 +211,6 @@ BEGIN
 END;
 $$;
 
-
 CREATE OR REPLACE PROCEDURE sp_sincronizar_calificacion(
     p_clase_id UUID,
     p_estudiante_id UUID,
@@ -143,8 +224,69 @@ BEGIN
     ON CONFLICT (clase_id, estudiante_id) DO UPDATE SET
         puntuacion = EXCLUDED.puntuacion,
         fecha_sincronizacion = NOW();
+    -- El trigger trg_actualizar_calificacion_agregada recalcula la métrica agregada.
+END;
+$$;
 
-    PERFORM fn_recalcular_calificacion_agregada(p_clase_id);
+-- Ingesta masiva de eventos desde CSV (arreglos paralelos).
+CREATE OR REPLACE PROCEDURE sp_ingesta_eventos_csv(
+    p_clase_ids       UUID[],
+    p_estudiante_ids  UUID[],
+    p_fechas          TIMESTAMPTZ[],
+    p_duraciones      INT[],
+    p_reemplazar      BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_idx INT;
+BEGIN
+    IF p_reemplazar THEN
+        DELETE FROM evento_vista;
+    END IF;
+
+    FOR v_idx IN 1..array_length(p_clase_ids, 1) LOOP
+        INSERT INTO clase_metrica (clase_id)
+        VALUES (p_clase_ids[v_idx])
+        ON CONFLICT (clase_id) DO NOTHING;
+
+        INSERT INTO evento_vista (clase_id, estudiante_id, fecha_evento, duracion_vista)
+        VALUES (
+            p_clase_ids[v_idx],
+            p_estudiante_ids[v_idx],
+            COALESCE(p_fechas[v_idx], NOW()),
+            COALESCE(p_duraciones[v_idx], 0)
+        );
+    END LOOP;
+END;
+$$;
+
+-- Bitácora de cargas CSV.
+CREATE OR REPLACE PROCEDURE sp_registrar_ingesta(
+    p_nombre_archivo     VARCHAR,
+    p_registros_cargados INT,
+    p_registros_omitidos INT,
+    p_usuario_carga      VARCHAR DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO ingesta_csv (nombre_archivo, registros_cargados, registros_omitidos, usuario_carga)
+    VALUES (p_nombre_archivo, p_registros_cargados, p_registros_omitidos, p_usuario_carga);
+END;
+$$;
+
+-- Materializa las recomendaciones de un estudiante en la tabla `recomendacion`.
+CREATE OR REPLACE PROCEDURE sp_calcular_recomendaciones(p_estudiante_id UUID)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO recomendacion (clase_id, estudiante_id, porcentaje_recomendacion, fecha_calculo)
+    SELECT r.clase_id, p_estudiante_id, r.porcentaje_recomendacion, r.fecha_calculo
+    FROM fn_recomendaciones_estudiante(p_estudiante_id, 100) r
+    ON CONFLICT (clase_id, estudiante_id) DO UPDATE SET
+        porcentaje_recomendacion = EXCLUDED.porcentaje_recomendacion,
+        fecha_calculo = EXCLUDED.fecha_calculo;
 END;
 $$;
 
@@ -152,7 +294,6 @@ CREATE OR REPLACE PROCEDURE sp_recalcular_tendencias(p_semana DATE)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-
     DELETE FROM tendencia_semanal WHERE semana = p_semana;
 
     INSERT INTO tendencia_semanal (clase_id, semana, total_vistas)
@@ -175,24 +316,32 @@ $$;
 --vistas
 CREATE OR REPLACE VIEW vw_ranking_clases AS
 SELECT
-    ts.clase_id,
-    SUM(ts.total_vistas) AS total_vistas,
+    cm.clase_id,
+    COALESCE(ev.total_vistas, 0) AS total_vistas,
     COALESCE(ca.promedio_calificacion, 0) AS promedio_calificacion,
     COALESCE(ca.total_calificaciones, 0) AS total_calificaciones,
-    RANK() OVER (ORDER BY SUM(ts.total_vistas) DESC) AS posicion
-FROM tendencia_semanal ts
-LEFT JOIN calificacion_agregada ca ON ca.clase_id = ts.clase_id
-GROUP BY ts.clase_id, ca.promedio_calificacion, ca.total_calificaciones;
+    RANK() OVER (ORDER BY COALESCE(ev.total_vistas, 0) DESC) AS posicion
+FROM clase_metrica cm
+LEFT JOIN (
+    SELECT clase_id, COUNT(*) AS total_vistas
+    FROM evento_vista
+    GROUP BY clase_id
+) ev ON ev.clase_id = cm.clase_id
+LEFT JOIN calificacion_agregada ca ON ca.clase_id = cm.clase_id
+ORDER BY COALESCE(ev.total_vistas, 0) DESC;
 
+-- Temas de mayor tendencia en época de exámenes (últimas 3 semanas).
 CREATE OR REPLACE VIEW vw_tendencias_examenes AS
 SELECT
-    ts.clase_id,
-    ts.semana,
-    ts.total_vistas,
-    ts.ranking_posicion
-FROM tendencia_semanal ts
-WHERE ts.semana >= (SELECT MAX(semana) FROM tendencia_semanal) - INTERVAL '3 weeks'
-ORDER BY ts.total_vistas DESC
+    ev.clase_id,
+    COUNT(*) AS total_vistas,
+    ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC)::INT AS ranking_posicion
+FROM evento_vista ev
+WHERE ev.fecha_evento >= (
+    SELECT MAX(fecha_evento) FROM evento_vista
+) - INTERVAL '21 days'
+GROUP BY ev.clase_id
+ORDER BY total_vistas DESC
 LIMIT 20;
 
 --triggers
@@ -210,7 +359,7 @@ CREATE TRIGGER trg_actualizar_calificacion_agregada
     AFTER INSERT OR UPDATE ON sincronizacion_calificacion
     FOR EACH ROW EXECUTE FUNCTION fn_trg_actualizar_calificacion_agregada();
 
-CREATE OR REPLACE FUNCTION fn_trg_invalidar_cache_ranking() RETURNS TRIGGER
+CREATE OR REPLACE FUNCTION fn_trg_invalidar_cache() RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
@@ -221,7 +370,12 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_invalidar_cache_ranking ON tendencia_semanal;
-CREATE TRIGGER trg_invalidar_cache_ranking
+DROP TRIGGER IF EXISTS trg_invalidar_cache_tendencias ON tendencia_semanal;
+CREATE TRIGGER trg_invalidar_cache_tendencias
     AFTER INSERT OR UPDATE ON tendencia_semanal
-    FOR EACH ROW EXECUTE FUNCTION fn_trg_invalidar_cache_ranking();
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_invalidar_cache();
+
+DROP TRIGGER IF EXISTS trg_invalidar_cache_eventos ON evento_vista;
+CREATE TRIGGER trg_invalidar_cache_eventos
+    AFTER INSERT OR UPDATE ON evento_vista
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_invalidar_cache();
