@@ -14,6 +14,9 @@ FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
+# ffmpeg/ffprobe para detectar la duración real de los videos al subirlos.
+RUN apk add --no-cache ffmpeg
+
 COPY api-gateway/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 

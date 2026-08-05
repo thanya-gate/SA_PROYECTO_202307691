@@ -72,6 +72,8 @@ export const catalogGrpc = {
   }) => unary('PublicarClase', req),
   actualizarUrlVideo: (claseId: string, urlVideo: string) =>
     unary('ActualizarUrlVideo', { claseId, urlVideo }),
+  actualizarDuracion: (claseId: string, duracion: number) =>
+    unary('ActualizarDuracion', { claseId, duracion }),
   registrarCurso: (req: { codigo: string; nombre: string; escuela: string }) =>
     unary('RegistrarCurso', req),
 };

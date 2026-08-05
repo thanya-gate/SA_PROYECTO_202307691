@@ -5,6 +5,21 @@ export interface PublicUser {
   email: string;
   emailVerified: boolean;
   roles: string[];
+  carnet?: string | null;
+  dpi?: string | null;
+  fechaNacimiento?: string | null;
+}
+
+export type RegisterRole = 'ESTUDIANTE' | 'CATEDRATICO';
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  carnet: string;
+  dpi: string;
+  fechaNacimiento: string;
+  rol: RegisterRole;
 }
 
 export interface AuthResponse {
@@ -20,26 +35,28 @@ export interface MeResponse {
 }
 
 export interface OAuthAuthorizeResponse {
-  redirect_uri: string;
-  code: string;
+  login_uri: string;
 }
 
 export const authApi = {
   login: (email: string, password: string): Promise<AuthResponse> =>
     apiFetch<AuthResponse>('/auth/login', { method: 'POST', body: { email, password } }),
 
-  register: (email: string, password: string, confirmPassword: string): Promise<AuthResponse> =>
+  register: (input: RegisterInput): Promise<AuthResponse> =>
     apiFetch<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: { email, password, confirmPassword },
+      body: input,
     }),
 
   me: (token: string): Promise<MeResponse> => apiFetch<MeResponse>('/auth/me', { token }),
 
   logout: (token: string): Promise<void> => apiFetch<void>('/auth/logout', { method: 'POST', token }),
 
-  oauthAuthorize: (email: string): Promise<OAuthAuthorizeResponse> =>
-    apiFetch<OAuthAuthorizeResponse>('/auth/oauth/authorize', { method: 'POST', body: { email } }),
+  oauthAuthorize: (email: string, state: string): Promise<OAuthAuthorizeResponse> =>
+    apiFetch<OAuthAuthorizeResponse>('/auth/oauth/authorize', {
+      method: 'POST',
+      body: { email, state },
+    }),
 
   oauthCallback: (code: string): Promise<AuthResponse> =>
     apiFetch<AuthResponse>('/auth/oauth/callback', { method: 'POST', body: { code } }),

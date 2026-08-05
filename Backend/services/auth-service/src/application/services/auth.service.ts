@@ -48,11 +48,26 @@ export class AuthService {
       );
     }
 
+    const rol = input.rol ?? Role.ESTUDIANTE;
+    const carnet = rol === Role.ESTUDIANTE ? input.carnet.trim() : '';
+    const dpi = input.dpi.trim();
+
+    if (carnet && (await this.users.findByCarnet(carnet))) {
+      throw new DomainError('CARNET_YA_REGISTRADO', 'Este carnet ya está registrado', 409);
+    }
+    if (await this.users.findByDpi(dpi)) {
+      throw new DomainError('DPI_YA_REGISTRADO', 'Este DPI ya está registrado', 409);
+    }
+
     const passwordHash = await this.password.hash(input.password);
     const user = createUser({
       userId: randomUUID(),
       email,
       passwordHash,
+      carnet: carnet || null,
+      dpi,
+      fechaNacimiento: input.fechaNacimiento,
+      roles: [rol],
     });
 
     await this.users.save(user);
@@ -86,6 +101,37 @@ export class AuthService {
     }
 
     return this.establishSession(user, meta);
+  }
+
+  /**
+   * Verifica credenciales contra el directorio sin crear una sesión.
+   * Lo consume el proveedor de identidad institucional (IdP) para autenticar
+   * al usuario como lo haría un IdP real (p. ej. Google Workspace / Entra ID):
+   * la cuenta debe existir y la contraseña debe coincidir. Nunca revela cuál
+   * de las dos falló.
+   */
+  async validateCredentials(email: string, password: string): Promise<User> {
+    const normalizedEmail = this.domainValidator.validate(email);
+
+    const user = await this.users.findByEmail(normalizedEmail);
+    if (!user) {
+      throw new DomainError(
+        'CREDENCIALES_INVALIDAS',
+        'Credenciales incorrectas',
+        401,
+      );
+    }
+
+    const valid = await this.password.verify(password, user.passwordHash);
+    if (!valid) {
+      throw new DomainError(
+        'CREDENCIALES_INVALIDAS',
+        'Credenciales incorrectas',
+        401,
+      );
+    }
+
+    return user;
   }
 
   async loginWithOAuth(

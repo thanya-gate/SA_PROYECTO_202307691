@@ -3,10 +3,13 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/auth-context';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ClasePage from './pages/ClasePage';
 import HistorialPage from './pages/HistorialPage';
+import AnaliticaPage from './pages/AnaliticaPage';
+import AdminPage from './pages/AdminPage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -24,6 +27,25 @@ function RequireAuth({ children }: { children: ReactElement }) {
   return children;
 }
 
+function RequireRole({ role, children }: { role: string; children: ReactElement }) {
+  const { user, initializing } = useAuth();
+
+  if (initializing) {
+    return (
+      <div className="app-loading" role="status">
+        Cargando sesión…
+      </div>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  if (!user.roles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -31,6 +53,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
           <Route
             path="/"
             element={
@@ -61,6 +84,22 @@ export default function App() {
               <RequireAuth>
                 <HistorialPage />
               </RequireAuth>
+            }
+          />
+          <Route
+            path="/analitica"
+            element={
+              <RequireAuth>
+                <AnaliticaPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <RequireRole role="ROLE_ADMIN">
+                <AdminPage />
+              </RequireRole>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

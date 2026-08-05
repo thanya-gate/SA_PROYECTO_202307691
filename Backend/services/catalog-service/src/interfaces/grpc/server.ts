@@ -175,6 +175,18 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
+    ActualizarDuracion: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const clase = await container.catalogService.actualizarDuracion(
+          call.request.claseId,
+          call.request.duracion,
+        );
+        callback(null, { clase: claseDetalleToProto(clase) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
     RegistrarCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
         const curso = await container.catalogService.registrarCurso({

@@ -8,6 +8,7 @@ import { Role } from '../../domain/enums/role';
 import { User } from '../../domain/entities/user';
 import { SessionStatus } from '../../domain/enums/auth';
 import { DomainError } from '../../domain/errors/domain-error';
+import { ZodError } from 'zod';
 import { domainErrorToGrpcCode } from '../http/middleware/error-handler';
 import {
   registerSchema,
@@ -69,6 +70,9 @@ function userToProto(u: User) {
     email: u.email,
     emailVerified: u.emailVerified,
     roles: u.roles.map((r) => roleToProto[r]),
+    carnet: u.carnet ?? '',
+    dpi: u.dpi ?? '',
+    fechaNacimiento: u.fechaNacimiento ?? '',
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
   };
@@ -185,6 +189,10 @@ export function createGrpcServer(): grpc.Server {
           email: call.request.email,
           password: call.request.password,
           confirmPassword: call.request.confirmPassword,
+          carnet: call.request.carnet,
+          dpi: call.request.dpi,
+          fechaNacimiento: call.request.fechaNacimiento,
+          rol: call.request.rol,
         });
         const result = await container.authService.register(input, {
           ip: call.request.ip,
@@ -239,6 +247,19 @@ export function createGrpcServer(): grpc.Server {
           user: userToProto(user),
           sessionId: call.request.sessionId,
         });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    // Validación de credenciales para el IdP institucional (no crea sesión).
+    ValidateCredentials: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const user = await container.authService.validateCredentials(
+          call.request.email,
+          call.request.password,
+        );
+        callback(null, { user: userToProto(user) });
       } catch (err: any) {
         callback(mapError(err));
       }
@@ -409,11 +430,20 @@ export function listenGrpc(server: grpc.Server): Promise<void> {
 }
 
 function mapError(err: any): grpc.ServiceError {
+  const message = err instanceof ZodError
+    ? (() => {
+        const first = err.issues[0];
+        return first
+          ? `${first.message}${first.path.length ? ` (${first.path.join('.')})` : ''}`
+          : 'Datos de entrada inválidos';
+      })()
+    : (err?.message ?? 'Error interno');
   const code =
-    err?.code && domainErrorToGrpcCode[err.code] !== undefined
-      ? domainErrorToGrpcCode[err.code]
-      : grpc.status.INTERNAL;
-  const message = err?.message ?? 'Error interno';
-  const details = err?.details ?? '';
-  return { name: 'Error', message, code, details, metadata: new grpc.Metadata() } as grpc.ServiceError;
+    err instanceof ZodError
+      ? grpc.status.INVALID_ARGUMENT
+      : err?.code && domainErrorToGrpcCode[err.code] !== undefined
+        ? domainErrorToGrpcCode[err.code]
+        : grpc.status.INTERNAL;
+  // grpc-js transmite err.details como texto del error al cliente.
+  return { name: 'Error', message, code, details: message, metadata: new grpc.Metadata() } as grpc.ServiceError;
 }

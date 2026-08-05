@@ -38,6 +38,9 @@ message User {
   repeated Role roles = 4;
   string created_at = 5;
   string updated_at = 6;
+  string carnet = 7;
+  string dpi = 8;
+  string fecha_nacimiento = 9;
 }
 
 message SessionInfo {
@@ -116,6 +119,10 @@ message RegisterRequest {
   string confirm_password = 3;
   string ip = 4;
   string user_agent = 5;
+  string carnet = 6;
+  string dpi = 7;
+  string fecha_nacimiento = 8;
+  string rol = 9;
 }
 
 message RegisterResponse {
@@ -143,6 +150,18 @@ message LogoutRequest {
 
 message LogoutResponse {
   bool revoked = 1;
+}
+
+// Validación de credenciales para el proveedor de identidad institucional
+// (IdP). Un IdP real autentica contra su directorio; este RPC expone la
+// verificación de correo + contraseña sin crear una sesión.
+message ValidateCredentialsRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message ValidateCredentialsResponse {
+  User user = 1;
 }
 
 message GetCurrentUserRequest {
@@ -274,6 +293,7 @@ service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+  rpc ValidateCredentials(ValidateCredentialsRequest) returns (ValidateCredentialsResponse);
 
   // --- Cuenta ---
   rpc RequestEmailVerification(RequestEmailVerificationRequest) returns (RequestEmailVerificationResponse);

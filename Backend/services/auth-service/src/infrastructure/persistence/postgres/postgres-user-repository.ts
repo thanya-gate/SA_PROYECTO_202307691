@@ -11,6 +11,9 @@ interface UserRow {
   email_verified: boolean;
   activo: boolean;
   proveedor_oauth: string | null;
+  carnet: string | null;
+  dpi: string | null;
+  fecha_nacimiento: Date | string | null;
   roles: string[];
   created_at: Date;
   updated_at: Date;
@@ -24,6 +27,9 @@ const USER_SELECT = `
     u.email_verificado AS email_verified,
     u.activo,
     u.proveedor_oauth,
+    u.carnet,
+    u.dpi,
+    u.fecha_nacimiento,
     COALESCE((
       SELECT array_agg(r.nombre ORDER BY r.nombre)
       FROM usuario_rol ur
@@ -43,6 +49,11 @@ function rowToUser(row: UserRow): User {
     emailVerified: row.email_verified,
     roles: (row.roles ?? []).map((r) => r as Role),
     oauthProviders: row.proveedor_oauth ? [row.proveedor_oauth] : [],
+    carnet: row.carnet ?? null,
+    dpi: row.dpi ?? null,
+    fechaNacimiento: row.fecha_nacimiento
+      ? new Date(row.fecha_nacimiento).toISOString().slice(0, 10)
+      : null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -70,15 +81,36 @@ export class PostgresUserRepository implements UserRepository {
                 email_verificado = $4,
                 activo = TRUE,
                 proveedor_oauth = $5,
+                carnet = $6,
+                dpi = $7,
+                fecha_nacimiento = $8,
                 fecha_actualizacion = NOW()
           WHERE id = $1`,
-        [user.userId, user.email, user.passwordHash, user.emailVerified, user.oauthProviders[0] ?? null],
+        [
+          user.userId,
+          user.email,
+          user.passwordHash,
+          user.emailVerified,
+          user.oauthProviders[0] ?? null,
+          user.carnet ?? null,
+          user.dpi ?? null,
+          user.fechaNacimiento ?? null,
+        ],
       );
     } else {
       await query(
-        `INSERT INTO usuario (id, correo_institucional, contraseña, email_verificado, activo, proveedor_oauth)
-         VALUES ($1, $2, $3, $4, TRUE, $5)`,
-        [user.userId, user.email, user.passwordHash, user.emailVerified, user.oauthProviders[0] ?? null],
+        `INSERT INTO usuario (id, correo_institucional, contraseña, email_verificado, activo, proveedor_oauth, carnet, dpi, fecha_nacimiento)
+         VALUES ($1, $2, $3, $4, TRUE, $5, $6, $7, $8)`,
+        [
+          user.userId,
+          user.email,
+          user.passwordHash,
+          user.emailVerified,
+          user.oauthProviders[0] ?? null,
+          user.carnet ?? null,
+          user.dpi ?? null,
+          user.fechaNacimiento ?? null,
+        ],
       );
     }
     await this.syncRoles(user.userId, user.roles);
@@ -95,6 +127,22 @@ export class PostgresUserRepository implements UserRepository {
 
   async findById(userId: string): Promise<User | null> {
     const result = await query<UserRow>(`${USER_SELECT} WHERE u.id = $1`, [userId]);
+    return result.rows[0] ? rowToUser(result.rows[0]) : null;
+  }
+
+  async findByCarnet(carnet: string): Promise<User | null> {
+    const result = await query<UserRow>(
+      `${USER_SELECT} WHERE u.carnet = $1`,
+      [carnet],
+    );
+    return result.rows[0] ? rowToUser(result.rows[0]) : null;
+  }
+
+  async findByDpi(dpi: string): Promise<User | null> {
+    const result = await query<UserRow>(
+      `${USER_SELECT} WHERE u.dpi = $1`,
+      [dpi],
+    );
     return result.rows[0] ? rowToUser(result.rows[0]) : null;
   }
 

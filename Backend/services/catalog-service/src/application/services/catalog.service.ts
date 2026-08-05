@@ -66,4 +66,15 @@ export class CatalogService {
     }
     return clase;
   }
+
+  async actualizarDuracion(claseId: string, duracion: number): Promise<ClaseDetalle> {
+    if (!Number.isInteger(duracion) || duracion <= 0) {
+      throw new DomainError('ENTRADA_INVALIDA', 'duracion debe ser un entero positivo', 400);
+    }
+    const clase = await this.repository.actualizarDuracion(claseId, duracion);
+    if (!clase) {
+      throw new DomainError('CLASE_NO_ENCONTRADA', 'Clase no encontrada', 404);
+    }
+    return clase;
+  }
 }

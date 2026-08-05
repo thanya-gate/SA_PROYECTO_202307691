@@ -29,6 +29,20 @@ export class InMemoryUserRepository implements UserRepository {
     return this.store.get(userId) ?? null;
   }
 
+  async findByCarnet(carnet: string): Promise<User | null> {
+    for (const user of this.store.values()) {
+      if (user.carnet === carnet) return user;
+    }
+    return null;
+  }
+
+  async findByDpi(dpi: string): Promise<User | null> {
+    for (const user of this.store.values()) {
+      if (user.dpi === dpi) return user;
+    }
+    return null;
+  }
+
   async addRole(userId: string, role: Role): Promise<User> {
     const user = await this.requireUser(userId);
     const updated: User = { ...user, roles: [...user.roles, role], updatedAt: new Date() };

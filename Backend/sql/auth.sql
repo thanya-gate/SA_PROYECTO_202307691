@@ -15,6 +15,9 @@ CREATE TABLE usuario (
     email_verificado    BOOLEAN NOT NULL DEFAULT FALSE,
     activo              BOOLEAN NOT NULL DEFAULT TRUE,
     proveedor_oauth     VARCHAR(50),
+    carnet              VARCHAR(10) UNIQUE,
+    dpi                 VARCHAR(13) UNIQUE,
+    fecha_nacimiento    DATE,
     fecha_creacion      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -104,7 +107,10 @@ $$;
 CREATE OR REPLACE PROCEDURE sp_registrar_usuario(
     p_correo TEXT,
     p_contraseña_hash TEXT,
-    INOUT p_usuario_id UUID
+    INOUT p_usuario_id UUID,
+    p_carnet TEXT DEFAULT NULL,
+    p_dpi TEXT DEFAULT NULL,
+    p_fecha_nacimiento DATE DEFAULT NULL
 )
 LANGUAGE plpgsql
 AS $$
@@ -119,8 +125,16 @@ BEGIN
         RAISE EXCEPTION 'CORREO_YA_REGISTRADO: Ya existe una cuenta con este correo';
     END IF;
 
-    INSERT INTO usuario (correo_institucional, contraseña)
-    VALUES (lower(p_correo), p_contraseña_hash)
+    IF p_carnet IS NOT NULL AND EXISTS (SELECT 1 FROM usuario WHERE carnet = p_carnet) THEN
+        RAISE EXCEPTION 'CARNET_YA_REGISTRADO: El carnet ya está registrado';
+    END IF;
+
+    IF p_dpi IS NOT NULL AND EXISTS (SELECT 1 FROM usuario WHERE dpi = p_dpi) THEN
+        RAISE EXCEPTION 'DPI_YA_REGISTRADO: El DPI ya está registrado';
+    END IF;
+
+    INSERT INTO usuario (correo_institucional, contraseña, carnet, dpi, fecha_nacimiento)
+    VALUES (lower(p_correo), p_contraseña_hash, p_carnet, p_dpi, p_fecha_nacimiento)
     RETURNING id INTO p_usuario_id;
 
     SELECT id INTO v_rol_estudiante FROM rol WHERE nombre = 'ESTUDIANTE';
@@ -256,6 +270,9 @@ SELECT
     u.email_verificado,
     u.activo,
     u.proveedor_oauth,
+    u.carnet,
+    u.dpi,
+    u.fecha_nacimiento,
     COALESCE(array_agg(r.nombre ORDER BY r.nombre), '{}') AS roles,
     u.fecha_creacion,
     u.fecha_actualizacion

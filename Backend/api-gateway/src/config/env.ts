@@ -28,6 +28,13 @@ const envSchema = z.object({
   COOKIE_PATH: z.string().default('/'),
   SESSION_TTL_MS: z.coerce.number().default(60 * 60 * 1000),
 
+  // OAuth 2.0 (Authorization Code). El "IdP" simulado se aloja en el gateway
+  // (OAUTH_ISSUER_PUBLIC es la URL visible desde el navegador) y redirige al
+  // SPA (OAUTH_REDIRECT_URI) con el código. OAUTH_CLIENT_ID identifica al cliente web.
+  OAUTH_ISSUER_PUBLIC: z.string().default('http://localhost:8080/mock-oauth'),
+  OAUTH_REDIRECT_URI: z.string().default('http://localhost:8081/oauth/callback'),
+  OAUTH_CLIENT_ID: z.string().default('yousac-web'),
+
   PUBLIC_PATHS: z.string().default('/health'),
 });
 

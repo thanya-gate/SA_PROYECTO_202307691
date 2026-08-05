@@ -11,6 +11,8 @@ export interface UserRepository {
   save(user: User): Promise<User>;
   findByEmail(email: string): Promise<User | null>;
   findById(userId: string): Promise<User | null>;
+  findByCarnet(carnet: string): Promise<User | null>;
+  findByDpi(dpi: string): Promise<User | null>;
   addRole(userId: string, role: Role): Promise<User>;
   removeRole(userId: string, role: Role): Promise<User>;
   updatePassword(userId: string, passwordHash: string): Promise<User>;
