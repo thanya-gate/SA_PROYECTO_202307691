@@ -113,6 +113,15 @@ message ActualizarUrlVideoResponse {
   ClaseDetalle clase = 1;
 }
 
+message ActualizarDuracionRequest {
+  string clase_id = 1;
+  int32 duracion = 2; // duración real detectada (segundos)
+}
+
+message ActualizarDuracionResponse {
+  ClaseDetalle clase = 1;
+}
+
 
 message RegistrarCursoRequest {
   string codigo = 1;
@@ -141,6 +150,7 @@ service CatalogoService {
 
   rpc PublicarClase(PublicarClaseRequest) returns (PublicarClaseResponse);
   rpc ActualizarUrlVideo(ActualizarUrlVideoRequest) returns (ActualizarUrlVideoResponse);
+  rpc ActualizarDuracion(ActualizarDuracionRequest) returns (ActualizarDuracionResponse);
   rpc RegistrarCurso(RegistrarCursoRequest) returns (RegistrarCursoResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);

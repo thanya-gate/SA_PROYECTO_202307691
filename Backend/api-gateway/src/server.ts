@@ -2,6 +2,8 @@ import express, { Express } from 'express';
 import cookieParser from 'cookie-parser';
 import fs from 'fs';
 import path from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { config } from './config/env';
 import { authGrpc } from './grpc/auth-client';
 import { catalogGrpc } from './grpc/catalog-client';
@@ -17,6 +19,27 @@ import { createIdpRouter, buildIdpLoginUri } from './mock-idp';
 
 const cookieMaxAge = config.SESSION_TTL_MS;
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+const execFileAsync = promisify(execFile);
+
+/**
+ * Detecta la duración real de un archivo de video (segundos) leyendo sus
+ * metadatos con ffprobe. Reemplaza la duración que se fija manualmente al
+ * publicar la clase.
+ */
+async function detectVideoDuration(filePath: string): Promise<number | null> {
+  try {
+    const { stdout } = await execFileAsync(
+      'ffprobe',
+      ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filePath],
+      { timeout: 60_000, maxBuffer: 1024 * 1024 },
+    );
+    const seconds = Number.parseFloat(stdout.trim());
+    if (!Number.isFinite(seconds) || seconds <= 0) return null;
+    return Math.round(seconds);
+  } catch {
+    return null;
+  }
+}
 
 function publicUser(u: {
   userId: string;
@@ -423,17 +446,44 @@ export function createGateway(): Express {
     }
     try {
       await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+
+      // Se escribe primero a un archivo temporal: si el video es inválido se
+      // descarta y el video anterior queda intacto.
+      const tempPath = `${targetPath}.uploading`;
       await new Promise<void>((resolve, reject) => {
-        const out = fs.createWriteStream(targetPath);
+        const out = fs.createWriteStream(tempPath);
         out.on('error', reject);
         out.on('close', resolve);
         req.on('error', reject);
         req.pipe(out);
       });
+
+      // Se detecta la duración real del video a partir de sus metadatos
+      // (ffprobe) y se actualiza la clase, ignorando la duración manual.
+      const duracion = await detectVideoDuration(tempPath);
+      if (duracion === null || duracion === 0) {
+        await fs.promises.rm(tempPath, { force: true }).catch(() => {});
+        return next(
+          new DomainError(
+            'ENTRADA_INVALIDA',
+            'No se pudo leer el archivo como video o detectar su duración',
+            400,
+          ),
+        );
+      }
+
+      await fs.promises.rename(tempPath, targetPath);
       const urlVideo = `/media/clases/${claseId}.mp4`;
-      const result = await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
-      res.status(201).json({ message: 'Video subido a la plataforma', urlVideo, clase: result.clase });
+      await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
+      const result = await catalogGrpc.actualizarDuracion(claseId, duracion);
+      res.status(201).json({
+        message: 'Video subido a la plataforma',
+        urlVideo,
+        duracion: result.clase?.duracion ?? duracion,
+        clase: result.clase,
+      });
     } catch (err) {
+      await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
       await fs.promises.rm(targetPath, { force: true }).catch(() => {});
       next(err);
     }

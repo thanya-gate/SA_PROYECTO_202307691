@@ -192,6 +192,12 @@ export class PostgresCatalogRepository implements CatalogRepository {
     return this.getClase(claseId);
   }
 
+  async actualizarDuracion(claseId: string, duracion: number): Promise<ClaseDetalle | null> {
+    const res = await query('UPDATE clase_grabada SET duracion = $2 WHERE id = $1', [claseId, duracion]);
+    if (res.rowCount === 0) return null;
+    return this.getClase(claseId);
+  }
+
   private async asociarEtiquetas(
     client: PoolClient,
     claseId: string,
