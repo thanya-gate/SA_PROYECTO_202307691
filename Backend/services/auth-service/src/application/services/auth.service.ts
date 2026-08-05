@@ -48,11 +48,24 @@ export class AuthService {
       );
     }
 
+    const carnet = input.carnet.trim();
+    const dpi = input.dpi.trim();
+
+    if (await this.users.findByCarnet(carnet)) {
+      throw new DomainError('CARNET_YA_REGISTRADO', 'Este carnet ya está registrado', 409);
+    }
+    if (await this.users.findByDpi(dpi)) {
+      throw new DomainError('DPI_YA_REGISTRADO', 'Este DPI ya está registrado', 409);
+    }
+
     const passwordHash = await this.password.hash(input.password);
     const user = createUser({
       userId: randomUUID(),
       email,
       passwordHash,
+      carnet,
+      dpi,
+      fechaNacimiento: input.fechaNacimiento,
     });
 
     await this.users.save(user);

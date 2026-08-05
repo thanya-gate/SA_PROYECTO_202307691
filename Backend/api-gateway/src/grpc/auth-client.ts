@@ -33,7 +33,7 @@ export class GrpcError extends Error {
   readonly grpcCode: number;
 
   constructor(grpcCode: number, message: string) {
-    super(message);
+    super(message.replace(/^\d+\s+[A-Z_]+:\s*/, ''));
     this.grpcCode = grpcCode;
   }
 }
@@ -58,8 +58,16 @@ export const authGrpc = {
   validateSession: (token: string) => unary('ValidateSession', { token }),
   revokeSession: (sessionId: string) => unary('RevokeSession', { sessionId }),
 
-  register: (req: { email: string; password: string; confirmPassword: string; ip?: string; userAgent?: string }) =>
-    unary('Register', req),
+  register: (req: {
+    email: string;
+    password: string;
+    confirmPassword: string;
+    carnet: string;
+    dpi: string;
+    fechaNacimiento: string;
+    ip?: string;
+    userAgent?: string;
+  }) => unary('Register', req),
   login: (req: { email: string; password: string; ip?: string; userAgent?: string }) => unary('Login', req),
   logout: (sessionId: string) => unary('Logout', { sessionId }),
   getCurrentUser: (sessionId: string) => unary('GetCurrentUser', { sessionId }),

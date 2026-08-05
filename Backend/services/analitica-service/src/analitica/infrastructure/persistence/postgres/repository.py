@@ -19,6 +19,8 @@ class PostgresAnaliticaRepository(AnaliticaRepository):
                 if not semana:
                     cur.execute("SELECT fn_inicio_semana(NOW()::date)")
                     semana = cur.fetchone()[0]
+                if hasattr(semana, "isoformat"):
+                    semana = semana.isoformat()
 
                 cur.execute(
                     "SELECT * FROM fn_clases_mas_vistas_semana(%s::date, %s::int)",
@@ -146,6 +148,8 @@ class PostgresAnaliticaRepository(AnaliticaRepository):
                 if not semana:
                     cur.execute("SELECT fn_inicio_semana(NOW()::date)")
                     semana = cur.fetchone()[0]
+                if hasattr(semana, "isoformat"):
+                    semana = semana.isoformat()
                 cur.execute("CALL sp_recalcular_tendencias(%s::date)", (semana,))
             conn.commit()
             return semana

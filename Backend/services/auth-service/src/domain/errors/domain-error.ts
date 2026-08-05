@@ -17,6 +17,8 @@ export class DomainError extends Error {
 export type DomainErrorCode =
   | 'DOMINIO_NO_AUTORIZADO'
   | 'CORREO_YA_REGISTRADO'
+  | 'CARNET_YA_REGISTRADO'
+  | 'DPI_YA_REGISTRADO'
   | 'CREDENCIALES_INVALIDAS'
   | 'CUENTA_BLOQUEADA'
   | 'SESION_INVALIDA'

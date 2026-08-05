@@ -13,12 +13,29 @@ import { authenticate } from './middleware/authenticate';
 import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
 import { errorHandler } from './middleware/error-handler';
+import { createIdpRouter, buildIdpLoginUri } from './mock-idp';
 
 const cookieMaxAge = config.SESSION_TTL_MS;
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 
-function publicUser(u: { userId: string; email: string; emailVerified: boolean; roles: string[] }) {
-  return { userId: u.userId, email: u.email, emailVerified: u.emailVerified, roles: u.roles };
+function publicUser(u: {
+  userId: string;
+  email: string;
+  emailVerified: boolean;
+  roles: string[];
+  carnet?: string | null;
+  dpi?: string | null;
+  fechaNacimiento?: string | null;
+}) {
+  return {
+    userId: u.userId,
+    email: u.email,
+    emailVerified: u.emailVerified,
+    roles: u.roles,
+    carnet: u.carnet ?? null,
+    dpi: u.dpi ?? null,
+    fechaNacimiento: u.fechaNacimiento ?? null,
+  };
 }
 
 function toProtoRole(role: string): string {
@@ -32,6 +49,9 @@ export function createGateway(): Express {
   app.disable('x-powered-by');
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
+
+  // IdP institucional simulado (OAuth 2.0 Authorization Code).
+  app.use('/mock-oauth', createIdpRouter());
 
   app.get('/health', async (_req, res) => {
     let authStatus = 'unknown';
@@ -76,7 +96,7 @@ export function createGateway(): Express {
   // ===== Autenticación =====
   app.post('/auth/register', domainGuard, async (req, res, next) => {
     try {
-      const { email, password, confirmPassword } = req.body as Record<string, unknown>;
+      const { email, password, confirmPassword, carnet, dpi, fechaNacimiento } = req.body as Record<string, unknown>;
       if (typeof password !== 'string' || password.length < 8 || password !== confirmPassword) {
         throw new DomainError('ENTRADA_INVALIDA', 'Contraseña inválida o no coincide', 400);
       }
@@ -84,6 +104,9 @@ export function createGateway(): Express {
         email: String(email),
         password,
         confirmPassword: String(confirmPassword),
+        carnet: String(carnet ?? ''),
+        dpi: String(dpi ?? ''),
+        fechaNacimiento: String(fechaNacimiento ?? ''),
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
@@ -267,13 +290,17 @@ export function createGateway(): Express {
 
   app.post('/auth/oauth/authorize', domainGuard, async (req, res, next) => {
     try {
-      const { email, roles } = req.body as { email?: string; roles?: string[] };
+      const { email, state, roles } = req.body as { email?: string; state?: string; roles?: string[] };
       if (!email) {
         throw new DomainError('ENTRADA_INVALIDA', 'Correo requerido', 400);
       }
       const protoRoles = (roles ?? []).map(toProtoRole);
-      const result = await authGrpc.oauthAuthorize(email, protoRoles);
-      res.json({ redirect_uri: result.redirectUri, code: result.code });
+      const loginUri = buildIdpLoginUri({
+        email: String(email).trim().toLowerCase(),
+        state: typeof state === 'string' ? state : '',
+        roles: protoRoles,
+      });
+      res.json({ login_uri: loginUri });
     } catch (err) {
       next(err);
     }
