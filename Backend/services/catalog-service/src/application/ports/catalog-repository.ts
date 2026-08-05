@@ -41,5 +41,6 @@ export interface CatalogRepository {
   publicarClase(
     input: PublicarClaseInput,
   ): Promise<{ claseId: string; fechaPublicacion: string }>;
+  actualizarUrlVideo(claseId: string, urlVideo: string): Promise<ClaseDetalle | null>;
   registrarCurso(input: RegistrarCursoInput): Promise<CursoCatalogo>;
 }

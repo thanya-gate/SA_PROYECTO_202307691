@@ -70,6 +70,8 @@ export const catalogGrpc = {
     etiquetas?: string[];
     participantes?: Array<{ nombre: string; rol: string }>;
   }) => unary('PublicarClase', req),
+  actualizarUrlVideo: (claseId: string, urlVideo: string) =>
+    unary('ActualizarUrlVideo', { claseId, urlVideo }),
   registrarCurso: (req: { codigo: string; nombre: string; escuela: string }) =>
     unary('RegistrarCurso', req),
 };

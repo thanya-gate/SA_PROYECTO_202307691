@@ -186,6 +186,12 @@ export class PostgresCatalogRepository implements CatalogRepository {
     });
   }
 
+  async actualizarUrlVideo(claseId: string, urlVideo: string): Promise<ClaseDetalle | null> {
+    const res = await query('UPDATE clase_grabada SET url_video = $2 WHERE id = $1', [claseId, urlVideo]);
+    if (res.rowCount === 0) return null;
+    return this.getClase(claseId);
+  }
+
   private async asociarEtiquetas(
     client: PoolClient,
     claseId: string,

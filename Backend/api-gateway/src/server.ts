@@ -1,5 +1,7 @@
 import express, { Express } from 'express';
 import cookieParser from 'cookie-parser';
+import fs from 'fs';
+import path from 'path';
 import { config } from './config/env';
 import { authGrpc } from './grpc/auth-client';
 import { catalogGrpc } from './grpc/catalog-client';
@@ -12,6 +14,7 @@ import { domainGuard } from './middleware/domain-guard';
 import { errorHandler } from './middleware/error-handler';
 
 const cookieMaxAge = config.SESSION_TTL_MS;
+const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 
 function publicUser(u: { userId: string; email: string; emailVerified: boolean; roles: string[] }) {
   return { userId: u.userId, email: u.email, emailVerified: u.emailVerified, roles: u.roles };
@@ -370,6 +373,44 @@ export function createGateway(): Express {
       }
       const result = await catalogGrpc.registrarCurso({ codigo, nombre, escuela });
       res.status(201).json({ message: 'Curso registrado en el catálogo', curso: result.curso });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/catalog/classes/:claseId/video', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+    const claseId = req.params.claseId;
+    const targetPath = path.join(config.MEDIA_DIR, 'clases', `${claseId}.mp4`);
+    const contentLength = Number(req.headers['content-length'] ?? 0);
+    if (!contentLength || contentLength > MAX_VIDEO_BYTES) {
+      return next(new DomainError('ENTRADA_INVALIDA', 'El archivo debe pesar entre 1 byte y 500 MB', 400));
+    }
+    try {
+      await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+      await new Promise<void>((resolve, reject) => {
+        const out = fs.createWriteStream(targetPath);
+        out.on('error', reject);
+        out.on('close', resolve);
+        req.on('error', reject);
+        req.pipe(out);
+      });
+      const urlVideo = `/media/clases/${claseId}.mp4`;
+      const result = await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
+      res.status(201).json({ message: 'Video subido a la plataforma', urlVideo, clase: result.clase });
+    } catch (err) {
+      await fs.promises.rm(targetPath, { force: true }).catch(() => {});
+      next(err);
+    }
+  });
+
+  app.post('/catalog/classes/:claseId/video-url', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { urlVideo } = req.body as Record<string, unknown>;
+      if (typeof urlVideo !== 'string' || !/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(urlVideo)) {
+        throw new DomainError('ENTRADA_INVALIDA', 'urlVideo debe ser una URL de YouTube válida (http/https)', 400);
+      }
+      const result = await catalogGrpc.actualizarUrlVideo(req.params.claseId, urlVideo);
+      res.json({ message: 'URL de video actualizada', clase: result.clase });
     } catch (err) {
       next(err);
     }
