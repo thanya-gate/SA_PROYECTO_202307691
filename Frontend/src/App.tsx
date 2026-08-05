@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ClasePage from './pages/ClasePage';
+import HistorialPage from './pages/HistorialPage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -51,6 +52,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <ClasePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/historial"
+            element={
+              <RequireAuth>
+                <HistorialPage />
               </RequireAuth>
             }
           />

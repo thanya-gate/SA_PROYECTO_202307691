@@ -7,6 +7,7 @@ import { Button } from './ui/Button';
 const NAV_ITEMS = [
   { to: '/', label: 'Principal', end: true },
   { to: '/catalogo', label: 'Catálogo' },
+  { to: '/historial', label: 'Historial' },
   { to: '/catalogo', label: 'Tendencias' },
   { to: '/catalogo', label: 'Categorías' },
   { to: '/catalogo', label: 'Mis cursos' },
