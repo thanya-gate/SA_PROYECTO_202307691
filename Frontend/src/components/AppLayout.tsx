@@ -75,6 +75,41 @@ const MenuIcon = () => (
     <line x1="3" y1="18" x2="21" y2="18" />
   </Icon>
 );
+const DashboardIcon = () => (
+  <Icon>
+    <rect x="3" y="3" width="8" height="10" rx="1.5" />
+    <rect x="13" y="3" width="8" height="6" rx="1.5" />
+    <rect x="13" y="11" width="8" height="10" rx="1.5" />
+    <rect x="3" y="15" width="8" height="6" rx="1.5" />
+  </Icon>
+);
+const UsersIcon = () => (
+  <Icon>
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </Icon>
+);
+const ContentIcon = () => (
+  <Icon>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <polyline points="8 10 12 14 16 10" />
+    <line x1="12" y1="2" x2="12" y2="4" />
+  </Icon>
+);
+const BellIcon = () => (
+  <Icon>
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </Icon>
+);
+const SettingsIcon = () => (
+  <Icon>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </Icon>
+);
 const LogoutIcon = () => (
   <Icon>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -113,9 +148,51 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
 ];
 
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  { to: '/admin', label: 'Dashboard', end: true, icon: <DashboardIcon /> },
+  {
+    to: '',
+    label: 'Gestión de Usuarios',
+    icon: <UsersIcon />,
+    disabled: true,
+    description: 'Administrar cuentas, roles y permisos',
+  },
+  {
+    to: '',
+    label: 'Gestión de Contenido',
+    icon: <ContentIcon />,
+    disabled: true,
+    description: 'Administrar cursos, grabaciones y catálogo',
+  },
+  {
+    to: '',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    disabled: true,
+    description: 'Revisar y enviar notificaciones del sistema',
+  },
+  {
+    to: '',
+    label: 'Reportes',
+    icon: <ChartIcon />,
+    disabled: true,
+    description: 'Métricas y reportes de uso de la plataforma',
+  },
+  {
+    to: '',
+    label: 'Configuraciones',
+    icon: <SettingsIcon />,
+    disabled: true,
+    description: 'Configuración general de la plataforma',
+  },
+];
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const isAdmin = user?.roles.includes('ROLE_ADMIN') ?? false;
+  const navItems = isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {
@@ -189,8 +266,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <MenuIcon />
           </button>
         </div>
-        <nav className="app-layout__nav" aria-label="Módulos">
-          {NAV_ITEMS.map((item) => {
+        <nav className="app-layout__nav" aria-label={isAdmin ? 'Panel de administración' : 'Módulos'}>
+          {navItems.map((item) => {
             const content = (
               <>
                 <span className="app-layout__nav-icon">{item.icon}</span>

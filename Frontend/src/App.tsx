@@ -9,6 +9,7 @@ import CatalogPage from './pages/CatalogPage';
 import ClasePage from './pages/ClasePage';
 import HistorialPage from './pages/HistorialPage';
 import AnaliticaPage from './pages/AnaliticaPage';
+import AdminPage from './pages/AdminPage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -22,6 +23,25 @@ function RequireAuth({ children }: { children: ReactElement }) {
   }
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function RequireRole({ role, children }: { role: string; children: ReactElement }) {
+  const { user, initializing } = useAuth();
+
+  if (initializing) {
+    return (
+      <div className="app-loading" role="status">
+        Cargando sesión…
+      </div>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  if (!user.roles.includes(role)) {
+    return <Navigate to="/" replace />;
   }
   return children;
 }
@@ -72,6 +92,14 @@ export default function App() {
               <RequireAuth>
                 <AnaliticaPage />
               </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <RequireRole role="ROLE_ADMIN">
+                <AdminPage />
+              </RequireRole>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

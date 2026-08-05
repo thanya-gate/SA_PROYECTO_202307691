@@ -1,8 +1,13 @@
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 
 export default function HomePage() {
   const { user } = useAuth();
+
+  if (user?.roles.includes('ROLE_ADMIN')) {
+    return <Navigate to="/admin" replace />;
+  }
 
   return (
     <AppLayout>
