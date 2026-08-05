@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package yousac.analitica.v1;
+
+option java_multiple_files = true;
+option go_package = "yousac.com/yousac/analitica-service/gen/analiticav1;analiticav1";
+
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+}
+
+message RankingItem {
+  string clase_id = 1;
+  int32 total_vistas = 2;
+  double promedio_calificacion = 3;
+  int32 total_calificaciones = 4;
+  int32 posicion = 5;
+}
+
+message ClasesMasVistasRequest {
+  string semana = 1; 
+  int32 limite = 2;  
+}
+
+message ClasesMasVistasResponse {
+  string semana = 1; 
+  repeated RankingItem items = 2;
+}
+
+message TendenciasExamenesRequest {
+  int32 limite = 1; 
+}
+
+message TendenciasExamenesResponse {
+  repeated RankingItem items = 1;
+}
+
+message RankingMejorValoradasRequest {
+  int32 limite = 1; // opcional, por defecto 20.
+}
+
+message RankingMejorValoradasResponse {
+  repeated RankingItem items = 1;
+}
+
+message RecomendacionItem {
+  string clase_id = 1;
+  double porcentaje_recomendacion = 2; 
+  int32 total_vistas = 3;
+  double promedio_calificacion = 4;
+  string fecha_calculo = 5;
+}
+
+message RecomendacionesEstudianteRequest {
+  string estudiante_id = 1;
+  int32 limite = 2; 
+}
+
+message RecomendacionesEstudianteResponse {
+  repeated RecomendacionItem items = 1;
+}
+
+message SincronizarVistaRequest {
+  string clase_id = 1;
+  string estudiante_id = 2;
+  int32 duracion_vista = 3;
+}
+
+message SincronizarVistaResponse {
+  bool registrada = 1;
+}
+
+message SincronizarCalificacionRequest {
+  string clase_id = 1;
+  string estudiante_id = 2;
+  int32 puntuacion = 3; 
+}
+
+message SincronizarCalificacionResponse {
+  bool registrada = 1;
+}
+
+message CargarEventosCSVRequest {
+  string contenido = 1; 
+  bool reemplazar = 2;  
+}
+
+message CargarEventosCSVResponse {
+  int32 registros_cargados = 1;
+  int32 registros_omitidos = 2;
+}
+
+message RecalcularTendenciasRequest {
+  string semana = 1; // YYYY-MM-DD (lunes) o vacío para la semana actual.
+}
+
+message RecalcularTendenciasResponse {
+  bool recalculada = 1;
+}
+
+
+service AnaliticaService {
+  rpc Health(HealthRequest) returns (HealthResponse);
+
+  rpc ClasesMasVistas(ClasesMasVistasRequest) returns (ClasesMasVistasResponse);
+  rpc TendenciasExamenes(TendenciasExamenesRequest) returns (TendenciasExamenesResponse);
+  rpc RankingMejorValoradas(RankingMejorValoradasRequest) returns (RankingMejorValoradasResponse);
+  rpc RecomendacionesEstudiante(RecomendacionesEstudianteRequest) returns (RecomendacionesEstudianteResponse);
+
+  rpc SincronizarVista(SincronizarVistaRequest) returns (SincronizarVistaResponse);
+  rpc SincronizarCalificacion(SincronizarCalificacionRequest) returns (SincronizarCalificacionResponse);
+  rpc CargarEventosCSV(CargarEventosCSVRequest) returns (CargarEventosCSVResponse);
+  rpc RecalcularTendencias(RecalcularTendenciasRequest) returns (RecalcularTendenciasResponse);
+}
