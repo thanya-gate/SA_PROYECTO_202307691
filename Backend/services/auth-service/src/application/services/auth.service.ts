@@ -48,10 +48,11 @@ export class AuthService {
       );
     }
 
-    const carnet = input.carnet.trim();
+    const rol = input.rol ?? Role.ESTUDIANTE;
+    const carnet = rol === Role.ESTUDIANTE ? input.carnet.trim() : '';
     const dpi = input.dpi.trim();
 
-    if (await this.users.findByCarnet(carnet)) {
+    if (carnet && (await this.users.findByCarnet(carnet))) {
       throw new DomainError('CARNET_YA_REGISTRADO', 'Este carnet ya está registrado', 409);
     }
     if (await this.users.findByDpi(dpi)) {
@@ -63,9 +64,10 @@ export class AuthService {
       userId: randomUUID(),
       email,
       passwordHash,
-      carnet,
+      carnet: carnet || null,
       dpi,
       fechaNacimiento: input.fechaNacimiento,
+      roles: [rol],
     });
 
     await this.users.save(user);

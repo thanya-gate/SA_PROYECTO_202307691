@@ -122,6 +122,7 @@ message RegisterRequest {
   string carnet = 6;
   string dpi = 7;
   string fecha_nacimiento = 8;
+  string rol = 9;
 }
 
 message RegisterResponse {

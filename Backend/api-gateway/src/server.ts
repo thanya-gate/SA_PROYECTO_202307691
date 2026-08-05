@@ -96,10 +96,11 @@ export function createGateway(): Express {
   // ===== Autenticación =====
   app.post('/auth/register', domainGuard, async (req, res, next) => {
     try {
-      const { email, password, confirmPassword, carnet, dpi, fechaNacimiento } = req.body as Record<string, unknown>;
+      const { email, password, confirmPassword, carnet, dpi, fechaNacimiento, rol } = req.body as Record<string, unknown>;
       if (typeof password !== 'string' || password.length < 8 || password !== confirmPassword) {
         throw new DomainError('ENTRADA_INVALIDA', 'Contraseña inválida o no coincide', 400);
       }
+      const normalizedRol = rol === 'CATEDRATICO' ? 'CATEDRATICO' : 'ESTUDIANTE';
       const result = await authGrpc.register({
         email: String(email),
         password,
@@ -107,6 +108,7 @@ export function createGateway(): Express {
         carnet: String(carnet ?? ''),
         dpi: String(dpi ?? ''),
         fechaNacimiento: String(fechaNacimiento ?? ''),
+        rol: normalizedRol,
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });

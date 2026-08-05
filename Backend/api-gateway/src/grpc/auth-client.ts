@@ -65,6 +65,7 @@ export const authGrpc = {
     carnet: string;
     dpi: string;
     fechaNacimiento: string;
+    rol: string;
     ip?: string;
     userAgent?: string;
   }) => unary('Register', req),

@@ -192,6 +192,7 @@ export function createGrpcServer(): grpc.Server {
           carnet: call.request.carnet,
           dpi: call.request.dpi,
           fechaNacimiento: call.request.fechaNacimiento,
+          rol: call.request.rol,
         });
         const result = await container.authService.register(input, {
           ip: call.request.ip,
