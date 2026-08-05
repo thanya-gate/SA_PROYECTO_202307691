@@ -11,6 +11,8 @@ const envSchema = z.object({
   CATALOG_GRPC_ADDR: z.string().default('localhost:50052'),
   REPRODUCTION_GRPC_ADDR: z.string().default('localhost:50053'),
 
+  MEDIA_DIR: z.string().default('/app/media'),
+
   ALLOWED_EMAIL_DOMAINS: z
     .string()
     .default('ingenieria.usac.edu.gt,ing.usac.edu.gt')
