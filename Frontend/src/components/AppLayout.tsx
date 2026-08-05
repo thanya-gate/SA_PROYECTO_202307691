@@ -53,12 +53,6 @@ const ChartIcon = () => (
     <line x1="19" y1="20" x2="19" y2="8" />
   </Icon>
 );
-const PlayIcon = () => (
-  <Icon>
-    <circle cx="12" cy="12" r="9" />
-    <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" />
-  </Icon>
-);
 const ClipboardIcon = () => (
   <Icon>
     <path d="M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1z" />
@@ -130,13 +124,6 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
   { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
-  {
-    to: '',
-    label: 'Reproductor',
-    icon: <PlayIcon />,
-    disabled: true,
-    description: 'Ver clases con checkpoint de avance',
-  },
   {
     to: '',
     label: 'Asignaciones',
