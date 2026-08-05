@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+package yousac.inscripcion.v1;
+
+option java_multiple_files = true;
+option go_package = "yousac/inscripcion/v1;inscripcionv1";
+
+message CursoInscripcion {
+  string curso_id = 1;
+  string codigo = 2;
+  string nombre = 3;
+  string escuela = 4;
+  string semestre = 5;
+  int32 anio = 6;
+}
+
+message PanelEstudianteItem {
+  string curso_id = 1;
+  string codigo = 2;
+  string curso = 3;
+  string escuela = 4;
+  string semestre = 5;
+  int32 anio = 6;
+  string estado_matricula = 7;
+  string catedratico_usuario_id = 8;
+}
+
+message CursoCatedraticoItem {
+  string curso_id = 1;
+  string codigo = 2;
+  string curso = 3;
+  string semestre = 4;
+  int32 anio = 5;
+  repeated string auxiliares = 6;
+}
+
+message RegistrarCursoRequest {
+  string codigo = 1;
+  string nombre = 2;
+  string escuela = 3;
+  string semestre = 4;
+  int32 anio = 5;
+}
+
+message RegistrarCursoResponse {
+  CursoInscripcion curso = 1;
+}
+
+message RegistrarDocenteRequest {
+  string usuario_id = 1;
+}
+
+message RegistrarDocenteResponse {
+  string docente_id = 1;
+}
+
+message RegistrarAuxiliarRequest {
+  string usuario_id = 1;
+}
+
+message RegistrarAuxiliarResponse {
+  string auxiliar_id = 1;
+}
+
+message InscribirEstudianteRequest {
+  string estudiante_id = 1;
+  string curso_id = 2;
+  string semestre = 3;
+}
+
+message InscribirEstudianteResponse {
+  string inscripcion_id = 1;
+  string estado_matricula = 2;
+}
+
+message AsignarCatedraticoCursoRequest {
+  string docente_id = 1;
+  string curso_id = 2;
+  string semestre = 3;
+}
+
+message AsignarCatedraticoCursoResponse {
+  string asignacion_id = 1;
+}
+
+message AsignarAuxiliarCatedraticoRequest {
+  string auxiliar_id = 1;
+  string asignacion_docente_id = 2;
+}
+
+message AsignarAuxiliarCatedraticoResponse {
+  string asignacion_auxiliar_id = 1;
+}
+
+message ConsultarPanelEstudianteRequest {
+  string estudiante_id = 1;
+}
+
+message ConsultarPanelEstudianteResponse {
+  repeated PanelEstudianteItem items = 1;
+}
+
+message ConsultarCursosCatedraticoRequest {
+  string catedratico_usuario_id = 1;
+}
+
+message ConsultarCursosCatedraticoResponse {
+  repeated CursoCatedraticoItem items = 1;
+}
+
+message ConsultarEstadoMatriculaRequest {
+  string estudiante_id = 1;
+  string curso_id = 2;
+}
+
+message ConsultarEstadoMatriculaResponse {
+  string estado = 1;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+}
+
+service InscripcionService {
+  rpc RegistrarCurso(RegistrarCursoRequest) returns (RegistrarCursoResponse);
+  rpc RegistrarDocente(RegistrarDocenteRequest) returns (RegistrarDocenteResponse);
+  rpc RegistrarAuxiliar(RegistrarAuxiliarRequest) returns (RegistrarAuxiliarResponse);
+
+  rpc InscribirEstudiante(InscribirEstudianteRequest) returns (InscribirEstudianteResponse);
+  rpc AsignarCatedraticoCurso(AsignarCatedraticoCursoRequest) returns (AsignarCatedraticoCursoResponse);
+  rpc AsignarAuxiliarCatedratico(AsignarAuxiliarCatedraticoRequest) returns (AsignarAuxiliarCatedraticoResponse);
+
+  rpc ConsultarPanelEstudiante(ConsultarPanelEstudianteRequest) returns (ConsultarPanelEstudianteResponse);
+  rpc ConsultarCursosCatedratico(ConsultarCursosCatedraticoRequest) returns (ConsultarCursosCatedraticoResponse);
+  rpc ConsultarEstadoMatricula(ConsultarEstadoMatriculaRequest) returns (ConsultarEstadoMatriculaResponse);
+
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
