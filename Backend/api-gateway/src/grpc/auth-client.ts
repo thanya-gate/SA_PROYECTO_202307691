@@ -72,6 +72,8 @@ export const authGrpc = {
   login: (req: { email: string; password: string; ip?: string; userAgent?: string }) => unary('Login', req),
   logout: (sessionId: string) => unary('Logout', { sessionId }),
   getCurrentUser: (sessionId: string) => unary('GetCurrentUser', { sessionId }),
+  validateCredentials: (email: string, password: string) =>
+    unary('ValidateCredentials', { email, password }),
 
   getProfiles: (userId: string) => unary('GetProfiles', { userId }),
   switchProfile: (userId: string, role: string, sessionId: string) =>

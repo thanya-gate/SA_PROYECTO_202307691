@@ -292,15 +292,13 @@ export function createGateway(): Express {
 
   app.post('/auth/oauth/authorize', domainGuard, async (req, res, next) => {
     try {
-      const { email, state, roles } = req.body as { email?: string; state?: string; roles?: string[] };
+      const { email, state } = req.body as { email?: string; state?: string };
       if (!email) {
         throw new DomainError('ENTRADA_INVALIDA', 'Correo requerido', 400);
       }
-      const protoRoles = (roles ?? []).map(toProtoRole);
       const loginUri = buildIdpLoginUri({
         email: String(email).trim().toLowerCase(),
         state: typeof state === 'string' ? state : '',
-        roles: protoRoles,
       });
       res.json({ login_uri: loginUri });
     } catch (err) {

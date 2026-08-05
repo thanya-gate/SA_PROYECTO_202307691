@@ -252,6 +252,19 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
+    // Validación de credenciales para el IdP institucional (no crea sesión).
+    ValidateCredentials: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const user = await container.authService.validateCredentials(
+          call.request.email,
+          call.request.password,
+        );
+        callback(null, { user: userToProto(user) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
     // ===== Cuenta =====
     RequestEmailVerification: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {

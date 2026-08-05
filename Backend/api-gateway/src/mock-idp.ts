@@ -4,24 +4,25 @@ import { authGrpc } from './grpc/auth-client';
 import { DomainError } from './domain/domain-error';
 
 /**
- * Proveedor de identidad institucional SIMULADO (IdP mock).
- *
- * Implementa la parte del IdP del flujo OAuth 2.0 Authorization Code para
- * mostrar el mismo comportamiento de un flujo real:
+ * Proveedor de identidad institucional (IdP) — simula el flujo OAuth 2.0
+ * Authorization Code que en producción lo proveería Google Workspace o
+ * Microsoft Entra ID del dominio institucional:
  *
  *   1. El SPA obtiene la URL de autorización (login_uri) del IdP.
- *   2. El navegador se redirige a GET /mock-oauth/login (la pantalla del IdP).
- *   3. El usuario se autentica con su correo institucional (la contraseña no se
- *      valida: es un entorno de demostración; el IdP real validaría las credenciales
- *      contra su propio directorio).
- *   4. El IdP genera un authorization code (único, 5 min) y redirige al cliente
- *      (redirect_uri) con ?code=...&state=...
+ *   2. El navegador se redirige a GET /mock-oauth/login (pantalla del IdP,
+ *      equivalente a accounts.google.com para un dominio de Google).
+ *   3. El usuario se autentica con su cuenta institucional y contraseña.
+ *      Las credenciales SÍ se validan contra el directorio (auth-service,
+ *      bcrypt): la cuenta debe existir y la contraseña debe coincidir, tal
+ *      como lo haría un IdP real. No se revela cuál de las dos falló.
+ *   4. El IdP deriva los roles del directorio (no del cliente), genera un
+ *      authorization code (único, 5 min) y redirige al cliente (redirect_uri)
+ *      con ?code=...&state=...
  *   5. El SPA intercambia el código en POST /auth/oauth/callback.
  *
  * En producción este componente viviría en un dominio separado (p. ej.
- * login.ingenieria.usac.edu.gt) y validaría credenciales reales; aquí se aloja
- * en el gateway para no añadir infraestructura y porque es el punto de entrada
- * único del sistema.
+ * login.ingenieria.usac.edu.gt) autenticando contra el directorio real; aquí
+ * se aloja en el gateway por ser el punto de entrada único del sistema.
  */
 
 const ALLOWED_RESPONSE_TYPES = new Set(['code']);
@@ -35,19 +36,8 @@ function esc(value: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
-function normalizeRoles(roles: string | undefined): string[] {
-  return (roles ?? '')
-    .split(',')
-    .map((r) => r.trim())
-    .filter(Boolean)
-    .map((r) => {
-      const up = r.toUpperCase();
-      return up.startsWith('ROLE_') ? up : `ROLE_${up}`;
-    });
-}
-
 /** Construye la URL de autorización del IdP (paso 1 del flujo). */
-export function buildIdpLoginUri(opts: { email: string; state?: string; roles?: string[] }): string {
+export function buildIdpLoginUri(opts: { email: string; state?: string }): string {
   const params = new URLSearchParams({
     client_id: config.OAUTH_CLIENT_ID,
     redirect_uri: config.OAUTH_REDIRECT_URI,
@@ -56,7 +46,6 @@ export function buildIdpLoginUri(opts: { email: string; state?: string; roles?: 
     email: opts.email,
   });
   if (opts.state) params.set('state', opts.state);
-  if (opts.roles && opts.roles.length > 0) params.set('roles', opts.roles.join(','));
   return `${config.OAUTH_ISSUER_PUBLIC}/login?${params.toString()}`;
 }
 
@@ -66,10 +55,9 @@ function renderLoginPage(opts: {
   redirectUri?: string;
   responseType?: string;
   state?: string;
-  roles?: string;
   error?: string;
 }): string {
-  const { email = '', clientId = '', redirectUri = '', responseType = 'code', state = '', roles = '', error } = opts;
+  const { email = '', clientId = '', redirectUri = '', responseType = 'code', state = '', error } = opts;
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -131,10 +119,9 @@ function renderLoginPage(opts: {
     <input type="hidden" name="redirect_uri" value="${esc(redirectUri)}" />
     <input type="hidden" name="response_type" value="${esc(responseType)}" />
     <input type="hidden" name="state" value="${esc(state)}" />
-    <input type="hidden" name="roles" value="${esc(roles)}" />
 
     <div class="idp-field">
-      <label for="idp-email">Correo institucional</label>
+      <label for="idp-email">Cuenta institucional</label>
       <input id="idp-email" type="email" name="email" value="${esc(email)}" placeholder="persona@ingenieria.usac.edu.gt" required autofocus />
     </div>
     <div class="idp-field">
@@ -143,7 +130,7 @@ function renderLoginPage(opts: {
     </div>
 
     <button class="idp-submit" type="submit">Iniciar sesión</button>
-    <p class="idp-note">Entorno de demostración: la contraseña no se valida. En producción esta pantalla pertenecería al dominio del proveedor institucional.</p>
+    <p class="idp-note">La contraseña se valida contra el directorio institucional. En producción esta pantalla pertenecería al dominio del proveedor institucional (p. ej. Google Workspace / Microsoft Entra ID de la Facultad).</p>
   </form>
 </body>
 </html>`;
@@ -157,7 +144,7 @@ function idpErrorPage(message: string): string {
   <div style="background:#fff;border-radius:12px;padding:2rem;max-width:420px;box-shadow:0 10px 30px rgba(0,0,0,.15)">
     <h1 style="color:#0b3d91;font-size:1.1rem;margin:0 0 .75rem">No se pudo iniciar sesión</h1>
     <p style="color:#6b7280;font-size:.9rem;line-height:1.5;margin:0 0 1rem">${esc(message)}</p>
-    <a href="/auth/oauth/authorize" style="color:#0b3d91;font-size:.85rem">Volver al inicio de sesión</a>
+    <a href="#" onclick="window.history.back(); return false;" style="color:#0b3d91;font-size:.85rem">Volver al formulario de acceso</a>
   </div>
 </body>
 </html>`;
@@ -171,7 +158,7 @@ export function createIdpRouter(): Router {
 
   // Pantalla de autenticación del proveedor (GET /mock-oauth/login).
   router.get('/login', (req: Request, res: Response): Response => {
-    const { email, client_id, redirect_uri, response_type, state, roles } = req.query as Record<string, string | undefined>;
+    const { email, client_id, redirect_uri, response_type, state } = req.query as Record<string, string | undefined>;
 
     if (client_id !== config.OAUTH_CLIENT_ID) {
       return res.status(400).send(idpErrorPage('Cliente no registrado (client_id inválido).'));
@@ -190,7 +177,6 @@ export function createIdpRouter(): Router {
         redirectUri: redirect_uri,
         responseType: response_type,
         state,
-        roles,
       }),
     );
   });
@@ -198,7 +184,7 @@ export function createIdpRouter(): Router {
   // Autenticación del usuario (POST /mock-oauth/login) -> redirige con el código.
   router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password, client_id, redirect_uri, response_type, state, roles } = req.body as Record<
+      const { email, password, client_id, redirect_uri, response_type, state } = req.body as Record<
         string,
         string | undefined
       >;
@@ -213,23 +199,34 @@ export function createIdpRouter(): Router {
       if (response_type !== undefined && !ALLOWED_RESPONSE_TYPES.has(response_type)) {
         throw new DomainError('ENTRADA_INVALIDA', 'Tipo de respuesta no soportado.', 400);
       }
+      if (typeof password !== 'string' || password.length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'La contraseña es requerida.', 400);
+      }
       const domain = normalizedEmail.split('@')[1] ?? '';
       if (!config.ALLOWED_EMAIL_DOMAINS.includes(domain)) {
         throw new DomainError('DOMINIO_NO_AUTORIZADO', 'Correo no autorizado. Usa el dominio institucional de la Facultad de Ingeniería.', 403);
       }
-      if (typeof password !== 'string' || password.length === 0) {
-        throw new DomainError('ENTRADA_INVALIDA', 'La contraseña es requerida.', 400);
+
+      // Como un IdP real, se validan las credenciales contra el directorio
+      // (auth-service, bcrypt). La cuenta debe existir y la contraseña debe
+      // coincidir; no se revela cuál de las dos falló.
+      let user: { roles?: string[] } | undefined;
+      try {
+        user = await authGrpc.validateCredentials(normalizedEmail, password);
+      } catch {
+        return res.status(401).send(idpErrorPage('Credenciales incorrectas. Revisa tu cuenta y contraseña.'));
       }
 
-      // En un IdP real aquí se validarían las credenciales contra el directorio
-      // y los roles vendrían de los claims. En el mock, el auth-service genera el
-      // authorization code (único, 5 min) y deja los roles en el perfil federado.
-      const { code } = await authGrpc.oauthAuthorize(normalizedEmail, normalizeRoles(roles));
+      // Los roles los deriva el IdP del directorio, no del cliente.
+      const roles = Array.isArray(user?.roles) ? user.roles : [];
+
+      // El IdP emite el authorization code (único, 5 min) y redirige al cliente.
+      const { code } = await authGrpc.oauthAuthorize(normalizedEmail, roles);
 
       const callback = new URL(redirect_uri);
       callback.searchParams.set('code', code);
       if (state) callback.searchParams.set('state', state);
-      res.redirect(302, callback.toString());
+      return res.redirect(302, callback.toString());
     } catch (err) {
       next(err);
     }
