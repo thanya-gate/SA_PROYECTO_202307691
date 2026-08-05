@@ -144,10 +144,12 @@ $$;
 CREATE OR REPLACE VIEW vw_panel_estudiante AS
 SELECT
     ac.estudiante_id,
+    ac.curso_id,
     c.codigo,
     c.nombre AS curso,
     c.escuela,
-    c.semestre,
+    ac.semestre,
+    c.año,
     ac.estado_matricula,
     d.usuario_id AS catedratico_usuario_id
 FROM asignacion_curso ac
@@ -159,16 +161,18 @@ LEFT JOIN docente d ON d.id = ad.docente_id;
 CREATE OR REPLACE VIEW vw_cursos_por_catedratico AS
 SELECT
     d.usuario_id AS catedratico_usuario_id,
+    c.id AS curso_id,
     c.codigo,
     c.nombre AS curso,
     ad.semestre,
+    c.año,
     COALESCE(array_agg(a.usuario_id ORDER BY a.usuario_id) FILTER (WHERE a.id IS NOT NULL), '{}') AS auxiliares
 FROM asignacion_docente ad
 JOIN docente d ON d.id = ad.docente_id
 JOIN curso c ON c.id = ad.curso_id
 LEFT JOIN asignacion_auxiliar aa ON aa.asignacion_docente_id = ad.id
 LEFT JOIN auxiliar a ON a.id = aa.auxiliar_id
-GROUP BY d.usuario_id, c.codigo, c.nombre, ad.semestre;
+GROUP BY d.usuario_id, c.id, c.codigo, c.nombre, ad.semestre, c.año;
 
 --triggers
 CREATE OR REPLACE FUNCTION fn_trg_auditoria_inscripcion() RETURNS TRIGGER
