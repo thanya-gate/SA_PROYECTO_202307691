@@ -10,6 +10,8 @@ export interface PublicUser {
   fechaNacimiento?: string | null;
 }
 
+export type RegisterRole = 'ESTUDIANTE' | 'CATEDRATICO';
+
 export interface RegisterInput {
   email: string;
   password: string;
@@ -17,6 +19,7 @@ export interface RegisterInput {
   carnet: string;
   dpi: string;
   fechaNacimiento: string;
+  rol: RegisterRole;
 }
 
 export interface AuthResponse {
