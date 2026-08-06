@@ -85,15 +85,16 @@ message SincronizarCalificacionResponse {
   bool registrada = 1;
 }
 
-message CargarEventosCSVRequest {
-  string contenido = 1; 
-  bool reemplazar = 2;  
-}
-
-message CargarEventosCSVResponse {
-  int32 registros_cargados = 1;
-  int32 registros_omitidos = 2;
-}
+// [INGESTA DESACTIVADA] carga masiva CSV
+// message CargarEventosCSVRequest {
+//   string contenido = 1; 
+//   bool reemplazar = 2;  
+// }
+//
+// message CargarEventosCSVResponse {
+//   int32 registros_cargados = 1;
+//   int32 registros_omitidos = 2;
+// }
 
 message RecalcularTendenciasRequest {
   string semana = 1; // YYYY-MM-DD (lunes) o vacío para la semana actual.
@@ -114,6 +115,6 @@ service AnaliticaService {
 
   rpc SincronizarVista(SincronizarVistaRequest) returns (SincronizarVistaResponse);
   rpc SincronizarCalificacion(SincronizarCalificacionRequest) returns (SincronizarCalificacionResponse);
-  rpc CargarEventosCSV(CargarEventosCSVRequest) returns (CargarEventosCSVResponse);
+  // rpc CargarEventosCSV(CargarEventosCSVRequest) returns (CargarEventosCSVResponse);  // [INGESTA DESACTIVADA]
   rpc RecalcularTendencias(RecalcularTendenciasRequest) returns (RecalcularTendenciasResponse);
 }

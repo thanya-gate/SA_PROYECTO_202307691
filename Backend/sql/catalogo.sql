@@ -100,8 +100,6 @@ BEGIN
 END;
 $$;
 -- procedimientos
--- Valida el formato de semestre (AAAA-1 | AAAA-2). Se reutiliza en la
--- capa de aplicación y en los SPs de escritura del catálogo.
 CREATE OR REPLACE FUNCTION fn_validar_semestre(p_semestre VARCHAR(10))
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -132,8 +130,6 @@ BEGIN
         RAISE EXCEPTION 'CURSO_NO_ENCONTRADO: El curso no existe en el catálogo';
     END IF;
 
-    -- El video es opcional al publicar la ficha de la clase; se asigna después
-    -- al subir el archivo o una URL. La columna es NOT NULL, por eso se usa ''.
     IF p_url_video IS NULL OR length(trim(p_url_video)) = 0 THEN
         p_url_video := '';
     END IF;

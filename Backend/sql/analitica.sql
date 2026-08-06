@@ -1,10 +1,4 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- =====================================================================
--- BD del Microservicio de Analítica Académica (YoUSAC) — Python
--- Database per Microservice: esquema, SP, vistas, funciones y triggers.
--- =====================================================================
-
 --tablas
 CREATE TABLE clase_metrica (
     id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -40,7 +34,7 @@ CREATE TABLE calificacion_agregada (
 CREATE TABLE tendencia_semanal (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     clase_id         UUID NOT NULL,
-    semana           DATE NOT NULL,       -- lunes de la semana calculada
+    semana           DATE NOT NULL,       
     total_vistas     INT NOT NULL DEFAULT 0,
     ranking_posicion INT,
     fecha_calculo    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -56,15 +50,15 @@ CREATE TABLE recomendacion (
     UNIQUE (clase_id, estudiante_id)
 );
 
--- Bitácora de carga masiva en CSV (ingesta histórica de eventos).
-CREATE TABLE ingesta_csv (
-    id                 SERIAL PRIMARY KEY,
-    nombre_archivo     VARCHAR(255),
-    registros_cargados INT NOT NULL DEFAULT 0,
-    registros_omitidos INT NOT NULL DEFAULT 0,
-    usuario_carga      VARCHAR(255),
-    fecha_ingesta      TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- [INGESTA DESACTIVADA] tabla de carga masiva CSV (no necesaria por el momento)
+-- CREATE TABLE ingesta_csv (
+--     id                 SERIAL PRIMARY KEY,
+--     nombre_archivo     VARCHAR(255),
+--     registros_cargados INT NOT NULL DEFAULT 0,
+--     registros_omitidos INT NOT NULL DEFAULT 0,
+--     usuario_carga      VARCHAR(255),
+--     fecha_ingesta      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
 
 CREATE TABLE cache_invalidacion (
     id         SERIAL PRIMARY KEY,
@@ -135,7 +129,6 @@ BEGIN
 END;
 $$;
 
--- Clases más vistas de una semana concreta (lunes de la semana).
 CREATE OR REPLACE FUNCTION fn_clases_mas_vistas_semana(p_semana DATE, p_limite INT DEFAULT 20)
 RETURNS TABLE (
     clase_id               UUID,
@@ -164,7 +157,6 @@ BEGIN
 END;
 $$;
 
--- Motor de recomendaciones por estudiante (% dinámico de recomendación).
 CREATE OR REPLACE FUNCTION fn_recomendaciones_estudiante(p_estudiante_id UUID, p_limite INT DEFAULT 10)
 RETURNS TABLE (
     clase_id                 UUID,
@@ -224,59 +216,56 @@ BEGIN
     ON CONFLICT (clase_id, estudiante_id) DO UPDATE SET
         puntuacion = EXCLUDED.puntuacion,
         fecha_sincronizacion = NOW();
-    -- El trigger trg_actualizar_calificacion_agregada recalcula la métrica agregada.
 END;
 $$;
 
--- Ingesta masiva de eventos desde CSV (arreglos paralelos).
-CREATE OR REPLACE PROCEDURE sp_ingesta_eventos_csv(
-    p_clase_ids       UUID[],
-    p_estudiante_ids  UUID[],
-    p_fechas          TIMESTAMPTZ[],
-    p_duraciones      INT[],
-    p_reemplazar      BOOLEAN DEFAULT FALSE
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_idx INT;
-BEGIN
-    IF p_reemplazar THEN
-        DELETE FROM evento_vista;
-    END IF;
+-- [INGESTA DESACTIVADA] procedimientos de carga masiva CSV (no necesarios por el momento)
+-- CREATE OR REPLACE PROCEDURE sp_ingesta_eventos_csv(
+--     p_clase_ids       UUID[],
+--     p_estudiante_ids  UUID[],
+--     p_fechas          TIMESTAMPTZ[],
+--     p_duraciones      INT[],
+--     p_reemplazar      BOOLEAN DEFAULT FALSE
+-- )
+-- LANGUAGE plpgsql
+-- AS $$
+-- DECLARE
+--     v_idx INT;
+-- BEGIN
+--     IF p_reemplazar THEN
+--         DELETE FROM evento_vista;
+--     END IF;
+-- 
+--     FOR v_idx IN 1..array_length(p_clase_ids, 1) LOOP
+--         INSERT INTO clase_metrica (clase_id)
+--         VALUES (p_clase_ids[v_idx])
+--         ON CONFLICT (clase_id) DO NOTHING;
+-- 
+--         INSERT INTO evento_vista (clase_id, estudiante_id, fecha_evento, duracion_vista)
+--         VALUES (
+--             p_clase_ids[v_idx],
+--             p_estudiante_ids[v_idx],
+--             COALESCE(p_fechas[v_idx], NOW()),
+--             COALESCE(p_duraciones[v_idx], 0)
+--         );
+--     END LOOP;
+-- END;
+-- $$;
 
-    FOR v_idx IN 1..array_length(p_clase_ids, 1) LOOP
-        INSERT INTO clase_metrica (clase_id)
-        VALUES (p_clase_ids[v_idx])
-        ON CONFLICT (clase_id) DO NOTHING;
+-- CREATE OR REPLACE PROCEDURE sp_registrar_ingesta(
+--     p_nombre_archivo     VARCHAR,
+--     p_registros_cargados INT,
+--     p_registros_omitidos INT,
+--     p_usuario_carga      VARCHAR DEFAULT NULL
+-- )
+-- LANGUAGE plpgsql
+-- AS $$
+-- BEGIN
+--     INSERT INTO ingesta_csv (nombre_archivo, registros_cargados, registros_omitidos, usuario_carga)
+--     VALUES (p_nombre_archivo, p_registros_cargados, p_registros_omitidos, p_usuario_carga);
+-- END;
+-- $$;
 
-        INSERT INTO evento_vista (clase_id, estudiante_id, fecha_evento, duracion_vista)
-        VALUES (
-            p_clase_ids[v_idx],
-            p_estudiante_ids[v_idx],
-            COALESCE(p_fechas[v_idx], NOW()),
-            COALESCE(p_duraciones[v_idx], 0)
-        );
-    END LOOP;
-END;
-$$;
-
--- Bitácora de cargas CSV.
-CREATE OR REPLACE PROCEDURE sp_registrar_ingesta(
-    p_nombre_archivo     VARCHAR,
-    p_registros_cargados INT,
-    p_registros_omitidos INT,
-    p_usuario_carga      VARCHAR DEFAULT NULL
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    INSERT INTO ingesta_csv (nombre_archivo, registros_cargados, registros_omitidos, usuario_carga)
-    VALUES (p_nombre_archivo, p_registros_cargados, p_registros_omitidos, p_usuario_carga);
-END;
-$$;
-
--- Materializa las recomendaciones de un estudiante en la tabla `recomendacion`.
 CREATE OR REPLACE PROCEDURE sp_calcular_recomendaciones(p_estudiante_id UUID)
 LANGUAGE plpgsql
 AS $$
@@ -330,7 +319,6 @@ LEFT JOIN (
 LEFT JOIN calificacion_agregada ca ON ca.clase_id = cm.clase_id
 ORDER BY COALESCE(ev.total_vistas, 0) DESC;
 
--- Temas de mayor tendencia en época de exámenes (últimas 3 semanas).
 CREATE OR REPLACE VIEW vw_tendencias_examenes AS
 SELECT
     ev.clase_id,

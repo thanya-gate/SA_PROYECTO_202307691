@@ -1,7 +1,9 @@
 :root {
-  --color-primary: #0b3d91;
-  --color-primary-dark: #082e6e;
-  --color-primary-light: #eaf0fb;
+  --color-primary: #3e8fd6;
+  --color-primary-dark: #1e5a9c;
+  --color-primary-light: #eaf6ff;
+  --color-primary-mid: #7fc4f2;
+  --color-primary-soft: #bfe3fa;
   --color-accent: #f7b500;
   --color-text: #1c2230;
   --color-text-muted: #5b6472;
@@ -13,8 +15,8 @@
   --color-success: #166534;
   --color-success-bg: #e7f6ec;
   --radius: 12px;
-  --shadow-card: 0 10px 30px rgba(11, 61, 145, 0.12);
-  --font: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --shadow-card: 0 10px 30px rgba(30, 90, 156, 0.12);
+  --font: 'Nunito', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 * {
@@ -88,7 +90,7 @@ body {
   gap: 1.5rem;
   padding: 2rem 1rem;
   background:
-    linear-gradient(rgba(11, 61, 145, 0.55), rgba(8, 46, 110, 0.68)),
+    linear-gradient(rgba(30, 90, 156, 0.55), rgba(30, 90, 156, 0.68)),
     url('/Fondo.png') center / cover no-repeat,
     var(--color-bg);
   background-attachment: fixed;
@@ -247,7 +249,7 @@ body {
 .text-field__input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(11, 61, 145, 0.15);
+  box-shadow: 0 0 0 3px rgba(30, 90, 156, 0.15);
 }
 
 /* ===== Botón ===== */
@@ -313,7 +315,7 @@ body {
 
 .btn--secondary .btn__spinner,
 .btn--oauth .btn__spinner {
-  border-color: rgba(11, 61, 145, 0.25);
+  border-color: rgba(30, 90, 156, 0.25);
   border-top-color: var(--color-primary);
 }
 
@@ -459,7 +461,7 @@ body {
 .home__role {
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
-  border: 1px solid rgba(11, 61, 145, 0.2);
+  border: 1px solid rgba(30, 90, 156, 0.2);
   border-radius: 999px;
   padding: 0.15rem 0.7rem;
   font-size: 0.78rem;
@@ -935,7 +937,7 @@ body {
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 4px 14px rgba(11, 61, 145, 0.08);
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
@@ -952,7 +954,7 @@ body {
   justify-content: space-between;
   padding: 0.6rem 0.8rem;
   background:
-    linear-gradient(135deg, rgba(11, 61, 145, 0.92), rgba(8, 46, 110, 0.85)),
+    linear-gradient(135deg, rgba(30, 90, 156, 0.92), rgba(30, 90, 156, 0.85)),
     radial-gradient(200px 120px at 80% -10%, rgba(247, 181, 0, 0.35), transparent);
 }
 
@@ -1148,7 +1150,7 @@ body {
 .clase__etiqueta {
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
-  border: 1px solid rgba(11, 61, 145, 0.2);
+  border: 1px solid rgba(30, 90, 156, 0.2);
   border-radius: 999px;
   padding: 0.2rem 0.75rem;
   font-size: 0.8rem;
@@ -1402,7 +1404,7 @@ body {
   padding: 1rem 1.15rem;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 4px 14px rgba(11, 61, 145, 0.08);
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 
@@ -1449,7 +1451,7 @@ body {
 
 .historial__item-progreso-llenado {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  background: var(--color-primary);
   border-radius: 999px;
   transition: width 0.4s ease;
 }
@@ -1490,7 +1492,7 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: 1.25rem;
-  box-shadow: 0 4px 14px rgba(11, 61, 145, 0.08);
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
 }
 
 .analitica__cabecera {
@@ -1638,7 +1640,7 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: 0.35rem;
-  box-shadow: 0 4px 14px rgba(11, 61, 145, 0.08);
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
 }
 
 .asig__tab {
@@ -1799,7 +1801,7 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(11, 61, 145, 0.08);
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
 }
 
 .asig__tabla th {
@@ -2354,7 +2356,7 @@ body {
 .perfil__input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(11, 61, 145, 0.12);
+  box-shadow: 0 0 0 3px rgba(30, 90, 156, 0.12);
 }
 
 .perfil__input:disabled {
@@ -2476,7 +2478,7 @@ body {
 .subirclase__input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(11, 61, 145, 0.12);
+  box-shadow: 0 0 0 3px rgba(30, 90, 156, 0.12);
 }
 
 .subirclase__ayuda {
@@ -2496,9 +2498,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(11, 61, 145, 0.08);
+  background: rgba(30, 90, 156, 0.08);
   color: var(--color-primary-dark);
-  border: 1px solid rgba(11, 61, 145, 0.2);
+  border: 1px solid rgba(30, 90, 156, 0.2);
   border-radius: 999px;
   padding: 0.25rem 0.6rem;
   font-size: 0.8rem;

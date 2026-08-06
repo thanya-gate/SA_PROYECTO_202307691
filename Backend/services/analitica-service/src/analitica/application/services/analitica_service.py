@@ -1,14 +1,15 @@
-import csv
+# import csv  # [INGESTA DESACTIVADA]
 import json
-import uuid
+# import uuid  # [INGESTA DESACTIVADA]
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
 
-from ...domain.entities import EventoVista, RankingItem, Recomendacion, ResumenIngesta
+# from ...domain.entities import EventoVista, RankingItem, Recomendacion, ResumenIngesta  # [INGESTA DESACTIVADA: quitar EventoVista y ResumenIngesta]
+from ...domain.entities import RankingItem, Recomendacion
 from ...domain.errors import (
     ClaseRequeridaError,
-    CsvInvalidoError,
+    # CsvInvalidoError,  # [INGESTA DESACTIVADA]
     EstudianteRequeridoError,
     PuntuacionInvalidaError,
     SemanaInvalidaError,
@@ -128,7 +129,7 @@ class AnaliticaService:
         )
         return items
 
-    # ---------------------------------------------------------------- ingesta
+    # ---------------------------------------------------------------- sincronización
     def sincronizar_vista(self, clase_id: str, estudiante_id: str, duracion_vista: int) -> None:
         clase_id = clase_id.strip()
         estudiante_id = estudiante_id.strip()
@@ -154,20 +155,21 @@ class AnaliticaService:
         self._cache.delete_por_prefijo(PREFIJO_RANKING)
         self._cache.delete_por_prefijo(f"{PREFIJO_RECOMENDACIONES}{estudiante_id}:")
 
-    def cargar_eventos_csv(self, contenido: str, reemplazar: bool) -> ResumenIngesta:
-        if not contenido or not contenido.strip():
-            raise CsvInvalidoError("CSV_INVALIDO: el contenido no puede estar vacío")
-
-        eventos, omitidos_parse = self._parsear_csv(contenido)
-        if not eventos:
-            raise CsvInvalidoError("CSV_INVALIDO: no se encontraron filas válidas para cargar")
-
-        resumen = self._repo.ingesta_eventos_csv(eventos, reemplazar)
-        self._invalidar_tendencias()
-        return ResumenIngesta(
-            registros_cargados=resumen.registros_cargados,
-            registros_omitidos=resumen.registros_omitidos + omitidos_parse,
-        )
+    # [INGESTA DESACTIVADA] carga masiva CSV
+    # def cargar_eventos_csv(self, contenido: str, reemplazar: bool) -> ResumenIngesta:
+    #     if not contenido or not contenido.strip():
+    #         raise CsvInvalidoError("CSV_INVALIDO: el contenido no puede estar vacío")
+    #
+    #     eventos, omitidos_parse = self._parsear_csv(contenido)
+    #     if not eventos:
+    #         raise CsvInvalidoError("CSV_INVALIDO: no se encontraron filas válidas para cargar")
+    #
+    #     resumen = self._repo.ingesta_eventos_csv(eventos, reemplazar)
+    #     self._invalidar_tendencias()
+    #     return ResumenIngesta(
+    #         registros_cargados=resumen.registros_cargados,
+    #         registros_omitidos=resumen.registros_omitidos + omitidos_parse,
+    #     )
 
     def recalcular_tendencias(self, semana: Optional[str]) -> str:
         semana_validada = _validar_semana(semana)
@@ -181,55 +183,56 @@ class AnaliticaService:
         self._cache.delete_por_prefijo(PREFIJO_TENDENCIAS)
         self._cache.delete_por_prefijo(PREFIJO_RANKING)
 
-    @staticmethod
-    def _parsear_csv(contenido: str) -> tuple[list[EventoVista], int]:
-        eventos: list[EventoVista] = []
-        omitidos = 0
-
-        for fila in csv.reader(contenido.splitlines()):
-            if not fila or not any(campo.strip() for campo in fila):
-                continue
-
-            primera = fila[0].strip().lower()
-            if primera == "clase_id":
-                continue  # encabezado
-
-            if len(fila) < 2:
-                omitidos += 1
-                continue
-
-            clase_id = fila[0].strip()
-            estudiante_id = fila[1].strip()
-            fecha_str = fila[2].strip() if len(fila) > 2 else ""
-            duracion_str = fila[3].strip() if len(fila) > 3 else ""
-
-            try:
-                uuid.UUID(clase_id)
-                uuid.UUID(estudiante_id)
-            except ValueError:
-                omitidos += 1
-                continue
-
-            fecha: Optional[datetime] = None
-            if fecha_str:
-                try:
-                    fecha = datetime.fromisoformat(fecha_str.replace("Z", "+00:00"))
-                except ValueError:
-                    omitidos += 1
-                    continue
-
-            try:
-                duracion = int(duracion_str) if duracion_str else 0
-            except ValueError:
-                duracion = 0
-
-            eventos.append(
-                EventoVista(
-                    clase_id=clase_id,
-                    estudiante_id=estudiante_id,
-                    fecha_evento=fecha,
-                    duracion_vista=duracion,
-                )
-            )
-
-        return eventos, omitidos
+    # [INGESTA DESACTIVADA] parseo de CSV
+    # @staticmethod
+    # def _parsear_csv(contenido: str) -> tuple[list[EventoVista], int]:
+    #     eventos: list[EventoVista] = []
+    #     omitidos = 0
+    #
+    #     for fila in csv.reader(contenido.splitlines()):
+    #         if not fila or not any(campo.strip() for campo in fila):
+    #             continue
+    #
+    #         primera = fila[0].strip().lower()
+    #         if primera == "clase_id":
+    #             continue  # encabezado
+    #
+    #         if len(fila) < 2:
+    #             omitidos += 1
+    #             continue
+    #
+    #         clase_id = fila[0].strip()
+    #         estudiante_id = fila[1].strip()
+    #         fecha_str = fila[2].strip() if len(fila) > 2 else ""
+    #         duracion_str = fila[3].strip() if len(fila) > 3 else ""
+    #
+    #         try:
+    #             uuid.UUID(clase_id)
+    #             uuid.UUID(estudiante_id)
+    #         except ValueError:
+    #             omitidos += 1
+    #             continue
+    #
+    #         fecha: Optional[datetime] = None
+    #         if fecha_str:
+    #             try:
+    #                 fecha = datetime.fromisoformat(fecha_str.replace("Z", "+00:00"))
+    #             except ValueError:
+    #                 omitidos += 1
+    #                 continue
+    #
+    #         try:
+    #             duracion = int(duracion_str) if duracion_str else 0
+    #         except ValueError:
+    #             duracion = 0
+    #
+    #         eventos.append(
+    #             EventoVista(
+    #                 clase_id=clase_id,
+    #                 estudiante_id=estudiante_id,
+    #                 fecha_evento=fecha,
+    #                 duracion_vista=duracion,
+    #             )
+    #         )
+    #
+    #     return eventos, omitidos
