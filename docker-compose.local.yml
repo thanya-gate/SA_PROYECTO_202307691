@@ -1,0 +1,288 @@
+name: yousac-local
+
+#   docker compose -f docker-compose.local.yml up --build
+
+
+services:
+  auth-db:
+    image: postgres:16-alpine
+    container_name: yousac-auth-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yousac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yousac_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-yousac_auth}
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+      - ./Backend/sql/auth.sql:/docker-entrypoint-initdb.d/001-auth.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yousac} -d ${POSTGRES_DB:-yousac_auth}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: ./Backend
+      dockerfile: services/auth-service/Dockerfile
+    container_name: yousac-auth-service
+  
+    environment:
+      NODE_ENV: development
+      GRPC_PORT: 50051
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-cambiar-en-produccion-1234567890abcdef}
+      COOKIE_SECURE: "false"
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
+      OAUTH_MOCK_ENABLED: "true"
+      OAUTH_MOCK_ISSUER: http://api-gateway:8080/mock-oauth
+      OAUTH_REDIRECT_URI: http://localhost:8081/oauth/callback
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@auth-db:5432/${POSTGRES_DB:-yousac_auth}
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  catalog-db:
+    image: postgres:16-alpine
+    container_name: yousac-catalog-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yousac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yousac_secret}
+      POSTGRES_DB: ${CATALOG_DB:-yousac_catalogo}
+    ports:
+      - "5433:5432"
+    volumes:
+      - catalog-db-data:/var/lib/postgresql/data
+      - ./Backend/sql/catalogo.sql:/docker-entrypoint-initdb.d/001-catalogo.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yousac} -d ${CATALOG_DB:-yousac_catalogo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  catalog-service:
+    build:
+      context: ./Backend
+      dockerfile: services/catalog-service/Dockerfile
+    container_name: yousac-catalog-service
+
+    environment:
+      NODE_ENV: development
+      GRPC_PORT: 50052
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@catalog-db:5432/${CATALOG_DB:-yousac_catalogo}
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  reproduccion-db:
+    image: postgres:16-alpine
+    container_name: yousac-reproduccion-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yousac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yousac_secret}
+      POSTGRES_DB: ${REPRODUCCION_DB:-yousac_reproduccion}
+    ports:
+      - "5434:5432"
+    volumes:
+      - reproduccion-db-data:/var/lib/postgresql/data
+      - ./Backend/sql/reproduccion.sql:/docker-entrypoint-initdb.d/001-reproduccion.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yousac} -d ${REPRODUCCION_DB:-yousac_reproduccion}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  reproduccion-service:
+    build:
+      context: ./Backend/services/reproduccion-service
+      dockerfile: Dockerfile
+    container_name: yousac-reproduccion-service
+
+    environment:
+      NODE_ENV: development
+      GRPC_PORT: 50053
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@reproduccion-db:5432/${REPRODUCCION_DB:-yousac_reproduccion}
+    depends_on:
+      reproduccion-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/server", "-healthcheck"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  analitica-db:
+    image: postgres:16-alpine
+    container_name: yousac-analitica-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yousac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yousac_secret}
+      POSTGRES_DB: ${ANALITICA_DB:-yousac_analitica}
+    ports:
+      - "5435:5432"
+    volumes:
+      - analitica-db-data:/var/lib/postgresql/data
+      - ./Backend/sql/analitica.sql:/docker-entrypoint-initdb.d/001-analitica.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yousac} -d ${ANALITICA_DB:-yousac_analitica}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: yousac-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  analitica-service:
+    build:
+      context: ./Backend/services/analitica-service
+      dockerfile: Dockerfile
+    container_name: yousac-analitica-service
+
+    environment:
+      GRPC_PORT: 50054
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@analitica-db:5432/${ANALITICA_DB:-yousac_analitica}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      analitica-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  inscripcion-db:
+    image: postgres:16-alpine
+    container_name: yousac-inscripcion-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yousac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yousac_secret}
+      POSTGRES_DB: ${INSCRIPCION_DB:-yousac_inscripcion}
+    ports:
+      - "5436:5432"
+    volumes:
+      - inscripcion-db-data:/var/lib/postgresql/data
+      - ./Backend/sql/inscripcion.sql:/docker-entrypoint-initdb.d/001-inscripcion.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yousac} -d ${INSCRIPCION_DB:-yousac_inscripcion}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  inscripcion-service:
+    build:
+      context: ./Backend
+      dockerfile: services/inscripcion-service/Dockerfile
+    container_name: yousac-inscripcion-service
+    environment:
+      NODE_ENV: development
+      GRPC_PORT: 50055
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@inscripcion-db:5432/${INSCRIPCION_DB:-yousac_inscripcion}
+    depends_on:
+      inscripcion-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ./Backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: yousac-api-gateway
+    ports:
+      - "8080:8080" 
+    volumes:
+      - media-data:/app/media
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      AUTH_GRPC_ADDR: auth-service:50051
+      CATALOG_GRPC_ADDR: catalog-service:50052
+      REPRODUCTION_GRPC_ADDR: reproduccion-service:50053
+      ANALITICA_GRPC_ADDR: analitica-service:50054
+      INSCRIPCION_GRPC_ADDR: inscripcion-service:50055
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
+      SESSION_COOKIE_NAME: yousac_session
+      COOKIE_SECURE: "false"
+      COOKIE_SAME_SITE: lax
+      COOKIE_PATH: /
+      SESSION_TTL_MS: "3600000"
+      OAUTH_ISSUER_PUBLIC: http://localhost:8080/mock-oauth
+      OAUTH_REDIRECT_URI: http://localhost:8081/oauth/callback
+      OAUTH_CLIENT_ID: yousac-web
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      reproduccion-service:
+        condition: service_healthy
+      analitica-service:
+        condition: service_healthy
+      inscripcion-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: ./Frontend
+    container_name: yousac-web
+    ports:
+      - "8081:80" 
+    volumes:
+      - media-data:/usr/share/nginx/html/media
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  auth-db-data:
+  catalog-db-data:
+  reproduccion-db-data:
+  analitica-db-data:
+  inscripcion-db-data:
+  media-data:

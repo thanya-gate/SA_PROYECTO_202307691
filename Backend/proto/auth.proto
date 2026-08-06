@@ -1,0 +1,344 @@
+syntax = "proto3";
+
+package yousac.auth.v1;
+
+option java_multiple_files = true;
+option go_package = "yousac/auth/v1;authv1";
+
+// =====================================================================
+// Microservicio de Autenticación (YoUSAC)
+// Contrato gRPC para el tráfico east-west entre microservicios (RNF-06).
+// El API Gateway expone el north-south (HTTP) al cliente web y traduce
+// cada petición a una llamada gRPC de este contrato.
+// =====================================================================
+
+// Enumeraciones compartidas
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_ESTUDIANTE = 1;
+  ROLE_CATEDRATICO = 2;
+  ROLE_AUXILIAR = 3;
+  ROLE_ADMIN = 4;
+}
+
+enum SessionStatus {
+  SESSION_STATUS_UNSPECIFIED = 0;
+  SESSION_STATUS_ACTIVA = 1;
+  SESSION_STATUS_EXPIRADA = 2;
+  SESSION_STATUS_REVOCADA = 3;
+}
+
+// Mensajes de dominio
+
+message User {
+  string user_id = 1;
+  string email = 2;
+  bool email_verified = 3;
+  repeated Role roles = 4;
+  string created_at = 5;
+  string updated_at = 6;
+  string carnet = 7;
+  string dpi = 8;
+  string fecha_nacimiento = 9;
+  string nombres = 10;
+  string apellidos = 11;
+  string telefono_celular = 12;
+  string carrera = 13;
+}
+
+message SessionInfo {
+  string session_id = 1;
+  string user_id = 2;
+  string email = 3;
+  repeated Role roles = 4;
+  SessionStatus status = 5;
+  string issued_at = 6;
+  string expires_at = 7;
+  string ip = 8;
+  string user_agent = 9;
+}
+
+// ---- Sesión / validación ----
+
+message ValidateSessionRequest {
+  string token = 1; // JWT (Authorization: Bearer o cookie HttpOnly)
+}
+
+message ValidateSessionResponse {
+  SessionInfo session = 1;
+}
+
+message RevokeSessionRequest {
+  string session_id = 1;
+}
+
+message RevokeSessionResponse {
+  bool revoked = 1;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+}
+
+// ---- Usuarios / perfiles ----
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetProfilesRequest {
+  string user_id = 1;
+}
+
+message GetProfilesResponse {
+  string user_id = 1;
+  string email = 2;
+  repeated Role roles = 3; // perfiles activos (multiperfil)
+}
+
+message CheckPermissionRequest {
+  string user_id = 1;
+  string resource = 2;
+  string action = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
+}
+
+message ListUsersByRoleRequest {
+  repeated Role roles = 1;
+}
+
+message ListUsersByRoleResponse {
+  repeated User users = 1;
+}
+
+// ---- Autenticación (registro / login / logout) ----
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string confirm_password = 3;
+  string ip = 4;
+  string user_agent = 5;
+  string carnet = 6;
+  string dpi = 7;
+  string fecha_nacimiento = 8;
+  string rol = 9;
+}
+
+message RegisterResponse {
+  User user = 1;
+  string access_token = 2;
+  string expires_at = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+  string ip = 3;
+  string user_agent = 4;
+}
+
+message LoginResponse {
+  User user = 1;
+  string access_token = 2;
+  string expires_at = 3;
+}
+
+message LogoutRequest {
+  string session_id = 1;
+}
+
+message LogoutResponse {
+  bool revoked = 1;
+}
+
+// Validación de credenciales para el proveedor de identidad institucional
+// (IdP). Un IdP real autentica contra su directorio; este RPC expone la
+// verificación de correo + contraseña sin crear una sesión.
+message ValidateCredentialsRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message ValidateCredentialsResponse {
+  User user = 1;
+}
+
+message GetCurrentUserRequest {
+  string session_id = 1;
+}
+
+message GetCurrentUserResponse {
+  User user = 1;
+  string session_id = 2;
+}
+
+// ---- Perfil (actualización de datos personales) ----
+
+message UpdateProfileRequest {
+  string user_id = 1;
+  string nombres = 2;
+  string apellidos = 3;
+  string carnet = 4;
+  string dpi = 5;
+  string fecha_nacimiento = 6;
+  string telefono_celular = 7;
+  string carrera = 8;
+}
+
+message UpdateProfileResponse {
+  User user = 1;
+}
+
+// ---- Cuenta (verificación de correo y contraseña) ----
+
+message RequestEmailVerificationRequest {
+  string email = 1;
+}
+
+message RequestEmailVerificationResponse {
+  string token = 1;
+}
+
+message ConfirmEmailVerificationRequest {
+  string token = 1;
+}
+
+message ConfirmEmailVerificationResponse {
+  bool verified = 1;
+}
+
+message RequestPasswordResetRequest {
+  string email = 1;
+}
+
+message RequestPasswordResetResponse {
+  string token = 1;
+}
+
+message ConfirmPasswordResetRequest {
+  string token = 1;
+  string new_password = 2;
+}
+
+message ConfirmPasswordResetResponse {
+  bool reset = 1;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string current_password = 2;
+  string new_password = 3;
+}
+
+message ChangePasswordResponse {
+  bool changed = 1;
+}
+
+// ---- Perfiles / RBAC (multiperfil) ----
+
+message AssignRoleRequest {
+  string user_id = 1;
+  Role role = 2;
+}
+
+message AssignRoleResponse {
+  GetProfilesResponse profiles = 1;
+}
+
+message RemoveRoleRequest {
+  string user_id = 1;
+  Role role = 2;
+}
+
+message RemoveRoleResponse {
+  GetProfilesResponse profiles = 1;
+}
+
+message SwitchProfileRequest {
+  string user_id = 1;
+  Role role = 2;
+  string session_id = 3;
+}
+
+message SwitchProfileResponse {
+  bool switched = 1;
+  string pending_role = 2;
+}
+
+// ---- OAuth 2.0 institucional (mock) ----
+
+message OAuthAuthorizeRequest {
+  string email = 1;
+  repeated Role roles = 2;
+}
+
+message OAuthAuthorizeResponse {
+  string redirect_uri = 1;
+  string code = 2;
+}
+
+message OAuthCallbackRequest {
+  string code = 1;
+  string ip = 2;
+  string user_agent = 3;
+}
+
+message OAuthCallbackResponse {
+  User user = 1;
+  string access_token = 2;
+  string expires_at = 3;
+  string provider = 4;
+}
+
+// =====================================================================
+// Servicio
+// =====================================================================
+service AuthService {
+  // --- Sesión / validación (lo consume el API Gateway y otros servicios) ---
+  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+
+  // --- Usuarios / perfiles ---
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetProfiles(GetProfilesRequest) returns (GetProfilesResponse);
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+  rpc ListUsersByRole(ListUsersByRoleRequest) returns (ListUsersByRoleResponse);
+
+  // --- Autenticación ---
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc ValidateCredentials(ValidateCredentialsRequest) returns (ValidateCredentialsResponse);
+
+  // --- Cuenta ---
+  rpc RequestEmailVerification(RequestEmailVerificationRequest) returns (RequestEmailVerificationResponse);
+  rpc ConfirmEmailVerification(ConfirmEmailVerificationRequest) returns (ConfirmEmailVerificationResponse);
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
+  rpc ConfirmPasswordReset(ConfirmPasswordResetRequest) returns (ConfirmPasswordResetResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+
+  // --- Perfiles / RBAC ---
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
+  rpc RemoveRole(RemoveRoleRequest) returns (RemoveRoleResponse);
+  rpc SwitchProfile(SwitchProfileRequest) returns (SwitchProfileResponse);
+
+  // --- OAuth 2.0 ---
+  rpc OAuthAuthorize(OAuthAuthorizeRequest) returns (OAuthAuthorizeResponse);
+  rpc OAuthCallback(OAuthCallbackRequest) returns (OAuthCallbackResponse);
+}
