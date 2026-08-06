@@ -128,6 +128,20 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
 
+const DOCENTE_NAV_ITEMS: NavItem[] = [
+  { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
+  { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
+  {
+    to: '',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    disabled: true,
+    description: 'Revisar las notificaciones del sistema',
+  },
+  { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
+  { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
+];
+
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Dashboard', end: true, icon: <DashboardIcon /> },
   {
@@ -172,7 +186,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const isAdmin = user?.roles.includes('ROLE_ADMIN') ?? false;
-  const navItems = isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
+  const isDocente =
+    (user?.roles.includes('ROLE_CATEDRATICO') ?? false) || (user?.roles.includes('ROLE_AUXILIAR') ?? false);
+  const navItems = isAdmin ? ADMIN_NAV_ITEMS : isDocente ? DOCENTE_NAV_ITEMS : NAV_ITEMS;
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {

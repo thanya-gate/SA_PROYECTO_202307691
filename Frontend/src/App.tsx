@@ -12,6 +12,7 @@ import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
 import GestionCursosPage from './pages/GestionCursosPage';
 import MisCursosPage from './pages/MisCursosPage';
+import SubirClasePage from './pages/SubirClasePage';
 import ProfilePage from './pages/ProfilePage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -94,6 +95,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <MisCursosPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/mis-cursos/:cursoId/subir-clase"
+            element={
+              <RequireAuth>
+                <SubirClasePage />
               </RequireAuth>
             }
           />

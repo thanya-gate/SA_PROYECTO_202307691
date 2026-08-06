@@ -64,6 +64,11 @@ export const authApi = {
 
   me: (token: string): Promise<MeResponse> => apiFetch<MeResponse>('/auth/me', { token }),
 
+  listarUsuariosPorRol: (token: string, roles: string[]): Promise<{ usuarios: PublicUser[] }> => {
+    const query = roles.map((r) => `rol=${encodeURIComponent(r)}`).join('&');
+    return apiFetch<{ usuarios: PublicUser[] }>(`/auth/usuarios?${query}`, { token });
+  },
+
   updateProfile: (token: string, input: UpdateProfileInput): Promise<{ user: PublicUser }> =>
     apiFetch<{ user: PublicUser }>('/auth/me', { method: 'PATCH', token, body: input }),
 

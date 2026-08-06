@@ -80,6 +80,12 @@ interface AsignarCatedraticoCursoResponse {
   asignacionId: string;
 }
 
+interface AsignarDocenteCursoResponse {
+  message: string;
+  docenteId: string;
+  asignacionId: string;
+}
+
 interface AsignarAuxiliarCatedraticoResponse {
   message: string;
   asignacionAuxiliarId: string;
@@ -139,6 +145,18 @@ export const inscripcionApi = {
     apiFetch<AsignarCatedraticoCursoResponse>(`/inscripcion/catedraticos/${docenteId}/cursos/${cursoId}`, {
       method: 'POST',
       body: { semestre },
+      token,
+    }),
+
+  asignarDocenteCurso: (
+    token: string,
+    usuarioId: string,
+    cursoId: string,
+    semestre: string,
+  ): Promise<AsignarDocenteCursoResponse> =>
+    apiFetch<AsignarDocenteCursoResponse>(`/inscripcion/cursos/${cursoId}/docente`, {
+      method: 'POST',
+      body: { usuarioId, semestre },
       token,
     }),
 

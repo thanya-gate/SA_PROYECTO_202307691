@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { catalogApi, type ClaseResumen } from '../api/catalog';
-import { inscripcionApi, type CursoRegistrado, type PanelEstudianteItem } from '../api/inscripcion';
+import {
+  inscripcionApi,
+  type CursoCatedraticoItem,
+  type CursoRegistrado,
+  type PanelEstudianteItem,
+} from '../api/inscripcion';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import { ClaseCard } from '../components/ClaseCard';
@@ -25,10 +31,14 @@ function semestreCorto(semestre: string): string {
 
 export default function MisCursosPage() {
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const tokenActual = token ?? '';
   const esEstudiante = user?.roles.includes('ROLE_ESTUDIANTE') ?? false;
+  const esDocente =
+    (user?.roles.includes('ROLE_CATEDRATICO') ?? false) || (user?.roles.includes('ROLE_AUXILIAR') ?? false);
 
   const [panel, setPanel] = useState<PanelEstudianteItem[]>([]);
+  const [cursosDocente, setCursosDocente] = useState<CursoCatedraticoItem[]>([]);
   const [cursosConVideos, setCursosConVideos] = useState<CursoConVideos[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,37 +55,43 @@ export default function MisCursosPage() {
     setCargando(true);
     setError(null);
     try {
-      const items = (await inscripcionApi.panelEstudiante(tokenActual)).items;
-      const conVideos: CursoConVideos[] = await Promise.all(
-        items.map(async (item) => {
-          const res = await catalogApi.search({ curso: item.codigo }, tokenActual);
-          return {
-            cursoId: item.cursoId,
-            codigo: item.codigo,
-            curso: item.curso,
-            escuela: item.escuela,
-            semestre: item.semestre,
-            anio: item.anio,
-            estadoMatricula: item.estadoMatricula,
-            videos: res.resultados,
-          };
-        }),
-      );
-      conVideos.sort((a, b) => (a.semestre < b.semestre ? 1 : -1));
-      setPanel(items);
-      setCursosConVideos(conVideos);
+      if (esDocente) {
+        const res = await inscripcionApi.cursosCatedratico(tokenActual);
+        setCursosDocente(res.items);
+      } else {
+        const items = (await inscripcionApi.panelEstudiante(tokenActual)).items;
+        const conVideos: CursoConVideos[] = await Promise.all(
+          items.map(async (item) => {
+            const res = await catalogApi.search({ curso: item.codigo }, tokenActual);
+            return {
+              cursoId: item.cursoId,
+              codigo: item.codigo,
+              curso: item.curso,
+              escuela: item.escuela,
+              semestre: item.semestre,
+              anio: item.anio,
+              estadoMatricula: item.estadoMatricula,
+              videos: res.resultados,
+            };
+          }),
+        );
+        conVideos.sort((a, b) => (a.semestre < b.semestre ? 1 : -1));
+        setPanel(items);
+        setCursosConVideos(conVideos);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar tus cursos');
       setPanel([]);
       setCursosConVideos([]);
+      setCursosDocente([]);
     } finally {
       setCargando(false);
     }
-  }, [tokenActual]);
+  }, [tokenActual, esDocente]);
 
   useEffect(() => {
-    if (esEstudiante) void cargar();
-  }, [cargar, esEstudiante]);
+    if (esEstudiante || esDocente) void cargar();
+  }, [cargar, esEstudiante, esDocente]);
 
   async function abrirModal() {
     setModalAbierto(true);
@@ -127,7 +143,9 @@ export default function MisCursosPage() {
           <div>
             <h1 className="catalogo__title">Mis cursos</h1>
             <p className="catalogo__subtitle">
-              Videos y grabaciones de los cursos a los que estás inscrito este semestre.
+              {esDocente
+                ? 'Cursos que impartes este semestre. Publica o sube material de cada clase.'
+                : 'Videos y grabaciones de los cursos a los que estás inscrito este semestre.'}
             </p>
           </div>
           {esEstudiante && (
@@ -148,7 +166,54 @@ export default function MisCursosPage() {
           </Alert>
         )}
 
-        {!esEstudiante ? (
+        {esDocente ? (
+          cargando ? (
+            <p className="catalogo__estado" role="status">
+              Cargando tus cursos…
+            </p>
+          ) : cursosDocente.length === 0 ? (
+            <div className="asig__vacio">
+              <p className="asig__vacio-titulo">Aún no tienes cursos asignados</p>
+              <p className="asig__vacio-texto">
+                Cuando el administrador te asigne cursos aparecerán aquí para que publiques tus clases y
+                material.
+              </p>
+            </div>
+          ) : (
+            <div className="mcursos__lista">
+              {cursosDocente.map((curso) => (
+                <section key={curso.cursoId} className="mcursos__curso">
+                  <header className="mcursos__curso-header">
+                    <div>
+                      <h2 className="mcursos__curso-titulo">
+                        {curso.codigo} · {curso.curso}
+                      </h2>
+                      <p className="mcursos__curso-meta">
+                        {semestreCorto(curso.semestre)} {curso.anio}
+                        {curso.auxiliares.length > 0 &&
+                          ` · Auxiliares: ${curso.auxiliares.join(', ')}`}
+                      </p>
+                    </div>
+                  </header>
+                  <div className="mcursos__acciones">
+                    <Button
+                      variant="primary"
+                      onClick={() => navigate(`/mis-cursos/${curso.cursoId}/subir-clase`)}
+                    >
+                      Subir clase
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => navigate(`/mis-cursos/${curso.cursoId}/subir-clase?modo=material`)}
+                    >
+                      Subir material
+                    </Button>
+                  </div>
+                </section>
+              ))}
+            </div>
+          )
+        ) : !esEstudiante ? (
           <div className="asig__vacio">
             <p className="asig__vacio-titulo">Mis cursos es para estudiantes</p>
             <p className="asig__vacio-texto">

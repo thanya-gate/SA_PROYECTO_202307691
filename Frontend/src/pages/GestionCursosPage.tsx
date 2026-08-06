@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { inscripcionApi, type CursoRegistrado, type DocenteInscripcion } from '../api/inscripcion';
+import { inscripcionApi, type CursoRegistrado } from '../api/inscripcion';
+import { authApi, type PublicUser } from '../api/auth';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import { Alert } from '../components/ui/Alert';
@@ -7,7 +8,7 @@ import { Button } from '../components/ui/Button';
 import { TextField } from '../components/ui/TextField';
 
 interface Asignaciones {
-  [cursoId: string]: { docenteId: string; semestre: string };
+  [cursoId: string]: { usuarioId: string; semestre: string };
 }
 
 function semestreCorto(semestre: string): string {
@@ -15,12 +16,17 @@ function semestreCorto(semestre: string): string {
   return partes.length === 2 ? `${partes[1]} ${partes[0]}` : semestre;
 }
 
+function nombreUsuario(u: PublicUser): string {
+  const nombre = [u.nombres, u.apellidos].filter(Boolean).join(' ').trim();
+  return nombre || u.email;
+}
+
 export default function GestionCursosPage() {
   const { token } = useAuth();
   const tokenActual = token ?? '';
 
   const [cursos, setCursos] = useState<CursoRegistrado[]>([]);
-  const [docentes, setDocentes] = useState<DocenteInscripcion[]>([]);
+  const [usuarios, setUsuarios] = useState<PublicUser[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,18 +43,22 @@ export default function GestionCursosPage() {
     setCargando(true);
     setError(null);
     try {
-      const [resCursos, resDocentes] = await Promise.all([
+      const [resCursos, resUsuarios] = await Promise.all([
         inscripcionApi.listarCursos(tokenActual),
-        inscripcionApi.listarDocentes(tokenActual),
+        authApi.listarUsuariosPorRol(tokenActual, ['ROLE_CATEDRATICO', 'ROLE_AUXILIAR']),
       ]);
       setCursos(resCursos.cursos);
-      setDocentes(resDocentes.docentes);
+      setUsuarios(resUsuarios.usuarios);
+      const preferido =
+        resUsuarios.usuarios.find((u) => u.roles.includes('ROLE_CATEDRATICO'))?.userId ??
+        resUsuarios.usuarios[0]?.userId ??
+        '';
       setAsignaciones((prev) => {
         const next: Asignaciones = {};
         for (const curso of resCursos.cursos) {
           const previo = prev[curso.cursoId];
           next[curso.cursoId] = {
-            docenteId: previo?.docenteId ?? resDocentes.docentes[0]?.docenteId ?? '',
+            usuarioId: previo?.usuarioId ?? preferido,
             semestre: previo?.semestre ?? curso.semestre,
           };
         }
@@ -57,7 +67,7 @@ export default function GestionCursosPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar los cursos');
       setCursos([]);
-      setDocentes([]);
+      setUsuarios([]);
     } finally {
       setCargando(false);
     }
@@ -94,7 +104,7 @@ export default function GestionCursosPage() {
     }
   }
 
-  function cambiarAsignacion(cursoId: string, campo: 'docenteId' | 'semestre', valor: string) {
+  function cambiarAsignacion(cursoId: string, campo: 'usuarioId' | 'semestre', valor: string) {
     setAsignaciones((prev) => ({
       ...prev,
       [cursoId]: { ...prev[cursoId], [campo]: valor },
@@ -103,20 +113,22 @@ export default function GestionCursosPage() {
 
   async function asignarDocente(cursoId: string) {
     const config = asignaciones[cursoId];
-    if (!config?.docenteId || !config?.semestre) return;
+    if (!config?.usuarioId || !config?.semestre) return;
     setAsignando(cursoId);
     setErrorAsignacion(null);
     setMensaje(null);
     try {
-      const res = await inscripcionApi.asignarCatedraticoCurso(
+      const res = await inscripcionApi.asignarDocenteCurso(
         tokenActual,
-        config.docenteId,
+        config.usuarioId,
         cursoId,
         config.semestre,
       );
-      setMensaje(`Catedrático asignado al curso (${res.asignacionId.slice(0, 8)}…).`);
+      setMensaje(
+        `Docente asignado al curso (asignación ${res.asignacionId.slice(0, 8)}…).`,
+      );
     } catch (err: unknown) {
-      setErrorAsignacion(err instanceof Error ? err.message : 'No se pudo asignar el catedrático');
+      setErrorAsignacion(err instanceof Error ? err.message : 'No se pudo asignar el docente');
     } finally {
       setAsignando(null);
     }
@@ -128,7 +140,7 @@ export default function GestionCursosPage() {
         <div className="catalogo__hero">
           <h1 className="catalogo__title">Gestión de Cursos</h1>
           <p className="catalogo__subtitle">
-            Crea los cursos del semestre y asigna al catedrático responsable.
+            Crea los cursos del semestre y asigna a la persona (docente o auxiliar) que impartirá el curso.
           </p>
         </div>
 
@@ -206,7 +218,7 @@ export default function GestionCursosPage() {
                     <th>ID</th>
                     <th>Curso</th>
                     <th>Semestre</th>
-                    <th>Asignar catedrático</th>
+                    <th>Quien imparte</th>
                     <th aria-label="Acción" />
                   </tr>
                 </thead>
@@ -224,20 +236,20 @@ export default function GestionCursosPage() {
                           {semestreCorto(curso.semestre)} · {curso.anio}
                         </td>
                         <td>
-                          {docentes.length === 0 ? (
+                          {usuarios.length === 0 ? (
                             <span className="asig__muted">
-                              Sin docentes registrados. Regístralos vía API o seed.
+                              No hay usuarios con rol de docente o auxiliar registrados.
                             </span>
                           ) : (
                             <div className="gcursos__asignar">
                               <select
                                 className="catalogo__select"
-                                value={config?.docenteId ?? ''}
-                                onChange={(e) => cambiarAsignacion(curso.cursoId, 'docenteId', e.target.value)}
+                                value={config?.usuarioId ?? ''}
+                                onChange={(e) => cambiarAsignacion(curso.cursoId, 'usuarioId', e.target.value)}
                               >
-                                {docentes.map((docente) => (
-                                  <option key={docente.docenteId} value={docente.docenteId}>
-                                    {docente.usuarioId.slice(0, 8)}
+                                {usuarios.map((u) => (
+                                  <option key={u.userId} value={u.userId}>
+                                    {nombreUsuario(u)} ({u.email})
                                   </option>
                                 ))}
                               </select>
@@ -265,9 +277,15 @@ export default function GestionCursosPage() {
                           )}
                         </td>
                         <td className="asig__celda-accion">
-                          {config?.docenteId && (
-                            <span className="asig__muted">{config.docenteId.slice(0, 8)}…</span>
-                          )}
+                          {config?.usuarioId &&
+                            (() => {
+                              const asignado = usuarios.find((u) => u.userId === config.usuarioId);
+                              return asignado ? (
+                                <span className="asig__muted">
+                                  {asignado.roles.includes('ROLE_CATEDRATICO') ? 'Docente' : 'Auxiliar'}
+                                </span>
+                              ) : null;
+                            })()}
                         </td>
                       </tr>
                     );
