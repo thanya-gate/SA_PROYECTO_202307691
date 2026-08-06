@@ -21,15 +21,16 @@ class Recomendacion:
     fecha_calculo: str
 
 
-@dataclass(frozen=True)
-class EventoVista:
-    clase_id: str
-    estudiante_id: str
-    fecha_evento: Optional[datetime]
-    duracion_vista: int
-
-
-@dataclass(frozen=True)
-class ResumenIngesta:
-    registros_cargados: int = 0
-    registros_omitidos: int = 0
+# [INGESTA DESACTIVADA]
+# @dataclass(frozen=True)
+# class EventoVista:
+#     clase_id: str
+#     estudiante_id: str
+#     fecha_evento: Optional[datetime]
+#     duracion_vista: int
+#
+#
+# @dataclass(frozen=True)
+# class ResumenIngesta:
+#     registros_cargados: int = 0
+#     registros_omitidos: int = 0

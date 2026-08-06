@@ -789,25 +789,26 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/analitica/csv', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
-    try {
-      const { contenido, reemplazar } = req.body as Record<string, unknown>;
-      if (typeof contenido !== 'string' || contenido.length === 0) {
-        throw new DomainError('ENTRADA_INVALIDA', 'contenido CSV es obligatorio', 400);
-      }
-      const result = await analiticaGrpc.cargarEventosCSV({
-        contenido,
-        reemplazar: Boolean(reemplazar),
-      });
-      res.status(201).json({
-        message: 'Carga masiva CSV procesada',
-        registrosCargados: result.registrosCargados,
-        registrosOmitidos: result.registrosOmitidos,
-      });
-    } catch (err) {
-      next(err);
-    }
-  });
+  // [INGESTA DESACTIVADA] carga masiva CSV
+  // app.post('/analitica/csv', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+  //   try {
+  //     const { contenido, reemplazar } = req.body as Record<string, unknown>;
+  //     if (typeof contenido !== 'string' || contenido.length === 0) {
+  //       throw new DomainError('ENTRADA_INVALIDA', 'contenido CSV es obligatorio', 400);
+  //     }
+  //     const result = await analiticaGrpc.cargarEventosCSV({
+  //       contenido,
+  //       reemplazar: Boolean(reemplazar),
+  //     });
+  //     res.status(201).json({
+  //       message: 'Carga masiva CSV procesada',
+  //       registrosCargados: result.registrosCargados,
+  //       registrosOmitidos: result.registrosOmitidos,
+  //     });
+  //   } catch (err) {
+  //     next(err);
+  //   }
+  // });
 
   app.post('/analitica/tendencias/recalcular', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
     try {

@@ -1,7 +1,8 @@
 from typing import Optional
 
 from ....application.ports.repository import AnaliticaRepository
-from ....domain.entities import EventoVista, RankingItem, Recomendacion, ResumenIngesta
+# from ....domain.entities import EventoVista, RankingItem, Recomendacion, ResumenIngesta  # [INGESTA DESACTIVADA]
+from ....domain.entities import RankingItem, Recomendacion
 from .db import Database
 
 
@@ -112,34 +113,35 @@ class PostgresAnaliticaRepository(AnaliticaRepository):
         finally:
             self._db.putconn(conn)
 
-    def ingesta_eventos_csv(self, eventos: list[EventoVista], reemplazar: bool) -> ResumenIngesta:
-        conn = self._db.connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    CALL sp_ingesta_eventos_csv(
-                        %s::uuid[], %s::uuid[], %s::timestamptz[], %s::int[], %s
-                    )
-                    """,
-                    (
-                        [ev.clase_id for ev in eventos],
-                        [ev.estudiante_id for ev in eventos],
-                        [ev.fecha_evento for ev in eventos],
-                        [ev.duracion_vista for ev in eventos],
-                        reemplazar,
-                    ),
-                )
-                cur.execute(
-                    """
-                    CALL sp_registrar_ingesta(%s, %s::int, %s::int, %s)
-                    """,
-                    ("carga-masiva-csv", len(eventos), 0, "api-gateway"),
-                )
-            conn.commit()
-            return ResumenIngesta(registros_cargados=len(eventos), registros_omitidos=0)
-        finally:
-            self._db.putconn(conn)
+    # [INGESTA DESACTIVADA] carga masiva CSV
+    # def ingesta_eventos_csv(self, eventos: list[EventoVista], reemplazar: bool) -> ResumenIngesta:
+    #     conn = self._db.connection()
+    #     try:
+    #         with conn.cursor() as cur:
+    #             cur.execute(
+    #                 """
+    #                 CALL sp_ingesta_eventos_csv(
+    #                     %s::uuid[], %s::uuid[], %s::timestamptz[], %s::int[], %s
+    #                 )
+    #                 """,
+    #                 (
+    #                     [ev.clase_id for ev in eventos],
+    #                     [ev.estudiante_id for ev in eventos],
+    #                     [ev.fecha_evento for ev in eventos],
+    #                     [ev.duracion_vista for ev in eventos],
+    #                     reemplazar,
+    #                 ),
+    #             )
+    #             cur.execute(
+    #                 """
+    #                 CALL sp_registrar_ingesta(%s, %s::int, %s::int, %s)
+    #                 """,
+    #                 ("carga-masiva-csv", len(eventos), 0, "api-gateway"),
+    #             )
+    #         conn.commit()
+    #         return ResumenIngesta(registros_cargados=len(eventos), registros_omitidos=0)
+    #     finally:
+    #         self._db.putconn(conn)
 
     def recalcular_tendencias(self, semana: Optional[str]) -> str:
         conn = self._db.connection()

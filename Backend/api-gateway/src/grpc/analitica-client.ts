@@ -57,7 +57,7 @@ export const analiticaGrpc = {
     unary('SincronizarVista', req),
   sincronizarCalificacion: (req: { claseId: string; estudianteId: string; puntuacion: number }) =>
     unary('SincronizarCalificacion', req),
-  cargarEventosCSV: (req: { contenido: string; reemplazar?: boolean }) =>
-    unary('CargarEventosCSV', req),
+  // cargarEventosCSV: (req: { contenido: string; reemplazar?: boolean }) =>  // [INGESTA DESACTIVADA]
+  //   unary('CargarEventosCSV', req),
   recalcularTendencias: (req: { semana?: string }) => unary('RecalcularTendencias', req),
 };

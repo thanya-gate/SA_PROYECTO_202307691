@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from ...domain.entities import EventoVista, RankingItem, Recomendacion, ResumenIngesta
+# from ...domain.entities import EventoVista, RankingItem, Recomendacion, ResumenIngesta  # [INGESTA DESACTIVADA]
+from ...domain.entities import RankingItem, Recomendacion
 
 
 class CacheRepository(ABC):
@@ -44,8 +45,9 @@ class AnaliticaRepository(ABC):
     @abstractmethod
     def sincronizar_calificacion(self, clase_id: str, estudiante_id: str, puntuacion: int) -> None: ...
 
-    @abstractmethod
-    def ingesta_eventos_csv(self, eventos: list[EventoVista], reemplazar: bool) -> ResumenIngesta: ...
+    # [INGESTA DESACTIVADA] carga masiva CSV
+    # @abstractmethod
+    # def ingesta_eventos_csv(self, eventos: list[EventoVista], reemplazar: bool) -> ResumenIngesta: ...
 
     @abstractmethod
     def recalcular_tendencias(self, semana: Optional[str]) -> str: ...

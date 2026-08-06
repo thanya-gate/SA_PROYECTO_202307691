@@ -5,8 +5,8 @@ from typing import Optional
 import grpc
 
 from analitica_pb2 import (
-    CargarEventosCSVRequest,
-    CargarEventosCSVResponse,
+    # CargarEventosCSVRequest,  # [INGESTA DESACTIVADA]
+    # CargarEventosCSVResponse,  # [INGESTA DESACTIVADA]
     ClasesMasVistasRequest,
     ClasesMasVistasResponse,
     HealthRequest,
@@ -97,7 +97,7 @@ class AnaliticaServicer(AnaliticaServiceServicer):
 
         return _manejar(context, ejecutar)
 
-    # ---------------------------------------------------------------- ingesta
+    # ---------------------------------------------------------------- sincronización
     def SincronizarVista(self, request: SincronizarVistaRequest, context) -> SincronizarVistaResponse:
         def ejecutar() -> SincronizarVistaResponse:
             self._servicio.sincronizar_vista(
@@ -122,15 +122,16 @@ class AnaliticaServicer(AnaliticaServiceServicer):
 
         return _manejar(context, ejecutar)
 
-    def CargarEventosCSV(self, request: CargarEventosCSVRequest, context) -> CargarEventosCSVResponse:
-        def ejecutar() -> CargarEventosCSVResponse:
-            resumen = self._servicio.cargar_eventos_csv(request.contenido, request.reemplazar)
-            return CargarEventosCSVResponse(
-                registros_cargados=resumen.registros_cargados,
-                registros_omitidos=resumen.registros_omitidos,
-            )
-
-        return _manejar(context, ejecutar)
+    # [INGESTA DESACTIVADA] carga masiva CSV
+    # def CargarEventosCSV(self, request: CargarEventosCSVRequest, context) -> CargarEventosCSVResponse:
+    #     def ejecutar() -> CargarEventosCSVResponse:
+    #         resumen = self._servicio.cargar_eventos_csv(request.contenido, request.reemplazar)
+    #         return CargarEventosCSVResponse(
+    #             registros_cargados=resumen.registros_cargados,
+    #             registros_omitidos=resumen.registros_omitidos,
+    #         )
+    #
+    #     return _manejar(context, ejecutar)
 
     def RecalcularTendencias(
         self, request: RecalcularTendenciasRequest, context
