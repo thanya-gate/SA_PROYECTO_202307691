@@ -132,8 +132,10 @@ BEGIN
         RAISE EXCEPTION 'CURSO_NO_ENCONTRADO: El curso no existe en el catálogo';
     END IF;
 
+    -- El video es opcional al publicar la ficha de la clase; se asigna después
+    -- al subir el archivo o una URL. La columna es NOT NULL, por eso se usa ''.
     IF p_url_video IS NULL OR length(trim(p_url_video)) = 0 THEN
-        RAISE EXCEPTION 'ENTRADA_INVALIDA: url_video es obligatorio';
+        p_url_video := '';
     END IF;
 
     IF p_duracion IS NULL OR p_duracion < 0 THEN

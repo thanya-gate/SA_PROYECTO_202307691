@@ -73,6 +73,10 @@ function userToProto(u: User) {
     carnet: u.carnet ?? '',
     dpi: u.dpi ?? '',
     fechaNacimiento: u.fechaNacimiento ?? '',
+    nombres: u.nombres ?? '',
+    apellidos: u.apellidos ?? '',
+    telefonoCelular: u.telefonoCelular ?? '',
+    carrera: u.carrera ?? '',
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
   };
@@ -182,6 +186,21 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
+    ListUsersByRole: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const roles = (call.request.roles ?? [])
+          .map((r: string) => protoToRole[r])
+          .filter((r: Role | undefined): r is Role => Boolean(r));
+        if (roles.length === 0) {
+          throw new DomainError('ROL_INVALIDO', 'Debes indicar al menos un rol', 400);
+        }
+        const users = await container.userRepository.findByRoles(roles);
+        callback(null, { users: users.map(userToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
     // ===== Autenticación =====
     Register: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
@@ -259,6 +278,27 @@ export function createGrpcServer(): grpc.Server {
           call.request.email,
           call.request.password,
         );
+        callback(null, { user: userToProto(user) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    UpdateProfile: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const patch = (value: string): string | null | undefined => {
+          if (value === '' || value === undefined) return undefined;
+          return value;
+        };
+        const user = await container.profileService.updateProfile(call.request.userId, {
+          nombres: patch(call.request.nombres),
+          apellidos: patch(call.request.apellidos),
+          carnet: patch(call.request.carnet),
+          dpi: patch(call.request.dpi),
+          fechaNacimiento: patch(call.request.fechaNacimiento),
+          telefonoCelular: patch(call.request.telefonoCelular),
+          carrera: patch(call.request.carrera),
+        });
         callback(null, { user: userToProto(user) });
       } catch (err: any) {
         callback(mapError(err));

@@ -7,6 +7,7 @@ import { container } from '../../container';
 import {
   CursoCatedraticoItem,
   CursoInscripcion,
+  DocenteInscripcion,
   PanelEstudianteItem,
 } from '../../domain/entities/inscripcion';
 
@@ -55,6 +56,13 @@ function cursoCatedraticoToProto(c: CursoCatedraticoItem) {
     semestre: c.semestre,
     anio: c.anio,
     auxiliares: c.auxiliares,
+  };
+}
+
+function docenteToProto(d: DocenteInscripcion) {
+  return {
+    docenteId: d.docenteId,
+    usuarioId: d.usuarioId,
   };
 }
 
@@ -201,6 +209,24 @@ export function createGrpcServer(): grpc.Server {
           call.request.cursoId,
         );
         callback(null, { estado });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarCursos: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const cursos = await container.inscripcionService.listarCursos();
+        callback(null, { cursos: cursos.map(cursoToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarDocentes: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const docentes = await container.inscripcionService.listarDocentes();
+        callback(null, { docentes: docentes.map(docenteToProto) });
       } catch (err: any) {
         callback(mapError(err));
       }

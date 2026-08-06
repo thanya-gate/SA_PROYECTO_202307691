@@ -117,6 +117,23 @@ message ConsultarEstadoMatriculaResponse {
   string estado = 1;
 }
 
+message DocenteInscripcion {
+  string docente_id = 1;
+  string usuario_id = 2;
+}
+
+message ListarCursosRequest {}
+
+message ListarCursosResponse {
+  repeated CursoInscripcion cursos = 1;
+}
+
+message ListarDocentesRequest {}
+
+message ListarDocentesResponse {
+  repeated DocenteInscripcion docentes = 1;
+}
+
 message HealthRequest {}
 
 message HealthResponse {
@@ -137,6 +154,9 @@ service InscripcionService {
   rpc ConsultarPanelEstudiante(ConsultarPanelEstudianteRequest) returns (ConsultarPanelEstudianteResponse);
   rpc ConsultarCursosCatedratico(ConsultarCursosCatedraticoRequest) returns (ConsultarCursosCatedraticoResponse);
   rpc ConsultarEstadoMatricula(ConsultarEstadoMatriculaRequest) returns (ConsultarEstadoMatriculaResponse);
+
+  rpc ListarCursos(ListarCursosRequest) returns (ListarCursosResponse);
+  rpc ListarDocentes(ListarDocentesRequest) returns (ListarDocentesResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
 }

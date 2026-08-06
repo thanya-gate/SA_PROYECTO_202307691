@@ -1,7 +1,9 @@
 import { Role, rolesPermiten } from '../../domain/enums/role';
 import { DomainError } from '../../domain/errors/domain-error';
-import { UserRepository } from '../ports/user-repository';
+import { UserRepository, UpdateProfileData } from '../ports/user-repository';
 import { SessionService } from './session.service';
+import { updateProfileSchema } from '../dto/auth-schemas';
+import { User } from '../../domain/entities/user';
 
 export interface ProfileView {
   userId: string;
@@ -19,6 +21,12 @@ export class ProfileService {
   async getProfiles(userId: string): Promise<ProfileView> {
     const user = await this.requireUser(userId);
     return { userId: user.userId, email: user.email, roles: user.roles };
+  }
+
+  async updateProfile(userId: string, data: UpdateProfileData): Promise<User> {
+    await this.requireUser(userId);
+    const validated = updateProfileSchema.parse(data);
+    return this.users.updateProfile(userId, validated);
   }
 
   async assignRole(userId: string, role: Role): Promise<ProfileView> {

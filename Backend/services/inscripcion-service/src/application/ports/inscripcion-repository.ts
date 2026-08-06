@@ -1,6 +1,7 @@
 import {
   CursoCatedraticoItem,
   CursoInscripcion,
+  DocenteInscripcion,
   PanelEstudianteItem,
 } from '../../domain/entities/inscripcion';
 
@@ -53,4 +54,6 @@ export interface InscripcionRepository {
   consultarPanelEstudiante(estudianteId: string): Promise<PanelEstudianteItem[]>;
   consultarCursosCatedratico(catedraticoUsuarioId: string): Promise<CursoCatedraticoItem[]>;
   consultarEstadoMatricula(estudianteId: string, cursoId: string): Promise<string>;
+  listarCursos(): Promise<CursoInscripcion[]>;
+  listarDocentes(): Promise<DocenteInscripcion[]>;
 }

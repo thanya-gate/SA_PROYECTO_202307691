@@ -46,9 +46,28 @@ export class CatalogService {
     return this.repository.listarPorSemestre(semestre || undefined);
   }
 
+  async obtenerCursoPorCodigo(codigo: string): Promise<CursoCatalogo> {
+    const curso = await this.repository.buscarCursoPorCodigo(codigo);
+    if (!curso) {
+      throw new DomainError('CURSO_NO_ENCONTRADO', 'Curso no encontrado en el catálogo', 404);
+    }
+    return curso;
+  }
+
   async publicarClase(raw: PublicarClaseInput): Promise<{ claseId: string; fechaPublicacion: string }> {
     const input = parse(publicarClaseSchema, raw);
-    return this.repository.publicarClase(input);
+    return this.repository.publicarClase({ ...input, urlVideo: input.urlVideo ?? '' });
+  }
+
+  async actualizarUrlMaterial(claseId: string, urlMaterial: string): Promise<ClaseDetalle> {
+    if (!urlMaterial || urlMaterial.trim().length === 0) {
+      throw new DomainError('ENTRADA_INVALIDA', 'url_material es obligatorio', 400);
+    }
+    const clase = await this.repository.actualizarUrlMaterial(claseId, urlMaterial.trim());
+    if (!clase) {
+      throw new DomainError('CLASE_NO_ENCONTRADA', 'Clase no encontrada', 404);
+    }
+    return clase;
   }
 
   async registrarCurso(raw: RegistrarCursoInput): Promise<CursoCatalogo> {

@@ -41,12 +41,38 @@ export interface SemestreResumen {
   totalClases: number;
 }
 
+export interface CursoCatalogo {
+  cursoId: string;
+  codigo: string;
+  nombre: string;
+  escuela: string;
+}
+
 export interface SearchParams {
   semestre?: string;
   escuela?: string;
   curso?: string;
   catedratico?: string;
   tema?: string;
+}
+
+export interface ParticipanteInput {
+  nombre: string;
+  rol: 'CATEDRATICO' | 'AUXILIAR';
+}
+
+export interface PublicarClaseInput {
+  cursoId: string;
+  unidad?: string;
+  tema?: string;
+  fechaImparticion?: string;
+  semestre: string;
+  anio: number;
+  urlVideo?: string;
+  urlMaterial?: string;
+  duracion: number;
+  etiquetas: string[];
+  participantes: ParticipanteInput[];
 }
 
 interface SearchResponse {
@@ -59,6 +85,12 @@ interface GetClaseResponse {
 
 interface SemestresResponse {
   semestres: SemestreResumen[];
+}
+
+interface PublicarClaseResponse {
+  message: string;
+  claseId: string;
+  fechaPublicacion: string;
 }
 
 function toQuery(params: SearchParams): string {
@@ -81,6 +113,16 @@ export const catalogApi = {
 
   semestres: (semestre: string, token: string): Promise<SemestresResponse> =>
     apiFetch<SemestresResponse>(`/catalog/semestres${semestre ? `?semestre=${encodeURIComponent(semestre)}` : ''}`, {
+      token,
+    }),
+
+  getCursoPorCodigo: (codigo: string, token: string): Promise<{ curso: CursoCatalogo }> =>
+    apiFetch<{ curso: CursoCatalogo }>(`/catalog/courses/${encodeURIComponent(codigo)}`, { token }),
+
+  publicarClase: (input: PublicarClaseInput, token: string): Promise<PublicarClaseResponse> =>
+    apiFetch<PublicarClaseResponse>('/catalog/classes', {
+      method: 'POST',
+      body: input,
       token,
     }),
 };

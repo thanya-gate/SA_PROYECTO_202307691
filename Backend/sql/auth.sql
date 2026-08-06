@@ -15,9 +15,13 @@ CREATE TABLE usuario (
     email_verificado    BOOLEAN NOT NULL DEFAULT FALSE,
     activo              BOOLEAN NOT NULL DEFAULT TRUE,
     proveedor_oauth     VARCHAR(50),
+    nombres             VARCHAR(120),
+    apellidos           VARCHAR(120),
     carnet              VARCHAR(10) UNIQUE,
     dpi                 VARCHAR(13) UNIQUE,
     fecha_nacimiento    DATE,
+    telefono_celular    VARCHAR(20),
+    carrera             VARCHAR(120),
     fecha_creacion      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -53,15 +53,6 @@ const ChartIcon = () => (
     <line x1="19" y1="20" x2="19" y2="8" />
   </Icon>
 );
-const ClipboardIcon = () => (
-  <Icon>
-    <path d="M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1z" />
-    <rect x="4" y="4" width="16" height="18" rx="2" />
-    <line x1="8" y1="10" x2="16" y2="10" />
-    <line x1="8" y1="14" x2="16" y2="14" />
-    <line x1="8" y1="18" x2="12" y2="18" />
-  </Icon>
-);
 const MenuIcon = () => (
   <Icon>
     <line x1="3" y1="6" x2="21" y2="6" />
@@ -124,15 +115,31 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
   { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
+  { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
   {
     to: '',
-    label: 'Asignaciones',
-    icon: <ClipboardIcon />,
+    label: 'Notificaciones',
+    icon: <BellIcon />,
     disabled: true,
-    description: 'Cursos inscritos y permisos por rol',
+    description: 'Revisar las notificaciones del sistema',
   },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
+  { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
+];
+
+const DOCENTE_NAV_ITEMS: NavItem[] = [
+  { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
+  { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
+  {
+    to: '',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    disabled: true,
+    description: 'Revisar las notificaciones del sistema',
+  },
+  { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
+  { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -145,11 +152,10 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     description: 'Administrar cuentas, roles y permisos',
   },
   {
-    to: '',
-    label: 'Gestión de Contenido',
+    to: '/admin/cursos',
+    label: 'Gestión de Cursos',
     icon: <ContentIcon />,
-    disabled: true,
-    description: 'Administrar cursos, grabaciones y catálogo',
+    description: 'Crear cursos y asignar catedráticos',
   },
   {
     to: '',
@@ -172,6 +178,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     disabled: true,
     description: 'Configuración general de la plataforma',
   },
+  { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -179,7 +186,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const isAdmin = user?.roles.includes('ROLE_ADMIN') ?? false;
-  const navItems = isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
+  const isDocente =
+    (user?.roles.includes('ROLE_CATEDRATICO') ?? false) || (user?.roles.includes('ROLE_AUXILIAR') ?? false);
+  const navItems = isAdmin ? ADMIN_NAV_ITEMS : isDocente ? DOCENTE_NAV_ITEMS : NAV_ITEMS;
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {

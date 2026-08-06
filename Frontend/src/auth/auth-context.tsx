@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { authApi, type AuthResponse, type PublicUser, type RegisterInput } from '../api/auth';
+import { authApi, type AuthResponse, type PublicUser, type RegisterInput, type UpdateProfileInput } from '../api/auth';
 
 const TOKEN_KEY = 'yousac_token';
 const OAUTH_STATE_KEY = 'yousac_oauth_state';
@@ -13,6 +13,8 @@ interface AuthContextValue {
   loginWithOAuth: (email: string) => Promise<void>;
   completeOAuthLogin: (code: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  updateProfile: (input: UpdateProfileInput) => Promise<PublicUser>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -114,9 +116,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  async function refreshUser(): Promise<void> {
+    if (!token) return;
+    const res = await authApi.me(token);
+    setUser(res.user);
+  }
+
+  async function updateProfile(input: UpdateProfileInput): Promise<PublicUser> {
+    if (!token) {
+      throw new Error('No autenticado');
+    }
+    const res = await authApi.updateProfile(token, input);
+    setUser(res.user);
+    return res.user;
+  }
+
   return (
     <AuthContext.Provider
-      value={{ user, token, initializing, login, register, loginWithOAuth, completeOAuthLogin, logout }}
+      value={{
+        user,
+        token,
+        initializing,
+        login,
+        register,
+        loginWithOAuth,
+        completeOAuthLogin,
+        logout,
+        refreshUser,
+        updateProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>

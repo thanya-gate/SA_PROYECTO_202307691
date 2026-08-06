@@ -13,6 +13,7 @@ import {
 import {
   CursoCatedraticoItem,
   CursoInscripcion,
+  DocenteInscripcion,
   PanelEstudianteItem,
 } from '../../../domain/entities/inscripcion';
 
@@ -202,6 +203,27 @@ export class PostgresInscripcionRepository implements InscripcionRepository {
       cursoId,
     ]);
     return res.rows[0]?.fn_estado_matricula ?? 'SIN_MATRICULA';
+  }
+
+  async listarCursos(): Promise<CursoInscripcion[]> {
+    const res = await query<CursoRow>(
+      'SELECT id, codigo, nombre, escuela, semestre, año FROM curso ORDER BY semestre DESC, codigo ASC',
+    );
+    return res.rows.map((r) => ({
+      cursoId: r.id,
+      codigo: r.codigo,
+      nombre: r.nombre,
+      escuela: r.escuela,
+      semestre: r.semestre,
+      anio: r.año,
+    }));
+  }
+
+  async listarDocentes(): Promise<DocenteInscripcion[]> {
+    const res = await query<{ id: string; usuario_id: string }>(
+      'SELECT id, usuario_id FROM docente ORDER BY usuario_id ASC',
+    );
+    return res.rows.map((r) => ({ docenteId: r.id, usuarioId: r.usuario_id }));
   }
 
   private async getCursoByCodigo(client: PoolClient, codigo: string): Promise<CursoInscripcion> {

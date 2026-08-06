@@ -34,7 +34,7 @@ export const publicarClaseSchema = z.object({
   fechaImparticion: optionalText(10),
   semestre: z.string().trim().regex(semestreRegex, 'Semestre inválido (formato AAAA-1 o AAAA-2)'),
   anio: z.number().int().min(2000, 'año inválido').max(2100, 'año inválido'),
-  urlVideo: z.string().trim().min(1, 'urlVideo es obligatorio'),
+  urlVideo: optionalText(2000),
   urlMaterial: optionalText(500),
   duracion: z.number().int().min(0, 'duracion no puede ser negativa'),
   etiquetas: z.array(z.string().trim().min(1).max(100)).max(20).default([]),

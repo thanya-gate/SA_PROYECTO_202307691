@@ -1,7 +1,7 @@
 import { User } from '../../../domain/entities/user';
 import { Role } from '../../../domain/enums/role';
 import { DomainError } from '../../../domain/errors/domain-error';
-import { UserRepository } from '../../../application/ports/user-repository';
+import { UserRepository, UpdateProfileData } from '../../../application/ports/user-repository';
 
 /**
  * Implementación en memoria del repositorio de usuarios.
@@ -43,6 +43,11 @@ export class InMemoryUserRepository implements UserRepository {
     return null;
   }
 
+  async findByRoles(roles: Role[]): Promise<User[]> {
+    const wanted = new Set(roles);
+    return [...this.store.values()].filter((u) => u.roles.some((r) => wanted.has(r)));
+  }
+
   async addRole(userId: string, role: Role): Promise<User> {
     const user = await this.requireUser(userId);
     const updated: User = { ...user, roles: [...user.roles, role], updatedAt: new Date() };
@@ -64,6 +69,23 @@ export class InMemoryUserRepository implements UserRepository {
   async updatePassword(userId: string, passwordHash: string): Promise<User> {
     const user = await this.requireUser(userId);
     const updated: User = { ...user, passwordHash, updatedAt: new Date() };
+    this.store.set(userId, updated);
+    return updated;
+  }
+
+  async updateProfile(userId: string, data: UpdateProfileData): Promise<User> {
+    const user = await this.requireUser(userId);
+    const updated: User = {
+      ...user,
+      nombres: data.nombres !== undefined ? data.nombres : user.nombres,
+      apellidos: data.apellidos !== undefined ? data.apellidos : user.apellidos,
+      carnet: data.carnet !== undefined ? data.carnet : user.carnet,
+      dpi: data.dpi !== undefined ? data.dpi : user.dpi,
+      fechaNacimiento: data.fechaNacimiento !== undefined ? data.fechaNacimiento : user.fechaNacimiento,
+      telefonoCelular: data.telefonoCelular !== undefined ? data.telefonoCelular : user.telefonoCelular,
+      carrera: data.carrera !== undefined ? data.carrera : user.carrera,
+      updatedAt: new Date(),
+    };
     this.store.set(userId, updated);
     return updated;
   }

@@ -1,7 +1,7 @@
 import { User } from '../../../domain/entities/user';
 import { Role } from '../../../domain/enums/role';
 import { DomainError } from '../../../domain/errors/domain-error';
-import { UserRepository } from '../../../application/ports/user-repository';
+import { UpdateProfileData, UserRepository } from '../../../application/ports/user-repository';
 import { query } from './db';
 
 interface UserRow {
@@ -11,9 +11,13 @@ interface UserRow {
   email_verified: boolean;
   activo: boolean;
   proveedor_oauth: string | null;
+  nombres: string | null;
+  apellidos: string | null;
   carnet: string | null;
   dpi: string | null;
   fecha_nacimiento: Date | string | null;
+  telefono_celular: string | null;
+  carrera: string | null;
   roles: string[];
   created_at: Date;
   updated_at: Date;
@@ -27,9 +31,13 @@ const USER_SELECT = `
     u.email_verificado AS email_verified,
     u.activo,
     u.proveedor_oauth,
+    u.nombres,
+    u.apellidos,
     u.carnet,
     u.dpi,
     u.fecha_nacimiento,
+    u.telefono_celular,
+    u.carrera,
     COALESCE((
       SELECT array_agg(r.nombre ORDER BY r.nombre)
       FROM usuario_rol ur
@@ -49,11 +57,15 @@ function rowToUser(row: UserRow): User {
     emailVerified: row.email_verified,
     roles: (row.roles ?? []).map((r) => r as Role),
     oauthProviders: row.proveedor_oauth ? [row.proveedor_oauth] : [],
+    nombres: row.nombres ?? null,
+    apellidos: row.apellidos ?? null,
     carnet: row.carnet ?? null,
     dpi: row.dpi ?? null,
     fechaNacimiento: row.fecha_nacimiento
       ? new Date(row.fecha_nacimiento).toISOString().slice(0, 10)
       : null,
+    telefonoCelular: row.telefono_celular ?? null,
+    carrera: row.carrera ?? null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -81,9 +93,13 @@ export class PostgresUserRepository implements UserRepository {
                 email_verificado = $4,
                 activo = TRUE,
                 proveedor_oauth = $5,
-                carnet = $6,
-                dpi = $7,
-                fecha_nacimiento = $8,
+                nombres = $6,
+                apellidos = $7,
+                carnet = $8,
+                dpi = $9,
+                fecha_nacimiento = $10,
+                telefono_celular = $11,
+                carrera = $12,
                 fecha_actualizacion = NOW()
           WHERE id = $1`,
         [
@@ -92,24 +108,32 @@ export class PostgresUserRepository implements UserRepository {
           user.passwordHash,
           user.emailVerified,
           user.oauthProviders[0] ?? null,
+          user.nombres ?? null,
+          user.apellidos ?? null,
           user.carnet ?? null,
           user.dpi ?? null,
           user.fechaNacimiento ?? null,
+          user.telefonoCelular ?? null,
+          user.carrera ?? null,
         ],
       );
     } else {
       await query(
-        `INSERT INTO usuario (id, correo_institucional, contraseña, email_verificado, activo, proveedor_oauth, carnet, dpi, fecha_nacimiento)
-         VALUES ($1, $2, $3, $4, TRUE, $5, $6, $7, $8)`,
+        `INSERT INTO usuario (id, correo_institucional, contraseña, email_verificado, activo, proveedor_oauth, nombres, apellidos, carnet, dpi, fecha_nacimiento, telefono_celular, carrera)
+         VALUES ($1, $2, $3, $4, TRUE, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           user.userId,
           user.email,
           user.passwordHash,
           user.emailVerified,
           user.oauthProviders[0] ?? null,
+          user.nombres ?? null,
+          user.apellidos ?? null,
           user.carnet ?? null,
           user.dpi ?? null,
           user.fechaNacimiento ?? null,
+          user.telefonoCelular ?? null,
+          user.carrera ?? null,
         ],
       );
     }
@@ -146,6 +170,23 @@ export class PostgresUserRepository implements UserRepository {
     return result.rows[0] ? rowToUser(result.rows[0]) : null;
   }
 
+  async findByRoles(roles: Role[]): Promise<User[]> {
+    if (roles.length === 0) return [];
+    const result = await query<UserRow>(
+      `${USER_SELECT}
+       WHERE u.activo = TRUE
+         AND u.id IN (
+           SELECT ur.usuario_id
+           FROM usuario_rol ur
+           JOIN rol r ON r.id = ur.rol_id
+           WHERE r.nombre = ANY($1::text[])
+         )
+       ORDER BY u.nombres ASC, u.apellidos ASC`,
+      [roles],
+    );
+    return result.rows.map(rowToUser);
+  }
+
   /** sp_asignar_rol: otorga un rol adicional (multiperfil). */
   async addRole(userId: string, role: Role): Promise<User> {
     await query('CALL sp_asignar_rol($1, $2)', [userId, role]);
@@ -169,6 +210,34 @@ export class PostgresUserRepository implements UserRepository {
   /** sp_cambiar_password: actualización de credenciales (trg_auditoria_password). */
   async updatePassword(userId: string, passwordHash: string): Promise<User> {
     await query('CALL sp_cambiar_password($1, $2)', [userId, passwordHash]);
+    return this.requireUser(userId);
+  }
+
+  /** Actualiza los datos editables del perfil del usuario. */
+  async updateProfile(userId: string, data: UpdateProfileData): Promise<User> {
+    await this.requireUser(userId);
+    await query(
+      `UPDATE usuario
+          SET nombres = COALESCE($2, nombres),
+              apellidos = COALESCE($3, apellidos),
+              carnet = COALESCE($4, carnet),
+              dpi = COALESCE($5, dpi),
+              fecha_nacimiento = COALESCE($6, fecha_nacimiento),
+              telefono_celular = COALESCE($7, telefono_celular),
+              carrera = COALESCE($8, carrera),
+              fecha_actualizacion = NOW()
+        WHERE id = $1`,
+      [
+        userId,
+        data.nombres ?? null,
+        data.apellidos ?? null,
+        data.carnet ?? null,
+        data.dpi ?? null,
+        data.fechaNacimiento ?? null,
+        data.telefonoCelular ?? null,
+        data.carrera ?? null,
+      ],
+    );
     return this.requireUser(userId);
   }
 
