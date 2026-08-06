@@ -64,4 +64,7 @@ export const inscripcionGrpc = {
     unary('ConsultarCursosCatedratico', { catedraticoUsuarioId }),
   consultarEstadoMatricula: (estudianteId: string, cursoId: string) =>
     unary('ConsultarEstadoMatricula', { estudianteId, cursoId }),
+
+  listarCursos: () => unary('ListarCursos', {}),
+  listarDocentes: () => unary('ListarDocentes', {}),
 };

@@ -73,6 +73,10 @@ function userToProto(u: User) {
     carnet: u.carnet ?? '',
     dpi: u.dpi ?? '',
     fechaNacimiento: u.fechaNacimiento ?? '',
+    nombres: u.nombres ?? '',
+    apellidos: u.apellidos ?? '',
+    telefonoCelular: u.telefonoCelular ?? '',
+    carrera: u.carrera ?? '',
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
   };
@@ -259,6 +263,27 @@ export function createGrpcServer(): grpc.Server {
           call.request.email,
           call.request.password,
         );
+        callback(null, { user: userToProto(user) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    UpdateProfile: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const patch = (value: string): string | null | undefined => {
+          if (value === '' || value === undefined) return undefined;
+          return value;
+        };
+        const user = await container.profileService.updateProfile(call.request.userId, {
+          nombres: patch(call.request.nombres),
+          apellidos: patch(call.request.apellidos),
+          carnet: patch(call.request.carnet),
+          dpi: patch(call.request.dpi),
+          fechaNacimiento: patch(call.request.fechaNacimiento),
+          telefonoCelular: patch(call.request.telefonoCelular),
+          carrera: patch(call.request.carrera),
+        });
         callback(null, { user: userToProto(user) });
       } catch (err: any) {
         callback(mapError(err));

@@ -50,6 +50,10 @@ function publicUser(u: {
   carnet?: string | null;
   dpi?: string | null;
   fechaNacimiento?: string | null;
+  nombres?: string | null;
+  apellidos?: string | null;
+  telefonoCelular?: string | null;
+  carrera?: string | null;
 }) {
   return {
     userId: u.userId,
@@ -59,7 +63,17 @@ function publicUser(u: {
     carnet: u.carnet ?? null,
     dpi: u.dpi ?? null,
     fechaNacimiento: u.fechaNacimiento ?? null,
+    nombres: u.nombres ?? null,
+    apellidos: u.apellidos ?? null,
+    telefonoCelular: u.telefonoCelular ?? null,
+    carrera: u.carrera ?? null,
   };
+}
+
+function toOptionalString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 function toProtoRole(role: string): string {
@@ -194,6 +208,26 @@ export function createGateway(): Express {
     try {
       const result = await authGrpc.getCurrentUser(req.context!.sessionId);
       res.json({ user: publicUser(result.user), sessionId: result.sessionId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/auth/me', authenticate, async (req, res, next) => {
+    try {
+      const { nombres, apellidos, carnet, dpi, fechaNacimiento, telefonoCelular, carrera } =
+        req.body as Record<string, unknown>;
+      const result = await authGrpc.updateProfile({
+        userId: req.context!.userId,
+        nombres: toOptionalString(nombres),
+        apellidos: toOptionalString(apellidos),
+        carnet: toOptionalString(carnet),
+        dpi: toOptionalString(dpi),
+        fechaNacimiento: toOptionalString(fechaNacimiento),
+        telefonoCelular: toOptionalString(telefonoCelular),
+        carrera: toOptionalString(carrera),
+      });
+      res.json({ user: publicUser(result.user) });
     } catch (err) {
       next(err);
     }
@@ -779,6 +813,45 @@ export function createGateway(): Express {
       }
       const result = await inscripcionGrpc.registrarAuxiliar(usuarioId);
       res.status(201).json({ message: 'Auxiliar registrado', auxiliarId: result.auxiliarId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/inscripcion/cursos', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.listarCursos();
+      res.json({ cursos: result.cursos });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/inscripcion/docentes', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.listarDocentes();
+      res.json({ docentes: result.docentes });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/inscripcion/inscripciones/auto', authenticate, requireRole('ROLE_ESTUDIANTE'), async (req, res, next) => {
+    try {
+      const { cursoId, semestre } = req.body as Record<string, unknown>;
+      if (typeof cursoId !== 'string' || typeof semestre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'cursoId y semestre son obligatorios', 400);
+      }
+      const result = await inscripcionGrpc.inscribirEstudiante({
+        estudianteId: req.context!.userId,
+        cursoId,
+        semestre,
+      });
+      res.status(201).json({
+        message: 'Inscripción registrada',
+        inscripcionId: result.inscripcionId,
+        estadoMatricula: result.estadoMatricula,
+      });
     } catch (err) {
       next(err);
     }

@@ -26,3 +26,8 @@ export interface CursoCatedraticoItem {
   anio: number;
   auxiliares: string[];
 }
+
+export interface DocenteInscripcion {
+  docenteId: string;
+  usuarioId: string;
+}

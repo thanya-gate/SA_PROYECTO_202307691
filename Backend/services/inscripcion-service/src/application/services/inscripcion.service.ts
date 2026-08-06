@@ -12,6 +12,7 @@ import {
 import {
   CursoCatedraticoItem,
   CursoInscripcion,
+  DocenteInscripcion,
   PanelEstudianteItem,
 } from '../../domain/entities/inscripcion';
 import {
@@ -92,5 +93,13 @@ export class InscripcionService {
       throw new DomainError('ENTRADA_INVALIDA', 'estudianteId y cursoId son obligatorios', 400);
     }
     return this.repository.consultarEstadoMatricula(estudianteId, cursoId);
+  }
+
+  async listarCursos(): Promise<CursoInscripcion[]> {
+    return this.repository.listarCursos();
+  }
+
+  async listarDocentes(): Promise<DocenteInscripcion[]> {
+    return this.repository.listarDocentes();
   }
 }

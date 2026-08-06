@@ -41,6 +41,10 @@ message User {
   string carnet = 7;
   string dpi = 8;
   string fecha_nacimiento = 9;
+  string nombres = 10;
+  string apellidos = 11;
+  string telefono_celular = 12;
+  string carrera = 13;
 }
 
 message SessionInfo {
@@ -173,6 +177,23 @@ message GetCurrentUserResponse {
   string session_id = 2;
 }
 
+// ---- Perfil (actualización de datos personales) ----
+
+message UpdateProfileRequest {
+  string user_id = 1;
+  string nombres = 2;
+  string apellidos = 3;
+  string carnet = 4;
+  string dpi = 5;
+  string fecha_nacimiento = 6;
+  string telefono_celular = 7;
+  string carrera = 8;
+}
+
+message UpdateProfileResponse {
+  User user = 1;
+}
+
 // ---- Cuenta (verificación de correo y contraseña) ----
 
 message RequestEmailVerificationRequest {
@@ -293,6 +314,7 @@ service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
   rpc ValidateCredentials(ValidateCredentialsRequest) returns (ValidateCredentialsResponse);
 
   // --- Cuenta ---

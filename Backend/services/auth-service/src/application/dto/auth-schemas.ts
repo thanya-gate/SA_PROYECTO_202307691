@@ -37,6 +37,35 @@ export const assignRoleSchema = z.object({
   role: z.nativeEnum(Role, { errorMap: () => ({ message: 'Rol inválido' }) }),
 });
 
+export const updateProfileSchema = z.object({
+  nombres: z.string().trim().min(1, 'Nombres requeridos').max(120, 'Nombres muy largos').optional(),
+  apellidos: z.string().trim().min(1, 'Apellidos requeridos').max(120, 'Apellidos muy largos').optional(),
+  carnet: z
+    .string()
+    .regex(/^\d{8,10}$/, 'Carnet inválido (debe tener de 8 a 10 dígitos)')
+    .optional()
+    .nullable(),
+  dpi: z
+    .string()
+    .regex(/^\d{13}$/, 'DPI inválido (debe tener 13 dígitos)')
+    .optional()
+    .nullable(),
+  fechaNacimiento: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha de nacimiento inválida')
+    .optional()
+    .nullable(),
+  telefonoCelular: z.string().regex(/^\d{8,20}$/, 'Teléfono inválido').optional().nullable(),
+  carrera: z.string().trim().max(120, 'Carrera muy larga').optional().nullable(),
+}).refine((d) => {
+  if (!d.fechaNacimiento) return true;
+  const fecha = new Date(`${d.fechaNacimiento}T00:00:00Z`);
+  return !Number.isNaN(fecha.getTime()) && fecha.getTime() <= Date.now();
+}, {
+  message: 'La fecha de nacimiento no puede ser futura',
+  path: ['fechaNacimiento'],
+});
+
 export const checkPermissionSchema = z.object({
   resource: z.string().min(1),
   action: z.string().min(1),
