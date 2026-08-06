@@ -53,15 +53,6 @@ const ChartIcon = () => (
     <line x1="19" y1="20" x2="19" y2="8" />
   </Icon>
 );
-const ClipboardIcon = () => (
-  <Icon>
-    <path d="M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1z" />
-    <rect x="4" y="4" width="16" height="18" rx="2" />
-    <line x1="8" y1="10" x2="16" y2="10" />
-    <line x1="8" y1="14" x2="16" y2="14" />
-    <line x1="8" y1="18" x2="12" y2="18" />
-  </Icon>
-);
 const MenuIcon = () => (
   <Icon>
     <line x1="3" y1="6" x2="21" y2="6" />
@@ -131,12 +122,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: <BellIcon />,
     disabled: true,
     description: 'Revisar las notificaciones del sistema',
-  },
-  {
-    to: '/asignaciones',
-    label: 'Asignaciones',
-    icon: <ClipboardIcon />,
-    description: 'Cursos inscritos y permisos por rol',
   },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },

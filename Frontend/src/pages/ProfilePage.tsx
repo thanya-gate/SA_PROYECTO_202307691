@@ -1,5 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { inscripcionApi, type PanelEstudianteItem } from '../api/inscripcion';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  inscripcionApi,
+  type CursoCatedraticoItem,
+  type PanelEstudianteItem,
+} from '../api/inscripcion';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import { Alert } from '../components/ui/Alert';
@@ -51,9 +56,32 @@ export default function ProfilePage() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const esAdmin = user?.roles.includes('ROLE_ADMIN') ?? false;
+  const esCatedratico = user?.roles.includes('ROLE_CATEDRATICO') ?? false;
+  const esAuxiliar = user?.roles.includes('ROLE_AUXILIAR') ?? false;
+
+  const [vistaAdmin, setVistaAdmin] = useState<'estudiante' | 'catedratico'>('estudiante');
+  const [userIdAdmin, setUserIdAdmin] = useState('');
+  const vista: 'estudiante' | 'catedratico' | 'auxiliar' = esAdmin
+    ? vistaAdmin
+    : esEstudiante
+      ? 'estudiante'
+      : esCatedratico
+        ? 'catedratico'
+        : esAuxiliar
+          ? 'auxiliar'
+          : 'estudiante';
+
   const [panel, setPanel] = useState<PanelEstudianteItem[]>([]);
+  const [cursos, setCursos] = useState<CursoCatedraticoItem[]>([]);
   const [cargandoCursos, setCargandoCursos] = useState(false);
   const [errorCursos, setErrorCursos] = useState<string | null>(null);
+
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroSemestre, setFiltroSemestre] = useState('');
+  const [filtroAnio, setFiltroAnio] = useState('');
+
+  const adminId = esAdmin && userIdAdmin.trim() ? userIdAdmin.trim() : undefined;
 
   useEffect(() => {
     if (user) {
@@ -68,16 +96,31 @@ export default function ProfilePage() {
 
   useEffect(() => {
     let active = true;
-    if (seccion !== 'cursos' || !esEstudiante) return;
+    if (seccion !== 'cursos') return;
     setCargandoCursos(true);
     setErrorCursos(null);
-    inscripcionApi
-      .panelEstudiante(tokenActual)
-      .then((res) => {
-        if (active) setPanel(res.items);
-      })
+    const cargar = async () => {
+      if (vista === 'estudiante') {
+        const res = await inscripcionApi.panelEstudiante(tokenActual, adminId);
+        if (active) {
+          setPanel(res.items);
+          setCursos([]);
+        }
+      } else if (vista === 'catedratico') {
+        const res = await inscripcionApi.cursosCatedratico(tokenActual, adminId);
+        if (active) {
+          setCursos(res.items);
+          setPanel([]);
+        }
+      }
+    };
+    cargar()
       .catch((err: unknown) => {
-        if (active) setErrorCursos(err instanceof Error ? err.message : 'No se pudieron cargar tus cursos');
+        if (active) {
+          setErrorCursos(err instanceof Error ? err.message : 'No se pudieron cargar tus cursos');
+          setPanel([]);
+          setCursos([]);
+        }
       })
       .finally(() => {
         if (active) setCargandoCursos(false);
@@ -85,7 +128,94 @@ export default function ProfilePage() {
     return () => {
       active = false;
     };
-  }, [seccion, tokenActual, esEstudiante]);
+  }, [seccion, vista, adminId, tokenActual]);
+
+  const semestres = useMemo(() => {
+    const fuentes: Array<{ semestre: string; anio: number }> = vista === 'estudiante' ? panel : cursos;
+    const valores = new Map<string, number>();
+    for (const item of fuentes) valores.set(item.semestre, item.anio);
+    return [...valores.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  }, [vista, panel, cursos]);
+
+  const anios = useMemo(() => {
+    const fuentes: Array<{ anio: number }> = vista === 'estudiante' ? panel : cursos;
+    return [...new Set(fuentes.map((item) => item.anio))].sort((a, b) => b - a);
+  }, [vista, panel, cursos]);
+
+  const coincide = (codigo: string, curso: string): boolean => {
+    const termino = busqueda.toLowerCase();
+    return codigo.toLowerCase().includes(termino) || curso.toLowerCase().includes(termino);
+  };
+
+  const panelFiltrado = useMemo(
+    () =>
+      panel.filter(
+        (item) =>
+          coincide(item.codigo, item.curso) &&
+          (filtroSemestre === '' || item.semestre === filtroSemestre) &&
+          (filtroAnio === '' || String(item.anio) === filtroAnio),
+      ),
+    [panel, busqueda, filtroSemestre, filtroAnio],
+  );
+
+  const cursosFiltrados = useMemo(
+    () =>
+      cursos.filter(
+        (item) =>
+          coincide(item.codigo, item.curso) &&
+          (filtroSemestre === '' || item.semestre === filtroSemestre) &&
+          (filtroAnio === '' || String(item.anio) === filtroAnio),
+      ),
+    [cursos, busqueda, filtroSemestre, filtroAnio],
+  );
+
+  const hayFiltros = busqueda !== '' || filtroSemestre !== '' || filtroAnio !== '';
+
+  const mensajeVacio = hayFiltros
+    ? 'No hay cursos que coincidan con los filtros.'
+    : vista === 'estudiante'
+      ? 'No hay cursos asociados a tu cuenta este semestre.'
+      : 'Aún no tienes cursos asignados este semestre.';
+
+  const barraFiltros = (
+    <div className="asig__toolbar">
+      <div className="asig__toolbar-busqueda">
+        <span className="asig__toolbar-icon" aria-hidden="true">
+          🔍
+        </span>
+        <input
+          type="search"
+          className="asig__toolbar-input"
+          placeholder="Search"
+          aria-label="Buscar curso"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
+      <label className="asig__toolbar-select">
+        <span>Semestre</span>
+        <select value={filtroSemestre} onChange={(e) => setFiltroSemestre(e.target.value)}>
+          <option value="">Todos</option>
+          {semestres.map(([semestre]) => (
+            <option key={semestre} value={semestre}>
+              {semestreCorto(semestre)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="asig__toolbar-select">
+        <span>Año</span>
+        <select value={filtroAnio} onChange={(e) => setFiltroAnio(e.target.value)}>
+          <option value="">Todos</option>
+          {anios.map((anio) => (
+            <option key={anio} value={String(anio)}>
+              {anio}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
 
   async function guardarCredenciales(event: FormEvent) {
     event.preventDefault();
@@ -249,52 +379,77 @@ export default function ProfilePage() {
                 <header className="perfil__contenido-header">
                   <h2 className="perfil__titulo">Cursos asignados</h2>
                   <p className="perfil__subtitulo">
-                    Cursos en los que estás inscrito y el estado de tu matrícula.
+                    Cursos en los que estás inscrito o asignado y el estado de tu matrícula según tu
+                    rol.
                   </p>
                 </header>
 
-                {!esEstudiante ? (
+                {esAdmin && (
+                  <div className="asig__admin">
+                    <span className="asig__admin-label">Vista de administración</span>
+                    <div className="asig__admin-controles">
+                      <div className="asig__admin-switch" role="group" aria-label="Tipo de panel">
+                        <button
+                          type="button"
+                          className={`asig__admin-btn${vistaAdmin === 'estudiante' ? ' asig__admin-btn--active' : ''}`}
+                          onClick={() => setVistaAdmin('estudiante')}
+                        >
+                          Panel estudiante
+                        </button>
+                        <button
+                          type="button"
+                          className={`asig__admin-btn${vistaAdmin === 'catedratico' ? ' asig__admin-btn--active' : ''}`}
+                          onClick={() => setVistaAdmin('catedratico')}
+                        >
+                          Panel catedrático
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        className="asig__admin-input"
+                        placeholder="ID de usuario (opcional)"
+                        value={userIdAdmin}
+                        onChange={(e) => setUserIdAdmin(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {errorCursos && (
+                  <Alert tone="error">
+                    <strong>Error:</strong> {errorCursos}
+                  </Alert>
+                )}
+
+                {vista === 'auxiliar' ? (
                   <div className="asig__vacio">
-                    <p className="asig__vacio-titulo">Consulta de cursos solo para estudiantes</p>
+                    <p className="asig__vacio-titulo">Asignaciones de auxiliar</p>
                     <p className="asig__vacio-texto">
-                      Los catedráticos y auxiliares pueden ver sus asignaciones desde el módulo de
-                      Asignaciones.
+                      Como auxiliar, tus asignaciones se gestionan desde los cursos del catedrático al
+                      que apoyas. Explora el catálogo para consultar las clases disponibles.
                     </p>
                   </div>
                 ) : cargandoCursos ? (
                   <p className="catalogo__estado" role="status">
                     Cargando tus cursos…
                   </p>
-                ) : errorCursos ? (
-                  <Alert tone="error">
-                    <strong>Error:</strong> {errorCursos}
-                  </Alert>
-                ) : panel.length === 0 ? (
-                  <div className="asig__vacio">
-                    <p className="asig__vacio-titulo">Aún no tienes cursos asignados</p>
-                    <p className="asig__vacio-texto">
-                      Inscríbete a un curso desde el módulo Mis cursos para verlo aquí.
-                    </p>
+                ) : vista === 'estudiante' ? (
+                  <div className="asig__tabla-wrap">
+                    {barraFiltros}
+                    {panelFiltrado.length === 0 ? (
+                      <p className="catalogo__estado">{mensajeVacio}</p>
+                    ) : (
+                      <TablaPanel items={panelFiltrado} />
+                    )}
                   </div>
                 ) : (
-                  <div className="perfil__lista-cursos">
-                    {panel.map((item) => (
-                      <article key={item.cursoId} className="perfil__curso">
-                        <div>
-                          <h3 className="perfil__curso-titulo">
-                            {item.codigo} · {item.curso}
-                          </h3>
-                          <p className="perfil__curso-meta">
-                            {item.escuela} · {semestreCorto(item.semestre)} {item.anio}
-                          </p>
-                        </div>
-                        <span
-                          className={`mcursos__badge mcursos__badge--${item.estadoMatricula.toLowerCase()}`}
-                        >
-                          {etiquetaEstado(item.estadoMatricula)}
-                        </span>
-                      </article>
-                    ))}
+                  <div className="asig__tabla-wrap">
+                    {barraFiltros}
+                    {cursosFiltrados.length === 0 ? (
+                      <p className="catalogo__estado">{mensajeVacio}</p>
+                    ) : (
+                      <TablaCatedratico items={cursosFiltrados} />
+                    )}
                   </div>
                 )}
               </div>
@@ -340,4 +495,99 @@ export default function ProfilePage() {
       </section>
     </AppLayout>
   );
+}
+
+function TablaPanel({ items }: { items: PanelEstudianteItem[] }) {
+  return (
+    <table className="asig__tabla">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Curso</th>
+          <th>Semestre</th>
+          <th>Estado matrícula</th>
+          <th aria-label="Acción" />
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((item) => (
+          <tr key={item.cursoId}>
+            <td className="asig__celda-id">{item.codigo}</td>
+            <td>
+              <span className="asig__curso">{item.curso}</span>
+              <span className="asig__escuela">{item.escuela}</span>
+            </td>
+            <td className="asig__celda-semestre">
+              {semestreCorto(item.semestre)} · {item.anio}
+            </td>
+            <td>
+              <BadgeEstado estado={item.estadoMatricula} />
+            </td>
+            <td className="asig__celda-accion">
+              <Link to="/catalogo" className="asig__ir">
+                Ir
+              </Link>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function TablaCatedratico({ items }: { items: CursoCatedraticoItem[] }) {
+  return (
+    <table className="asig__tabla">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Curso</th>
+          <th>Semestre</th>
+          <th>Auxiliares</th>
+          <th aria-label="Acción" />
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((item) => (
+          <tr key={item.cursoId}>
+            <td className="asig__celda-id">{item.codigo}</td>
+            <td>
+              <span className="asig__curso">{item.curso}</span>
+            </td>
+            <td className="asig__celda-semestre">
+              {semestreCorto(item.semestre)} · {item.anio}
+            </td>
+            <td className="asig__celda-auxiliares">
+              {item.auxiliares.length === 0 ? (
+                <span className="asig__muted">Sin auxiliares</span>
+              ) : (
+                item.auxiliares.map((aux) => (
+                  <span key={aux} className="asig__aux" title={aux}>
+                    {aux.slice(0, 8)}
+                  </span>
+                ))
+              )}
+            </td>
+            <td className="asig__celda-accion">
+              <Link to="/catalogo" className="asig__ir">
+                Ir
+              </Link>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function BadgeEstado({ estado }: { estado: string }) {
+  const clase =
+    estado === 'ACTIVA'
+      ? 'asig__badge asig__badge--activa'
+      : estado === 'PENDIENTE'
+        ? 'asig__badge asig__badge--pendiente'
+        : estado === 'RETIRADA'
+          ? 'asig__badge asig__badge--retirada'
+          : 'asig__badge asig__badge--sin';
+  return <span className={clase}>{etiquetaEstado(estado)}</span>;
 }

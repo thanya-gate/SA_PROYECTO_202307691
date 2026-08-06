@@ -10,7 +10,6 @@ import ClasePage from './pages/ClasePage';
 import HistorialPage from './pages/HistorialPage';
 import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
-import AsignacionesPage from './pages/AsignacionesPage';
 import GestionCursosPage from './pages/GestionCursosPage';
 import MisCursosPage from './pages/MisCursosPage';
 import ProfilePage from './pages/ProfilePage';
@@ -87,14 +86,6 @@ export default function App() {
             element={
               <RequireAuth>
                 <HistorialPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/asignaciones"
-            element={
-              <RequireAuth>
-                <AsignacionesPage />
               </RequireAuth>
             }
           />

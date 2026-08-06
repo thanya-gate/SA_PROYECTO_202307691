@@ -152,8 +152,8 @@ export default function MisCursosPage() {
           <div className="asig__vacio">
             <p className="asig__vacio-titulo">Mis cursos es para estudiantes</p>
             <p className="asig__vacio-texto">
-              Los catedráticos y auxiliares pueden consultar sus asignaciones desde el módulo de
-              Asignaciones o el catálogo de clases grabadas.
+              Los catedráticos y auxiliares pueden consultar sus asignaciones desde Mi perfil o el
+              catálogo de clases grabadas.
             </p>
           </div>
         ) : cargando ? (

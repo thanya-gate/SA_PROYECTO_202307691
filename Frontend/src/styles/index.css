@@ -2368,35 +2368,6 @@ body {
   justify-content: flex-end;
 }
 
-.perfil__lista-cursos {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.perfil__curso {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-}
-
-.perfil__curso-titulo {
-  margin: 0 0 0.2rem;
-  font-size: 0.98rem;
-  color: var(--color-primary-dark);
-}
-
-.perfil__curso-meta {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
 .perfil__vacio {
   text-align: center;
   padding: 2.5rem 1.5rem;
@@ -2420,11 +2391,6 @@ body {
 @media (max-width: 720px) {
   .perfil__layout {
     grid-template-columns: 1fr;
-  }
-
-  .perfil__curso {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .perfil__hero {
