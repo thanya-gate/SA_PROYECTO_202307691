@@ -124,15 +124,23 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
   { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
+  { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
   {
     to: '',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    disabled: true,
+    description: 'Revisar las notificaciones del sistema',
+  },
+  {
+    to: '/asignaciones',
     label: 'Asignaciones',
     icon: <ClipboardIcon />,
-    disabled: true,
     description: 'Cursos inscritos y permisos por rol',
   },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
+  { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -145,11 +153,10 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     description: 'Administrar cuentas, roles y permisos',
   },
   {
-    to: '',
-    label: 'Gestión de Contenido',
+    to: '/admin/cursos',
+    label: 'Gestión de Cursos',
     icon: <ContentIcon />,
-    disabled: true,
-    description: 'Administrar cursos, grabaciones y catálogo',
+    description: 'Crear cursos y asignar catedráticos',
   },
   {
     to: '',
@@ -172,6 +179,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     disabled: true,
     description: 'Configuración general de la plataforma',
   },
+  { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {

@@ -10,6 +10,10 @@ import ClasePage from './pages/ClasePage';
 import HistorialPage from './pages/HistorialPage';
 import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
+import AsignacionesPage from './pages/AsignacionesPage';
+import GestionCursosPage from './pages/GestionCursosPage';
+import MisCursosPage from './pages/MisCursosPage';
+import ProfilePage from './pages/ProfilePage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -87,10 +91,42 @@ export default function App() {
             }
           />
           <Route
+            path="/asignaciones"
+            element={
+              <RequireAuth>
+                <AsignacionesPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/mis-cursos"
+            element={
+              <RequireAuth>
+                <MisCursosPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/cursos"
+            element={
+              <RequireRole role="ROLE_ADMIN">
+                <GestionCursosPage />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/analitica"
             element={
               <RequireAuth>
                 <AnaliticaPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <RequireAuth>
+                <ProfilePage />
               </RequireAuth>
             }
           />

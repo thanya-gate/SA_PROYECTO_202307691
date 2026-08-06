@@ -8,6 +8,20 @@ export interface PublicUser {
   carnet?: string | null;
   dpi?: string | null;
   fechaNacimiento?: string | null;
+  nombres?: string | null;
+  apellidos?: string | null;
+  telefonoCelular?: string | null;
+  carrera?: string | null;
+}
+
+export interface UpdateProfileInput {
+  nombres?: string;
+  apellidos?: string;
+  carnet?: string;
+  dpi?: string;
+  fechaNacimiento?: string;
+  telefonoCelular?: string;
+  carrera?: string;
 }
 
 export type RegisterRole = 'ESTUDIANTE' | 'CATEDRATICO';
@@ -49,6 +63,9 @@ export const authApi = {
     }),
 
   me: (token: string): Promise<MeResponse> => apiFetch<MeResponse>('/auth/me', { token }),
+
+  updateProfile: (token: string, input: UpdateProfileInput): Promise<{ user: PublicUser }> =>
+    apiFetch<{ user: PublicUser }>('/auth/me', { method: 'PATCH', token, body: input }),
 
   logout: (token: string): Promise<void> => apiFetch<void>('/auth/logout', { method: 'POST', token }),
 
