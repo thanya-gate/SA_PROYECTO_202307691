@@ -86,6 +86,7 @@ export const authGrpc = {
     unary('ValidateCredentials', { email, password }),
 
   getProfiles: (userId: string) => unary('GetProfiles', { userId }),
+  listUsersByRole: (roles: string[]) => unary('ListUsersByRole', { roles }),
   switchProfile: (userId: string, role: string, sessionId: string) =>
     unary('SwitchProfile', { userId, role, sessionId }),
   checkPermission: (userId: string, resource: string, action: string) =>

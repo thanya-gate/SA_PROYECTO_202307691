@@ -43,6 +43,11 @@ export class InMemoryUserRepository implements UserRepository {
     return null;
   }
 
+  async findByRoles(roles: Role[]): Promise<User[]> {
+    const wanted = new Set(roles);
+    return [...this.store.values()].filter((u) => u.roles.some((r) => wanted.has(r)));
+  }
+
   async addRole(userId: string, role: Role): Promise<User> {
     const user = await this.requireUser(userId);
     const updated: User = { ...user, roles: [...user.roles, role], updatedAt: new Date() };

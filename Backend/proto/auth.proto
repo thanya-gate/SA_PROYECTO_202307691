@@ -115,6 +115,14 @@ message CheckPermissionResponse {
   bool allowed = 1;
 }
 
+message ListUsersByRoleRequest {
+  repeated Role roles = 1;
+}
+
+message ListUsersByRoleResponse {
+  repeated User users = 1;
+}
+
 // ---- Autenticación (registro / login / logout) ----
 
 message RegisterRequest {
@@ -308,6 +316,7 @@ service AuthService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   rpc GetProfiles(GetProfilesRequest) returns (GetProfilesResponse);
   rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+  rpc ListUsersByRole(ListUsersByRoleRequest) returns (ListUsersByRoleResponse);
 
   // --- Autenticación ---
   rpc Register(RegisterRequest) returns (RegisterResponse);

@@ -23,6 +23,7 @@ export interface UserRepository {
   findById(userId: string): Promise<User | null>;
   findByCarnet(carnet: string): Promise<User | null>;
   findByDpi(dpi: string): Promise<User | null>;
+  findByRoles(roles: Role[]): Promise<User[]>;
   addRole(userId: string, role: Role): Promise<User>;
   removeRole(userId: string, role: Role): Promise<User>;
   updatePassword(userId: string, passwordHash: string): Promise<User>;

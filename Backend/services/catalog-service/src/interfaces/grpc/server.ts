@@ -175,6 +175,18 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
+    ActualizarUrlMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const clase = await container.catalogService.actualizarUrlMaterial(
+          call.request.claseId,
+          call.request.urlMaterial,
+        );
+        callback(null, { clase: claseDetalleToProto(clase) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
     ActualizarDuracion: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
         const clase = await container.catalogService.actualizarDuracion(
@@ -194,6 +206,22 @@ export function createGrpcServer(): grpc.Server {
           nombre: call.request.nombre,
           escuela: call.request.escuela,
         });
+        callback(null, {
+          curso: {
+            cursoId: curso.cursoId,
+            codigo: curso.codigo,
+            nombre: curso.nombre,
+            escuela: curso.escuela,
+          },
+        });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ObtenerCursoPorCodigo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const curso = await container.catalogService.obtenerCursoPorCodigo(call.request.codigo);
         callback(null, {
           curso: {
             cursoId: curso.cursoId,

@@ -10,6 +10,7 @@ import { catalogGrpc } from './grpc/catalog-client';
 import { reproductionGrpc } from './grpc/reproduction-client';
 import { analiticaGrpc } from './grpc/analitica-client';
 import { inscripcionGrpc } from './grpc/inscripcion-client';
+import { GrpcError } from './grpc/auth-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
 import { authenticate } from './middleware/authenticate';
@@ -20,6 +21,17 @@ import { createIdpRouter, buildIdpLoginUri } from './mock-idp';
 
 const cookieMaxAge = config.SESSION_TTL_MS;
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+const MAX_MATERIAL_BYTES = 50 * 1024 * 1024;
+const MATERIAL_EXTENSIONS: Record<string, string> = {
+  'application/pdf': '.pdf',
+  'application/msword': '.doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'application/vnd.ms-powerpoint': '.ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+  'text/plain': '.txt',
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+};
 const execFileAsync = promisify(execFile);
 
 /**
@@ -233,6 +245,22 @@ export function createGateway(): Express {
     }
   });
 
+  app.get('/auth/usuarios', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const raw = req.query.rol;
+      const roles = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter(
+        (r): r is string => typeof r === 'string' && r.startsWith('ROLE_'),
+      );
+      if (roles.length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'Indica al menos un rol (?rol=ROLE_CATEDRATICO)', 400);
+      }
+      const result = await authGrpc.listUsersByRole(roles);
+      res.json({ usuarios: result.users });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // ===== Perfiles / RBAC =====
   app.get('/profiles/me', authenticate, async (req, res, next) => {
     try {
@@ -434,8 +462,8 @@ export function createGateway(): Express {
   app.post('/catalog/classes', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
     try {
       const body = req.body as Record<string, unknown>;
-      if (typeof body.cursoId !== 'string' || typeof body.semestre !== 'string' || typeof body.urlVideo !== 'string') {
-        throw new DomainError('ENTRADA_INVALIDA', 'cursoId, semestre y urlVideo son obligatorios', 400);
+      if (typeof body.cursoId !== 'string' || typeof body.semestre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'cursoId y semestre son obligatorios', 400);
       }
       const participantes = Array.isArray(body.participantes)
         ? (body.participantes as Array<{ nombre?: unknown; rol?: unknown }>)
@@ -449,7 +477,7 @@ export function createGateway(): Express {
         fechaImparticion: typeof body.fechaImparticion === 'string' ? body.fechaImparticion : '',
         semestre: body.semestre,
         anio: Number(body.anio ?? 0),
-        urlVideo: body.urlVideo,
+        urlVideo: typeof body.urlVideo === 'string' ? body.urlVideo : '',
         urlMaterial: typeof body.urlMaterial === 'string' ? body.urlMaterial : '',
         duracion: Number(body.duracion ?? 0),
         etiquetas: Array.isArray(body.etiquetas)
@@ -475,6 +503,15 @@ export function createGateway(): Express {
       }
       const result = await catalogGrpc.registrarCurso({ codigo, nombre, escuela });
       res.status(201).json({ message: 'Curso registrado en el catálogo', curso: result.curso });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/catalog/courses/:codigo', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.obtenerCursoPorCodigo(req.params.codigo);
+      res.json({ curso: result.curso });
     } catch (err) {
       next(err);
     }
@@ -541,6 +578,46 @@ export function createGateway(): Express {
       const result = await catalogGrpc.actualizarUrlVideo(req.params.claseId, urlVideo);
       res.json({ message: 'URL de video actualizada', clase: result.clase });
     } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/catalog/classes/:claseId/material', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+    const claseId = req.params.claseId;
+    const contentLength = Number(req.headers['content-length'] ?? 0);
+    if (!contentLength || contentLength > MAX_MATERIAL_BYTES) {
+      return next(new DomainError('ENTRADA_INVALIDA', 'El archivo debe pesar entre 1 byte y 50 MB', 400));
+    }
+    const ext = MATERIAL_EXTENSIONS[req.headers['content-type'] ?? ''] ?? '.bin';
+    const targetPath = path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`);
+    try {
+      await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+
+      const tempPath = `${targetPath}.uploading`;
+      await new Promise<void>((resolve, reject) => {
+        const out = fs.createWriteStream(tempPath);
+        out.on('error', reject);
+        out.on('close', resolve);
+        req.on('error', reject);
+        req.pipe(out);
+      });
+
+      // Se elimina el material anterior de la misma clase para no dejar huérfanos.
+      for (const prevExt of Object.values(MATERIAL_EXTENSIONS)) {
+        if (prevExt === ext) continue;
+        await fs.promises.rm(path.join(path.dirname(targetPath), `${claseId}${prevExt}`), { force: true }).catch(() => {});
+      }
+
+      await fs.promises.rename(tempPath, targetPath);
+      const urlMaterial = `/media/materiales/${claseId}${ext}`;
+      const result = await catalogGrpc.actualizarUrlMaterial(claseId, urlMaterial);
+      res.status(201).json({
+        message: 'Material subido a la plataforma',
+        urlMaterial,
+        clase: result.clase,
+      });
+    } catch (err) {
+      await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
       next(err);
     }
   });
@@ -890,6 +967,49 @@ export function createGateway(): Express {
         semestre,
       });
       res.status(201).json({ message: 'Catedrático asignado al curso', asignacionId: result.asignacionId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/inscripcion/cursos/:cursoId/docente', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { usuarioId, semestre } = req.body as Record<string, unknown>;
+      if (typeof usuarioId !== 'string' || typeof semestre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'usuarioId y semestre son obligatorios', 400);
+      }
+      const { docenteId } = await inscripcionGrpc.registrarDocente(usuarioId);
+      const { asignacionId } = await inscripcionGrpc.asignarCatedraticoCurso({
+        docenteId,
+        cursoId: req.params.cursoId,
+        semestre,
+      });
+
+      // Asegura que el curso exista también en el catálogo para que el docente
+      // pueda publicar clases; si no está registrado ahí, se crea automáticamente.
+      const cursos = await inscripcionGrpc.listarCursos();
+      const curso = cursos.cursos.find((c: { cursoId: string }) => c.cursoId === req.params.cursoId);
+      if (curso) {
+        try {
+          await catalogGrpc.obtenerCursoPorCodigo(curso.codigo);
+        } catch (err) {
+          if (err instanceof GrpcError && err.grpcCode === 5) {
+            await catalogGrpc.registrarCurso({
+              codigo: curso.codigo,
+              nombre: curso.nombre,
+              escuela: curso.escuela,
+            });
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      res.status(201).json({
+        message: 'Docente registrado y asignado al curso',
+        docenteId,
+        asignacionId,
+      });
     } catch (err) {
       next(err);
     }

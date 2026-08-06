@@ -130,6 +130,16 @@ export class PostgresCatalogRepository implements CatalogRepository {
     }));
   }
 
+  async buscarCursoPorCodigo(codigo: string): Promise<CursoCatalogo | null> {
+    const res = await query<CursoRow>(
+      'SELECT id, codigo, nombre, escuela FROM curso_catalogo WHERE codigo = $1',
+      [codigo],
+    );
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    return { cursoId: row.id, codigo: row.codigo, nombre: row.nombre, escuela: row.escuela };
+  }
+
   async publicarClase(
     input: PublicarClaseInput,
   ): Promise<{ claseId: string; fechaPublicacion: string }> {
@@ -188,6 +198,12 @@ export class PostgresCatalogRepository implements CatalogRepository {
 
   async actualizarUrlVideo(claseId: string, urlVideo: string): Promise<ClaseDetalle | null> {
     const res = await query('UPDATE clase_grabada SET url_video = $2 WHERE id = $1', [claseId, urlVideo]);
+    if (res.rowCount === 0) return null;
+    return this.getClase(claseId);
+  }
+
+  async actualizarUrlMaterial(claseId: string, urlMaterial: string): Promise<ClaseDetalle | null> {
+    const res = await query('UPDATE clase_grabada SET url_material = $2 WHERE id = $1', [claseId, urlMaterial]);
     if (res.rowCount === 0) return null;
     return this.getClase(claseId);
   }

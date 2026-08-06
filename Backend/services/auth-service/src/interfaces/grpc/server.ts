@@ -186,6 +186,21 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
+    ListUsersByRole: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const roles = (call.request.roles ?? [])
+          .map((r: string) => protoToRole[r])
+          .filter((r: Role | undefined): r is Role => Boolean(r));
+        if (roles.length === 0) {
+          throw new DomainError('ROL_INVALIDO', 'Debes indicar al menos un rol', 400);
+        }
+        const users = await container.userRepository.findByRoles(roles);
+        callback(null, { users: users.map(userToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
     // ===== Autenticación =====
     Register: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {

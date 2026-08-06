@@ -38,10 +38,12 @@ export interface CatalogRepository {
   buscar(criteria: SearchCriteria): Promise<ClaseResumen[]>;
   getClase(claseId: string): Promise<ClaseDetalle | null>;
   listarPorSemestre(semestre?: string): Promise<SemestreResumen[]>;
+  buscarCursoPorCodigo(codigo: string): Promise<CursoCatalogo | null>;
   publicarClase(
     input: PublicarClaseInput,
   ): Promise<{ claseId: string; fechaPublicacion: string }>;
   actualizarUrlVideo(claseId: string, urlVideo: string): Promise<ClaseDetalle | null>;
+  actualizarUrlMaterial(claseId: string, urlMaterial: string): Promise<ClaseDetalle | null>;
   actualizarDuracion(claseId: string, duracion: number): Promise<ClaseDetalle | null>;
   registrarCurso(input: RegistrarCursoInput): Promise<CursoCatalogo>;
 }

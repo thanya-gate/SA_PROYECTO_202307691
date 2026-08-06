@@ -170,6 +170,23 @@ export class PostgresUserRepository implements UserRepository {
     return result.rows[0] ? rowToUser(result.rows[0]) : null;
   }
 
+  async findByRoles(roles: Role[]): Promise<User[]> {
+    if (roles.length === 0) return [];
+    const result = await query<UserRow>(
+      `${USER_SELECT}
+       WHERE u.activo = TRUE
+         AND u.id IN (
+           SELECT ur.usuario_id
+           FROM usuario_rol ur
+           JOIN rol r ON r.id = ur.rol_id
+           WHERE r.nombre = ANY($1::text[])
+         )
+       ORDER BY u.nombres ASC, u.apellidos ASC`,
+      [roles],
+    );
+    return result.rows.map(rowToUser);
+  }
+
   /** sp_asignar_rol: otorga un rol adicional (multiperfil). */
   async addRole(userId: string, role: Role): Promise<User> {
     await query('CALL sp_asignar_rol($1, $2)', [userId, role]);
