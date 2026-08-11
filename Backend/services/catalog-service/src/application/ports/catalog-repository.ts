@@ -12,6 +12,38 @@ export interface SearchCriteria {
   curso?: string;
   catedratico?: string;
   tema?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface BuscarResult {
+  resultados: ClaseResumen[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface ClaseCSVInput {
+  codigoCurso?: string;
+  nombreCurso?: string;
+  escuela?: string;
+  unidad?: string;
+  tema?: string;
+  fechaImparticion?: string;
+  semestre?: string;
+  anio?: number;
+  urlVideo?: string;
+  urlMaterial?: string;
+  duracion?: number;
+  etiquetas: string[];
+  docentes: string[];
+  auxiliares: string[];
+}
+
+export interface CargarClasesCSVResult {
+  registradas: number;
+  omitidas: number;
 }
 
 export interface PublicarClaseInput {
@@ -35,7 +67,7 @@ export interface RegistrarCursoInput {
 }
 
 export interface CatalogRepository {
-  buscar(criteria: SearchCriteria): Promise<ClaseResumen[]>;
+  buscar(criteria: SearchCriteria): Promise<BuscarResult>;
   getClase(claseId: string): Promise<ClaseDetalle | null>;
   listarPorSemestre(semestre?: string): Promise<SemestreResumen[]>;
   buscarCursoPorCodigo(codigo: string): Promise<CursoCatalogo | null>;
@@ -46,4 +78,5 @@ export interface CatalogRepository {
   actualizarUrlMaterial(claseId: string, urlMaterial: string): Promise<ClaseDetalle | null>;
   actualizarDuracion(claseId: string, duracion: number): Promise<ClaseDetalle | null>;
   registrarCurso(input: RegistrarCursoInput): Promise<CursoCatalogo>;
+  cargarClasesCSV(clases: ClaseCSVInput[]): Promise<CargarClasesCSVResult>;
 }

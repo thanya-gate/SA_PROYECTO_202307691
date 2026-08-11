@@ -19,6 +19,8 @@ export const searchSchema = z.object({
   curso: optionalText(200),
   catedratico: optionalText(200),
   tema: optionalText(200),
+  page: z.number().int().min(1).max(10000).default(1),
+  pageSize: z.number().int().min(1).max(10).default(10),
 });
 export type SearchInput = z.infer<typeof searchSchema>;
 
@@ -48,3 +50,21 @@ export const registrarCursoSchema = z.object({
   escuela: z.string().trim().min(1, 'escuela es obligatoria').max(100),
 });
 export type RegistrarCursoInput = z.infer<typeof registrarCursoSchema>;
+
+export const claseCSVSchema = z.object({
+  codigoCurso: z.string().trim().optional(),
+  nombreCurso: z.string().trim().optional(),
+  escuela: z.string().trim().optional(),
+  unidad: z.string().trim().optional(),
+  tema: z.string().trim().optional(),
+  fechaImparticion: z.string().trim().optional(),
+  semestre: z.string().trim().optional(),
+  anio: z.number().optional(),
+  urlVideo: z.string().trim().optional(),
+  urlMaterial: z.string().trim().optional(),
+  duracion: z.number().optional(),
+  etiquetas: z.array(z.string()).default([]),
+  docentes: z.array(z.string()).default([]),
+  auxiliares: z.array(z.string()).default([]),
+});
+export type ClaseCSVInput = z.infer<typeof claseCSVSchema>;

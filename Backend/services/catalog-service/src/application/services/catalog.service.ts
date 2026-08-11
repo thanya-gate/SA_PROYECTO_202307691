@@ -1,18 +1,25 @@
 import { z, ZodError } from 'zod';
 import { DomainError } from '../../domain/errors/domain-error';
 import {
+  BuscarResult,
+  CargarClasesCSVResult,
   CatalogRepository,
+  ClaseCSVInput,
   PublicarClaseInput,
   RegistrarCursoInput,
   SearchCriteria,
 } from '../ports/catalog-repository';
 import {
   ClaseDetalle,
-  ClaseResumen,
   CursoCatalogo,
   SemestreResumen,
 } from '../../domain/entities/clase';
-import { publicarClaseSchema, registrarCursoSchema, searchSchema } from '../dto/catalog-schemas';
+import {
+  claseCSVSchema,
+  publicarClaseSchema,
+  registrarCursoSchema,
+  searchSchema,
+} from '../dto/catalog-schemas';
 
 function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
   try {
@@ -29,9 +36,17 @@ function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
 export class CatalogService {
   constructor(private readonly repository: CatalogRepository) {}
 
-  async search(raw: SearchCriteria): Promise<ClaseResumen[]> {
+  async search(raw: SearchCriteria): Promise<BuscarResult> {
     const input = parse(searchSchema, raw);
     return this.repository.buscar(input);
+  }
+
+  async cargarClasesCSV(raw: ClaseCSVInput[]): Promise<CargarClasesCSVResult> {
+    if (!Array.isArray(raw) || raw.length === 0) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se recibieron filas CSV que procesar', 400);
+    }
+    const clases = raw.map((r) => parse(claseCSVSchema, r));
+    return this.repository.cargarClasesCSV(clases);
   }
 
   async getClase(claseId: string): Promise<ClaseDetalle> {
