@@ -1,8 +1,16 @@
 import { PoolClient } from 'pg';
 import { query, withTransaction } from './db';
 import { DomainError } from '../../../domain/errors/domain-error';
-import { CatalogRepository, PublicarClaseInput, RegistrarCursoInput, SearchCriteria } from '../../../application/ports/catalog-repository';
-import { ClaseDetalle, ClaseResumen, CursoCatalogo, Participante, SemestreResumen } from '../../../domain/entities/clase';
+import {
+  CatalogRepository,
+  PublicarClaseInput,
+  RegistrarCursoInput,
+  SearchCriteria,
+  BuscarResult,
+  ClaseCSVInput,
+  CargarClasesCSVResult,
+} from '../../../application/ports/catalog-repository';
+import { ClaseDetalle, CursoCatalogo, Participante, SemestreResumen } from '../../../domain/entities/clase';
 
 interface BuscarRow {
   clase_id: string;
@@ -13,6 +21,7 @@ interface BuscarRow {
   semestre: string;
   año: number;
   url_video: string;
+  total: string;
 }
 
 interface FichaRow {
@@ -62,18 +71,22 @@ function parseParticipantes(raw: string[]): Participante[] {
 
 
 export class PostgresCatalogRepository implements CatalogRepository {
-  async buscar(criteria: SearchCriteria): Promise<ClaseResumen[]> {
+  async buscar(criteria: SearchCriteria): Promise<BuscarResult> {
+    const page = Math.max(Math.trunc(criteria.page ?? 1), 1);
+    const pageSize = Math.min(Math.max(Math.trunc(criteria.pageSize ?? 10), 1), 10);
     const res = await query<BuscarRow>(
-      'SELECT * FROM fn_buscar_clases($1, $2, $3, $4, $5)',
+      'SELECT * FROM fn_buscar_clases($1, $2, $3, $4, $5, $6, $7)',
       [
         criteria.semestre ?? null,
         criteria.escuela ?? null,
         criteria.curso ?? null,
         criteria.catedratico ?? null,
         criteria.tema ?? null,
+        page,
+        pageSize,
       ],
     );
-    return res.rows.map((r) => ({
+    const resultados = res.rows.map((r) => ({
       claseId: r.clase_id,
       codigo: r.codigo,
       curso: r.curso,
@@ -83,6 +96,14 @@ export class PostgresCatalogRepository implements CatalogRepository {
       anio: r.año,
       urlVideo: r.url_video,
     }));
+    const total = res.rows.length > 0 ? Number(res.rows[0].total) : 0;
+    return {
+      resultados,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 
   async getClase(claseId: string): Promise<ClaseDetalle | null> {
@@ -212,6 +233,39 @@ export class PostgresCatalogRepository implements CatalogRepository {
     const res = await query('UPDATE clase_grabada SET duracion = $2 WHERE id = $1', [claseId, duracion]);
     if (res.rowCount === 0) return null;
     return this.getClase(claseId);
+  }
+
+  async cargarClasesCSV(clases: ClaseCSVInput[]): Promise<CargarClasesCSVResult> {
+    if (clases.length === 0) {
+      throw new DomainError('ENTRADA_INVALIDA', 'El archivo CSV no contiene filas que procesar', 400);
+    }
+
+    const payload = clases.map((c) => ({
+      codigo_curso: c.codigoCurso,
+      nombre_curso: c.nombreCurso ?? null,
+      escuela: c.escuela ?? null,
+      unidad: c.unidad ?? null,
+      tema: c.tema ?? null,
+      fecha_imparticion: c.fechaImparticion ?? null,
+      semestre: c.semestre,
+      año: c.anio,
+      url_video: c.urlVideo,
+      url_material: c.urlMaterial ?? null,
+      duracion: c.duracion ?? 0,
+      etiquetas: c.etiquetas ?? [],
+      docentes: c.docentes ?? [],
+      auxiliares: c.auxiliares ?? [],
+    }));
+
+    const res = await query<{ p_registradas: string; p_omitidas: string }>(
+      'CALL sp_cargar_clases_csv($1::jsonb, NULL, NULL)',
+      [JSON.stringify(payload)],
+    );
+    const row = res.rows[0];
+    return {
+      registradas: Number(row?.p_registradas ?? 0),
+      omitidas: Number(row?.p_omitidas ?? 0),
+    };
   }
 
   private async asociarEtiquetas(

@@ -103,14 +103,22 @@ export function createGrpcServer(): grpc.Server {
 
     Search: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const resultados = await container.catalogService.search({
+        const result = await container.catalogService.search({
           semestre: call.request.semestre,
           escuela: call.request.escuela,
           curso: call.request.curso,
           catedratico: call.request.catedratico,
           tema: call.request.tema,
+          page: call.request.page > 0 ? call.request.page : undefined,
+          pageSize: call.request.pageSize > 0 ? call.request.pageSize : undefined,
         });
-        callback(null, { resultados: resultados.map(claseResumenToProto) });
+        callback(null, {
+          resultados: result.resultados.map(claseResumenToProto),
+          total: result.total,
+          page: result.page,
+          pageSize: result.pageSize,
+          totalPages: result.totalPages,
+        });
       } catch (err: any) {
         callback(mapError(err));
       }
@@ -229,6 +237,34 @@ export function createGrpcServer(): grpc.Server {
             nombre: curso.nombre,
             escuela: curso.escuela,
           },
+        });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    CargarClasesCSV: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const clases = (call.request.clases ?? []).map((c: any) => ({
+          codigoCurso: c.codigoCurso,
+          nombreCurso: c.nombreCurso || undefined,
+          escuela: c.escuela || undefined,
+          unidad: c.unidad || undefined,
+          tema: c.tema || undefined,
+          fechaImparticion: c.fechaImparticion || undefined,
+          semestre: c.semestre,
+          anio: c.anio,
+          urlVideo: c.urlVideo,
+          urlMaterial: c.urlMaterial || undefined,
+          duracion: c.duracion,
+          etiquetas: c.etiquetas ?? [],
+          docentes: c.docentes ?? [],
+          auxiliares: c.auxiliares ?? [],
+        }));
+        const result = await container.catalogService.cargarClasesCSV(clases);
+        callback(null, {
+          registradas: result.registradas,
+          omitidas: result.omitidas,
         });
       } catch (err: any) {
         callback(mapError(err));
