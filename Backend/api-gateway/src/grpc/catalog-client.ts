@@ -53,6 +53,8 @@ export const catalogGrpc = {
     curso?: string;
     catedratico?: string;
     tema?: string;
+    page?: number;
+    pageSize?: number;
   }) => unary('Search', req),
   getClase: (claseId: string) => unary('GetClase', { claseId }),
   listarPorSemestre: (semestre?: string) => unary('ListarPorSemestre', { semestre }),
@@ -79,4 +81,5 @@ export const catalogGrpc = {
   registrarCurso: (req: { codigo: string; nombre: string; escuela: string }) =>
     unary('RegistrarCurso', req),
   obtenerCursoPorCodigo: (codigo: string) => unary('ObtenerCursoPorCodigo', { codigo }),
+  cargarClasesCSV: (clases: unknown[]) => unary('CargarClasesCSV', { clases }),
 };

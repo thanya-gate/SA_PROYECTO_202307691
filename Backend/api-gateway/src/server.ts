@@ -13,6 +13,7 @@ import { inscripcionGrpc } from './grpc/inscripcion-client';
 import { GrpcError } from './grpc/auth-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
+import { parseClasesCsv, CsvParseError } from './utils/csv';
 import { authenticate } from './middleware/authenticate';
 import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
@@ -91,6 +92,14 @@ function toOptionalString(value: unknown): string | undefined {
 function toProtoRole(role: string): string {
   const normalized = role.trim().toUpperCase();
   return normalized.startsWith('ROLE_') ? normalized : `ROLE_${normalized}`;
+}
+
+function toPositiveInt(value: unknown, defaultValue: number): number {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const n = Number(value);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  return defaultValue;
 }
 
 export function createGateway(): Express {
@@ -427,14 +436,26 @@ export function createGateway(): Express {
         string,
         string | undefined
       >;
+      const pageSize = Math.min(
+        toPositiveInt(req.query.pageSize ?? req.query.page_size, 10),
+        10,
+      );
       const result = await catalogGrpc.search({
         semestre: semestre ?? '',
         escuela: escuela ?? '',
         curso: curso ?? '',
         catedratico: catedratico ?? '',
         tema: tema ?? '',
+        page: toPositiveInt(req.query.page, 1),
+        pageSize,
       });
-      res.json({ resultados: result.resultados });
+      res.json({
+        resultados: result.resultados,
+        total: result.total,
+        page: result.page,
+        pageSize: result.pageSize,
+        totalPages: result.totalPages,
+      });
     } catch (err) {
       next(err);
     }
@@ -516,6 +537,44 @@ export function createGateway(): Express {
       next(err);
     }
   });
+
+  // Ingesta masiva de catálogo vía CSV (Práctica 3). Solo roles admin/docentes.
+  // El cuerpo puede ser el archivo .csv en crudo (text/csv) o JSON { csv: "..." }.
+  app.post(
+    '/admin/catalogo/csv',
+    authenticate,
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    express.text({ type: ['text/csv', 'application/csv', 'text/plain'], limit: '2mb' }),
+    async (req, res, next) => {
+      try {
+        const csvText =
+          typeof req.body === 'string' ? req.body : (req.body as { csv?: unknown })?.csv;
+        if (typeof csvText !== 'string' || csvText.trim().length === 0) {
+          throw new DomainError(
+            'ENTRADA_INVALIDA',
+            'El archivo CSV está vacío o no se recibió ningún archivo',
+            400,
+          );
+        }
+        const filas = parseClasesCsv(csvText);
+        if (filas.length === 0) {
+          throw new DomainError('ENTRADA_INVALIDA', 'El archivo CSV no contiene filas de clases', 400);
+        }
+        const result = await catalogGrpc.cargarClasesCSV(filas);
+        res.status(201).json({
+          message: 'Carga masiva procesada mediante sp_cargar_clases_csv',
+          registradas: result.registradas,
+          omitidas: result.omitidas,
+          totalProcesadas: filas.length,
+        });
+      } catch (err) {
+        if (err instanceof CsvParseError) {
+          return next(new DomainError('ENTRADA_INVALIDA', err.message, 400));
+        }
+        next(err);
+      }
+    },
+  );
 
   app.post('/catalog/classes/:claseId/video', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
     const claseId = req.params.claseId;
