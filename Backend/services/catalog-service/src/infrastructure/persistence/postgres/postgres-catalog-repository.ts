@@ -96,7 +96,20 @@ export class PostgresCatalogRepository implements CatalogRepository {
       anio: r.año,
       urlVideo: r.url_video,
     }));
-    const total = res.rows.length > 0 ? Number(res.rows[0].total) : 0;
+    let total = res.rows.length > 0 ? Number(res.rows[0].total) : 0;
+    if (res.rows.length === 0) {
+      const countRes = await query<{ fn_contar_clases: string }>(
+        'SELECT fn_contar_clases($1, $2, $3, $4, $5)',
+        [
+          criteria.semestre ?? null,
+          criteria.escuela ?? null,
+          criteria.curso ?? null,
+          criteria.catedratico ?? null,
+          criteria.tema ?? null,
+        ],
+      );
+      total = Number(countRes.rows[0]?.fn_contar_clases ?? 0);
+    }
     return {
       resultados,
       total,
