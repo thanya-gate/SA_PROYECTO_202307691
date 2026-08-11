@@ -61,10 +61,16 @@ message SearchRequest {
   string curso = 3;        
   string catedratico = 4;  
   string tema = 5;         
+  int32 page = 6;          // 1-based, por defecto 1
+  int32 page_size = 7;     // máx 10 (Práctica 3: paginación desde servidor)
 }
 
 message SearchResponse {
   repeated ClaseResumen resultados = 1;
+  int32 total = 2;         // total de clases que cumplen los filtros
+  int32 page = 3;
+  int32 page_size = 4;
+  int32 total_pages = 5;
 }
 
 
@@ -150,6 +156,35 @@ message ObtenerCursoPorCodigoResponse {
   CursoCatalogo curso = 1;
 }
 
+// Ingesta masiva de catálogo vía CSV (Práctica 3). Cada ClaseCSV es una
+// fila del archivo .csv; la inserción se ejecuta en el catálogo vía el
+// procedimiento almacenado sp_cargar_clases_csv.
+message ClaseCSV {
+  string codigo_curso = 1;
+  string nombre_curso = 2;
+  string escuela = 3;
+  string unidad = 4;
+  string tema = 5;
+  string fecha_imparticion = 6;
+  string semestre = 7;
+  int32 anio = 8;
+  string url_video = 9;
+  string url_material = 10;
+  int32 duracion = 11;
+  repeated string etiquetas = 12;
+  repeated string docentes = 13;
+  repeated string auxiliares = 14;
+}
+
+message CargarClasesCSVRequest {
+  repeated ClaseCSV clases = 1;
+}
+
+message CargarClasesCSVResponse {
+  int32 registradas = 1;
+  int32 omitidas = 2;
+}
+
 message HealthRequest {}
 
 message HealthResponse {
@@ -171,6 +206,8 @@ service CatalogoService {
   rpc ActualizarDuracion(ActualizarDuracionRequest) returns (ActualizarDuracionResponse);
   rpc RegistrarCurso(RegistrarCursoRequest) returns (RegistrarCursoResponse);
   rpc ObtenerCursoPorCodigo(ObtenerCursoPorCodigoRequest) returns (ObtenerCursoPorCodigoResponse);
+
+  rpc CargarClasesCSV(CargarClasesCSVRequest) returns (CargarClasesCSVResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
 }
