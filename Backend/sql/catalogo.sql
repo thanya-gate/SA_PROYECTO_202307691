@@ -56,12 +56,35 @@ CREATE INDEX idx_clase_etiqueta ON clase_etiqueta (etiqueta_id);
 CREATE INDEX idx_participante_clase ON participante_clase (clase_id);
 
 --funciones
+-- Vista base para búsqueda con paginación (evita duplicados por joins).
+CREATE OR REPLACE VIEW vw_clases_busqueda AS
+SELECT DISTINCT
+    cg.id AS clase_id,
+    cc.codigo,
+    cc.nombre AS curso,
+    cc.escuela,
+    cg.unidad,
+    cg.tema,
+    cg.semestre,
+    cg.año,
+    cg.url_video
+FROM clase_grabada cg
+JOIN curso_catalogo cc ON cc.id = cg.curso_id
+LEFT JOIN participante_clase pc ON pc.clase_id = cg.id
+LEFT JOIN clase_etiqueta ce ON ce.clase_id = cg.id
+LEFT JOIN etiqueta et ON et.id = ce.etiqueta_id;
+
+-- Búsqueda paginada desde la base de datos (Práctica 3: máx. 10 por página).
+-- La columna total (COUNT(*) OVER()) permite conocer el total filtrado sin
+-- consultas adicionales.
 CREATE OR REPLACE FUNCTION fn_buscar_clases(
     p_semestre VARCHAR(10) DEFAULT NULL,
     p_escuela VARCHAR(100) DEFAULT NULL,
     p_curso TEXT DEFAULT NULL,
     p_catedratico TEXT DEFAULT NULL,
-    p_tema TEXT DEFAULT NULL
+    p_tema TEXT DEFAULT NULL,
+    p_page INT DEFAULT 1,
+    p_page_size INT DEFAULT 10
 )
 RETURNS TABLE(
     clase_id UUID,
@@ -71,32 +94,43 @@ RETURNS TABLE(
     tema VARCHAR(200),
     semestre VARCHAR(10),
     año INT,
-    url_video TEXT
+    url_video TEXT,
+    total BIGINT
 )
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_page      INT := GREATEST(COALESCE(p_page, 1), 1);
+    v_page_size INT := LEAST(GREATEST(COALESCE(p_page_size, 10), 1), 10);
 BEGIN
     RETURN QUERY
-    SELECT DISTINCT
-        cg.id,
-        cc.codigo,
-        cc.nombre,
-        cg.unidad,
-        cg.tema,
-        cg.semestre,
-        cg.año,
-        cg.url_video
-    FROM clase_grabada cg
-    JOIN curso_catalogo cc ON cc.id = cg.curso_id
-    LEFT JOIN participante_clase pc ON pc.clase_id = cg.id
-    LEFT JOIN clase_etiqueta ce ON ce.clase_id = cg.id
-    LEFT JOIN etiqueta et ON et.id = ce.etiqueta_id
-    WHERE (p_semestre IS NULL OR cg.semestre = p_semestre)
-      AND (p_escuela IS NULL OR cc.escuela ILIKE '%' || p_escuela || '%')
-      AND (p_curso IS NULL OR cc.nombre ILIKE '%' || p_curso || '%' OR cc.codigo ILIKE '%' || p_curso || '%')
-      AND (p_catedratico IS NULL OR pc.nombre_participante ILIKE '%' || p_catedratico || '%')
-      AND (p_tema IS NULL OR et.nombre ILIKE '%' || p_tema || '%' OR cg.tema ILIKE '%' || p_tema || '%')
-    ORDER BY cg.año DESC, cg.semestre;
+    SELECT
+        v.clase_id,
+        v.codigo,
+        v.curso,
+        v.unidad,
+        v.tema,
+        v.semestre,
+        v.año,
+        v.url_video,
+        COUNT(*) OVER() AS total
+    FROM vw_clases_busqueda v
+    WHERE (p_semestre IS NULL OR v.semestre = p_semestre)
+      AND (p_escuela IS NULL OR v.escuela ILIKE '%' || p_escuela || '%')
+      AND (p_curso IS NULL OR v.curso ILIKE '%' || p_curso || '%' OR v.codigo ILIKE '%' || p_curso || '%')
+      AND (p_catedratico IS NULL OR EXISTS (
+          SELECT 1 FROM participante_clase pc
+          WHERE pc.clase_id = v.clase_id
+            AND pc.nombre_participante ILIKE '%' || p_catedratico || '%'
+      ))
+      AND (p_tema IS NULL OR EXISTS (
+          SELECT 1 FROM clase_etiqueta ce
+          JOIN etiqueta et ON et.id = ce.etiqueta_id
+          WHERE ce.clase_id = v.clase_id
+            AND (et.nombre ILIKE '%' || p_tema || '%' OR v.tema ILIKE '%' || p_tema || '%')
+      ))
+    ORDER BY v.año DESC, v.semestre, v.curso
+    LIMIT v_page_size OFFSET (v_page - 1) * v_page_size;
 END;
 $$;
 -- procedimientos
