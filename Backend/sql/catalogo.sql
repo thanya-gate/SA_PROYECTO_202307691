@@ -75,8 +75,8 @@ LEFT JOIN clase_etiqueta ce ON ce.clase_id = cg.id
 LEFT JOIN etiqueta et ON et.id = ce.etiqueta_id;
 
 -- Búsqueda paginada desde la base de datos (Práctica 3: máx. 10 por página).
--- La columna total (COUNT(*) OVER()) permite conocer el total filtrado sin
--- consultas adicionales.
+-- El total filtrado se calcula con un subquery sobre el CTE (sin LIMIT), por
+-- lo que es correcto incluso cuando la página solicitada está vacía.
 CREATE OR REPLACE FUNCTION fn_buscar_clases(
     p_semestre VARCHAR(10) DEFAULT NULL,
     p_escuela VARCHAR(100) DEFAULT NULL,
@@ -104,16 +104,65 @@ DECLARE
     v_page_size INT := LEAST(GREATEST(COALESCE(p_page_size, 10), 1), 10);
 BEGIN
     RETURN QUERY
+    WITH filtradas AS (
+        SELECT DISTINCT
+            v.clase_id,
+            v.codigo,
+            v.curso,
+            v.unidad,
+            v.tema,
+            v.semestre,
+            v.año,
+            v.url_video
+        FROM vw_clases_busqueda v
+        WHERE (p_semestre IS NULL OR v.semestre = p_semestre)
+          AND (p_escuela IS NULL OR v.escuela ILIKE '%' || p_escuela || '%')
+          AND (p_curso IS NULL OR v.curso ILIKE '%' || p_curso || '%' OR v.codigo ILIKE '%' || p_curso || '%')
+          AND (p_catedratico IS NULL OR EXISTS (
+              SELECT 1 FROM participante_clase pc
+              WHERE pc.clase_id = v.clase_id
+                AND pc.nombre_participante ILIKE '%' || p_catedratico || '%'
+          ))
+          AND (p_tema IS NULL OR EXISTS (
+              SELECT 1 FROM clase_etiqueta ce
+              JOIN etiqueta et ON et.id = ce.etiqueta_id
+              WHERE ce.clase_id = v.clase_id
+                AND (et.nombre ILIKE '%' || p_tema || '%' OR v.tema ILIKE '%' || p_tema || '%')
+          ))
+    )
     SELECT
-        v.clase_id,
-        v.codigo,
-        v.curso,
-        v.unidad,
-        v.tema,
-        v.semestre,
-        v.año,
-        v.url_video,
-        COUNT(*) OVER() AS total
+        f.clase_id,
+        f.codigo,
+        f.curso,
+        f.unidad,
+        f.tema,
+        f.semestre,
+        f.año,
+        f.url_video,
+        (SELECT count(*) FROM filtradas) AS total
+    FROM filtradas f
+    ORDER BY f.año DESC, f.semestre, f.curso
+    LIMIT v_page_size OFFSET (v_page - 1) * v_page_size;
+END;
+$$;
+
+-- Total de clases que cumplen los filtros (independiente de la página).
+-- Se usa cuando la página solicitada está vacía, donde fn_buscar_clases no
+-- devuelve filas de las que leer el total.
+CREATE OR REPLACE FUNCTION fn_contar_clases(
+    p_semestre VARCHAR(10) DEFAULT NULL,
+    p_escuela VARCHAR(100) DEFAULT NULL,
+    p_curso TEXT DEFAULT NULL,
+    p_catedratico TEXT DEFAULT NULL,
+    p_tema TEXT DEFAULT NULL
+)
+RETURNS BIGINT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_total BIGINT;
+BEGIN
+    SELECT count(DISTINCT v.clase_id) INTO v_total
     FROM vw_clases_busqueda v
     WHERE (p_semestre IS NULL OR v.semestre = p_semestre)
       AND (p_escuela IS NULL OR v.escuela ILIKE '%' || p_escuela || '%')
@@ -128,9 +177,8 @@ BEGIN
           JOIN etiqueta et ON et.id = ce.etiqueta_id
           WHERE ce.clase_id = v.clase_id
             AND (et.nombre ILIKE '%' || p_tema || '%' OR v.tema ILIKE '%' || p_tema || '%')
-      ))
-    ORDER BY v.año DESC, v.semestre, v.curso
-    LIMIT v_page_size OFFSET (v_page - 1) * v_page_size;
+      ));
+    RETURN v_total;
 END;
 $$;
 -- procedimientos
@@ -556,13 +604,13 @@ BEGIN
     FOR v_clase IN
         SELECT *
         FROM jsonb_to_recordset(p_clases) AS x(
-            codigo_curso      VARCHAR(20),
-            nombre_curso      VARCHAR(200),
-            escuela           VARCHAR(100),
-            unidad            VARCHAR(200),
-            tema              VARCHAR(200),
-            fecha_imparticion DATE,
-            semestre          VARCHAR(10),
+            codigo_curso      TEXT,
+            nombre_curso      TEXT,
+            escuela           TEXT,
+            unidad            TEXT,
+            tema              TEXT,
+            fecha_imparticion TEXT,
+            semestre          TEXT,
             año               INT,
             url_video         TEXT,
             url_material      TEXT,
@@ -572,9 +620,13 @@ BEGIN
             auxiliares        TEXT[]
         )
     LOOP
-        -- Fila incompleta → se omite y se cuenta.
-        IF v_clase.codigo_curso IS NULL OR length(trim(v_clase.codigo_curso)) = 0
-           OR v_clase.semestre IS NULL OR v_clase.año IS NULL
+        BEGIN
+        -- Fila incompleta o fuera de rango → se omite y se cuenta. Los campos
+        -- se validan contra la longitud de las columnas destino para no abortar
+        -- el lote completo por una fila inválida.
+        IF v_clase.codigo_curso IS NULL OR length(trim(v_clase.codigo_curso)) NOT BETWEEN 1 AND 20
+           OR v_clase.semestre IS NULL OR length(trim(v_clase.semestre)) NOT BETWEEN 1 AND 10
+           OR v_clase.año IS NULL
            OR v_clase.url_video IS NULL OR length(trim(v_clase.url_video)) = 0 THEN
             p_omitidas := p_omitidas + 1;
             CONTINUE;
@@ -587,8 +639,8 @@ BEGIN
 
         -- Curso: usa el existente o lo registra si vienen sus datos.
         IF NOT EXISTS (SELECT 1 FROM curso_catalogo WHERE codigo = trim(v_clase.codigo_curso)) THEN
-            IF v_clase.nombre_curso IS NULL OR length(trim(v_clase.nombre_curso)) = 0
-               OR v_clase.escuela IS NULL OR length(trim(v_clase.escuela)) = 0 THEN
+            IF v_clase.nombre_curso IS NULL OR length(trim(v_clase.nombre_curso)) NOT BETWEEN 1 AND 200
+               OR v_clase.escuela IS NULL OR length(trim(v_clase.escuela)) NOT BETWEEN 1 AND 100 THEN
                 p_omitidas := p_omitidas + 1;
                 CONTINUE;
             END IF;
@@ -620,12 +672,15 @@ BEGIN
         PERFORM fn_registrar_semestre(trim(v_clase.semestre), v_clase.año);
         PERFORM fn_registrar_escuela(trim(v_clase.escuela));
 
-        -- Publica la clase (transacción interna).
+        -- Publica la clase (transacción interna). El cast explícito ::DATE es
+        -- necesario porque la columna llega como TEXT y PL/pgSQL no resuelve
+        -- el procedimiento con cast implícito; una fecha inválida se captura
+        -- en el bloque EXCEPTION de la fila.
         CALL sp_publicar_clase(
             v_curso_id,
             v_clase.unidad,
             v_clase.tema,
-            v_clase.fecha_imparticion,
+            v_clase.fecha_imparticion::DATE,
             trim(v_clase.semestre),
             v_clase.año,
             trim(v_clase.url_video),
@@ -655,6 +710,12 @@ BEGIN
         END IF;
 
         p_registradas := p_registradas + 1;
+        EXCEPTION
+            WHEN OTHERS THEN
+                -- Cualquier error de una fila concreta (p. ej. fecha inválida)
+                -- se cuenta como omitida sin abortar el lote completo.
+                p_omitidas := p_omitidas + 1;
+        END;
     END LOOP;
 END;
 $$;
