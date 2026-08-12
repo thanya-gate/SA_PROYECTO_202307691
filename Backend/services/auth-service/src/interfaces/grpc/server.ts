@@ -7,6 +7,7 @@ import { container } from '../../container';
 import { Role } from '../../domain/enums/role';
 import { User } from '../../domain/entities/user';
 import { SessionStatus } from '../../domain/enums/auth';
+import { SolicitudEstado, SolicitudRol } from '../../domain/entities/solicitud-rol';
 import { DomainError } from '../../domain/errors/domain-error';
 import { ZodError } from 'zod';
 import { domainErrorToGrpcCode } from '../http/middleware/error-handler';
@@ -15,6 +16,8 @@ import {
   loginSchema,
   changePasswordSchema,
   assignRoleSchema,
+  crearSolicitudRolSchema,
+  resolverSolicitudRolSchema,
 } from '../../application/dto/auth-schemas';
 
 // El contrato gRPC vive en Backend/proto/auth.proto (carpeta compartida de
@@ -51,6 +54,18 @@ const protoToRole: Record<string, Role> = {
   ROLE_ADMIN: Role.ADMIN,
 };
 
+const estadoToProto: Record<SolicitudEstado, string> = {
+  PENDIENTE: 'SOLICITUD_ESTADO_PENDIENTE',
+  ACEPTADA: 'SOLICITUD_ESTADO_ACEPTADA',
+  RECHAZADA: 'SOLICITUD_ESTADO_RECHAZADA',
+};
+
+const protoToEstado: Record<string, SolicitudEstado> = {
+  SOLICITUD_ESTADO_PENDIENTE: 'PENDIENTE',
+  SOLICITUD_ESTADO_ACEPTADA: 'ACEPTADA',
+  SOLICITUD_ESTADO_RECHAZADA: 'RECHAZADA',
+};
+
 function statusToProto(status: SessionStatus): string {
   switch (status) {
     case SessionStatus.ACTIVA:
@@ -79,6 +94,22 @@ function userToProto(u: User) {
     carrera: u.carrera ?? '',
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
+  };
+}
+
+function solicitudToProto(s: SolicitudRol) {
+  return {
+    solicitudId: s.solicitudId,
+    usuarioId: s.usuarioId,
+    correo: s.correo,
+    nombres: s.nombres ?? '',
+    apellidos: s.apellidos ?? '',
+    carnet: s.carnet ?? '',
+    rolSolicitado: roleToProto[s.rolSolicitado],
+    estado: estadoToProto[s.estado],
+    fechaSolicitud: s.fechaSolicitud.toISOString(),
+    fechaResolucion: s.fechaResolucion ? s.fechaResolucion.toISOString() : '',
+    resueltoPor: s.resueltoPor ?? '',
   };
 }
 
@@ -410,6 +441,52 @@ export function createGrpcServer(): grpc.Server {
           call.request.sessionId,
         );
         callback(null, { switched: true, pendingRole: call.request.role });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    // ===== Solicitudes de rol =====
+    CrearSolicitudRol: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const input = crearSolicitudRolSchema.parse({
+          rolSolicitado: protoToRole[call.request.rolSolicitado],
+        });
+        const solicitud = await container.solicitudService.crearSolicitud(
+          call.request.usuarioId,
+          input.rolSolicitado,
+        );
+        callback(null, { solicitud: solicitudToProto(solicitud) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarSolicitudesRol: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const estado =
+          call.request.estado && call.request.estado !== 'SOLICITUD_ESTADO_UNSPECIFIED'
+            ? protoToEstado[call.request.estado]
+            : undefined;
+        const solicitudes = await container.solicitudService.listarSolicitudes(estado);
+        callback(null, { solicitudes: solicitudes.map(solicitudToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ResolverSolicitudRol: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const input = resolverSolicitudRolSchema.parse({
+          solicitudId: call.request.solicitudId,
+          aprobado: call.request.aprobado,
+        });
+        const solicitud = await container.solicitudService.resolverSolicitud(
+          input.solicitudId,
+          input.aprobado,
+          call.request.resueltoPor,
+        );
+        callback(null, { solicitud: solicitudToProto(solicitud) });
       } catch (err: any) {
         callback(mapError(err));
       }

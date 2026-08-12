@@ -1,5 +1,6 @@
 import { User } from '../../domain/entities/user';
 import { Role } from '../../domain/enums/role';
+import { SolicitudEstado, SolicitudRol } from '../../domain/entities/solicitud-rol';
 
 /**
  * Puerto de persistencia de Usuarios.
@@ -31,4 +32,12 @@ export interface UserRepository {
   markEmailVerified(userId: string): Promise<User>;
   linkOAuthProvider(userId: string, provider: string): Promise<User>;
   findByOAuthIdentity(provider: string, email: string): Promise<User | null>;
+
+  crearSolicitudRol(usuarioId: string, rolSolicitado: Role): Promise<SolicitudRol>;
+  listarSolicitudesRol(estado?: SolicitudEstado): Promise<SolicitudRol[]>;
+  resolverSolicitudRol(
+    solicitudId: string,
+    aprobado: boolean,
+    resueltoPor: string,
+  ): Promise<SolicitudRol>;
 }

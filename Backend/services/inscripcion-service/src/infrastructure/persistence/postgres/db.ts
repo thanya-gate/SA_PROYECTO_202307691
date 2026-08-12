@@ -63,6 +63,7 @@ const SP_ERROR_CODES: Record<string, { code: DomainErrorCode; httpStatus: number
   AUXILIAR_NO_ENCONTRADO: { code: 'AUXILIAR_NO_ENCONTRADO', httpStatus: 404 },
   INSCRIPCION_DUPLICADA: { code: 'INSCRIPCION_DUPLICADA', httpStatus: 409 },
   AUXILIAR_DUPLICADO: { code: 'CONFLICTO', httpStatus: 409 },
+  DOCENTE_EN_USO: { code: 'DOCENTE_EN_USO', httpStatus: 409 },
   ENTRADA_INVALIDA: { code: 'ENTRADA_INVALIDA', httpStatus: 400 },
   CONFLICTO: { code: 'CONFLICTO', httpStatus: 409 },
 };

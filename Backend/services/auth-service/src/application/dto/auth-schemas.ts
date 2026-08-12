@@ -71,6 +71,21 @@ export const checkPermissionSchema = z.object({
   action: z.string().min(1),
 });
 
+export const crearSolicitudRolSchema = z.object({
+  rolSolicitado: z.enum([Role.CATEDRATICO, Role.AUXILIAR], {
+    errorMap: () => ({ message: 'Solo se puede solicitar el rol CATEDRATICO o AUXILIAR' }),
+  }),
+});
+
+export const listarSolicitudesRolSchema = z.object({
+  estado: z.enum(['PENDIENTE', 'ACEPTADA', 'RECHAZADA']).optional(),
+});
+
+export const resolverSolicitudRolSchema = z.object({
+  solicitudId: z.string().uuid('Solicitud inválida'),
+  aprobado: z.boolean(),
+});
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
@@ -89,3 +104,6 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type AssignRoleInput = z.infer<typeof assignRoleSchema>;
 export type CheckPermissionInput = z.infer<typeof checkPermissionSchema>;
+export type CrearSolicitudRolInput = z.infer<typeof crearSolicitudRolSchema>;
+export type ListarSolicitudesRolInput = z.infer<typeof listarSolicitudesRolSchema>;
+export type ResolverSolicitudRolInput = z.infer<typeof resolverSolicitudRolSchema>;

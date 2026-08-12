@@ -2,6 +2,7 @@ import { User } from '../../../domain/entities/user';
 import { Role } from '../../../domain/enums/role';
 import { DomainError } from '../../../domain/errors/domain-error';
 import { UpdateProfileData, UserRepository } from '../../../application/ports/user-repository';
+import { SolicitudEstado, SolicitudRol } from '../../../domain/entities/solicitud-rol';
 import { query } from './db';
 
 interface UserRow {
@@ -71,6 +72,56 @@ function rowToUser(row: UserRow): User {
   };
 }
 
+interface IdRow {
+  id: string;
+}
+
+interface SolicitudRow {
+  id: string;
+  usuario_id: string;
+  correo: string;
+  nombres: string | null;
+  apellidos: string | null;
+  carnet: string | null;
+  rol_solicitado: string;
+  estado: string;
+  fecha_solicitud: Date;
+  fecha_resolucion: Date | null;
+  resuelto_por: string | null;
+}
+
+const SOLICITUD_SELECT = `
+  SELECT
+    sr.id,
+    sr.usuario_id,
+    sr.correo_institucional AS correo,
+    sr.nombres,
+    sr.apellidos,
+    sr.carnet,
+    sr.rol_solicitado,
+    sr.estado,
+    sr.fecha_solicitud,
+    sr.fecha_resolucion,
+    sr.resuelto_por
+  FROM vw_solicitudes_rol sr
+`;
+
+function rowToSolicitud(row: SolicitudRow): SolicitudRol {
+  return {
+    solicitudId: row.id,
+    usuarioId: row.usuario_id,
+    correo: row.correo,
+    nombres: row.nombres ?? null,
+    apellidos: row.apellidos ?? null,
+    carnet: row.carnet ?? null,
+    rolSolicitado: row.rol_solicitado as Role,
+    estado: row.estado as SolicitudEstado,
+    fechaSolicitud: new Date(row.fecha_solicitud),
+    fechaResolucion: row.fecha_resolucion ? new Date(row.fecha_resolucion) : null,
+    resueltoPor: row.resuelto_por ?? null,
+  };
+}
+
 /**
  * Repositorio de usuarios sobre PostgreSQL (patrón Database per Microservice).
  *
@@ -79,6 +130,7 @@ function rowToUser(row: UserRow): User {
  *  - sp_asignar_rol        -> addRole()
  *  - sp_cambiar_password   -> updatePassword()
  *  - sp_vincular_cuenta_oauth -> linkOAuthProvider()
+ *  - sp_crear_solicitud_rol / sp_resolver_solicitud_rol -> solicitudes de rol
  *  - vw_usuarios_activos_roles -> lectura de perfiles
  *  - trg_auditoria_*       -> auditoría automática de cambios de credenciales/roles
  */
@@ -260,6 +312,55 @@ export class PostgresUserRepository implements UserRepository {
     const user = await this.findByEmail(email);
     if (user && user.oauthProviders.includes(provider)) return user;
     return null;
+  }
+
+  /** sp_crear_solicitud_rol: registra la solicitud de rol pendiente. */
+  async crearSolicitudRol(usuarioId: string, rolSolicitado: Role): Promise<SolicitudRol> {
+    const res = await query<IdRow>('CALL sp_crear_solicitud_rol($1, $2, NULL)', [
+      usuarioId,
+      rolSolicitado,
+    ]);
+    const solicitudId = res.rows[0]?.id;
+    if (!solicitudId) {
+      throw new DomainError('ERROR_INTERNO', 'No se pudo crear la solicitud de rol', 500);
+    }
+    return this.requireSolicitud(solicitudId);
+  }
+
+  /** Lista las solicitudes de rol (opcionalmente filtradas por estado). */
+  async listarSolicitudesRol(estado?: SolicitudEstado): Promise<SolicitudRol[]> {
+    const res = estado
+      ? await query<SolicitudRow>(
+          `${SOLICITUD_SELECT} WHERE sr.estado = $1 ORDER BY sr.fecha_solicitud DESC`,
+          [estado],
+        )
+      : await query<SolicitudRow>(`${SOLICITUD_SELECT} ORDER BY sr.fecha_solicitud DESC`);
+    return res.rows.map(rowToSolicitud);
+  }
+
+  /**
+   * sp_resolver_solicitud_rol: aprueba o rechaza la solicitud.
+   * Si se aprueba, el procedimiento otorga el rol de forma atómica.
+   */
+  async resolverSolicitudRol(
+    solicitudId: string,
+    aprobado: boolean,
+    resueltoPor: string,
+  ): Promise<SolicitudRol> {
+    await query('CALL sp_resolver_solicitud_rol($1, $2, $3, NULL, NULL)', [
+      solicitudId,
+      aprobado,
+      resueltoPor,
+    ]);
+    return this.requireSolicitud(solicitudId);
+  }
+
+  private async requireSolicitud(solicitudId: string): Promise<SolicitudRol> {
+    const res = await query<SolicitudRow>(`${SOLICITUD_SELECT} WHERE sr.id = $1`, [solicitudId]);
+    if (res.rows.length === 0) {
+      throw new DomainError('SOLICITUD_NO_ENCONTRADA', 'Solicitud de rol no encontrada', 404);
+    }
+    return rowToSolicitud(res.rows[0]);
   }
 
   private async syncRoles(userId: string, roles: Role[]): Promise<void> {

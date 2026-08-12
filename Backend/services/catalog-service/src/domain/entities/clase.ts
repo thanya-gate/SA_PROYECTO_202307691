@@ -45,3 +45,23 @@ export interface SemestreResumen {
   escuela: string;
   totalClases: number;
 }
+
+export interface SemestreAdmin {
+  semestreId: string;
+  nombre: string;
+  anio: number;
+  clases: number;
+}
+
+export interface EscuelaAdmin {
+  escuelaId: string;
+  nombre: string;
+  cursos: number;
+}
+
+export interface CursoAdmin {
+  cursoId: string;
+  codigo: string;
+  nombre: string;
+  escuela: string;
+}

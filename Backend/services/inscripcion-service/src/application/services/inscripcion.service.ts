@@ -10,6 +10,8 @@ import {
   AsignarAuxiliarCatedraticoInput,
 } from '../ports/inscripcion-repository';
 import {
+  AsignacionDocenteItem,
+  AuxiliarInscripcion,
   CursoCatedraticoItem,
   CursoInscripcion,
   DocenteInscripcion,
@@ -101,5 +103,20 @@ export class InscripcionService {
 
   async listarDocentes(): Promise<DocenteInscripcion[]> {
     return this.repository.listarDocentes();
+  }
+
+  async listarAuxiliares(): Promise<AuxiliarInscripcion[]> {
+    return this.repository.listarAuxiliares();
+  }
+
+  async listarAsignaciones(): Promise<AsignacionDocenteItem[]> {
+    return this.repository.listarAsignaciones();
+  }
+
+  async eliminarDocente(docenteId: string): Promise<void> {
+    if (!docenteId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'docenteId es obligatorio', 400);
+    }
+    return this.repository.eliminarDocente(docenteId);
   }
 }
