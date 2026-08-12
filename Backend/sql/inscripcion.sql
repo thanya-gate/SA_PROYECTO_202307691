@@ -140,6 +140,27 @@ BEGIN
 END;
 $$;
 
+-- Elimina un docente del registro (solo si no tiene asignaciones vigentes).
+CREATE OR REPLACE PROCEDURE sp_eliminar_docente(
+    p_docente_id UUID,
+    INOUT p_eliminado BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM docente WHERE id = p_docente_id) THEN
+        RAISE EXCEPTION 'DOCENTE_NO_ENCONTRADO: el docente no existe';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM asignacion_docente WHERE docente_id = p_docente_id) THEN
+        RAISE EXCEPTION 'DOCENTE_EN_USO: no se puede eliminar un docente con asignaciones a cursos';
+    END IF;
+
+    DELETE FROM docente WHERE id = p_docente_id;
+    p_eliminado := TRUE;
+END;
+$$;
+
 --vistas
 CREATE OR REPLACE VIEW vw_panel_estudiante AS
 SELECT
