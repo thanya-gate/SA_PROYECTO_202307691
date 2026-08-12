@@ -1,6 +1,7 @@
 :root {
   --color-primary: #3e8fd6;
   --color-primary-dark: #1e5a9c;
+  --color-primary-hover: #1e5a9c;
   --color-primary-light: #eaf6ff;
   --color-primary-mid: #7fc4f2;
   --color-primary-soft: #bfe3fa;
@@ -10,13 +11,106 @@
   --color-border: #d8dde7;
   --color-bg: #f4f6fb;
   --color-surface: #ffffff;
+  --color-surface-muted: #f4f7fb;
+  --color-border-strong: #c9c9c9;
   --color-error: #b3261e;
   --color-error-bg: #fdecea;
+  --color-error-border: #f3c6c2;
   --color-success: #166534;
   --color-success-bg: #e7f6ec;
+  --color-success-border: #bfe3cb;
+  --color-info-border: #c9d8f5;
+  --color-warning: #8a5a00;
+  --color-warning-bg: #fff4d6;
+  --color-star: #f59e0b;
+  --color-danger: #c0392b;
+  --color-video-bg: #000000;
+  --color-overlay: rgba(10, 18, 36, 0.55);
   --radius: 12px;
   --shadow-card: 0 10px 30px rgba(30, 90, 156, 0.12);
+  --shadow-modal: 0 20px 50px rgba(10, 18, 36, 0.35);
   --font: 'Nunito', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+:root[data-theme='dark'] {
+  --color-primary: #5aa7e0;
+  --color-primary-dark: #a8d4f7;
+  --color-primary-hover: #2f7fbf;
+  --color-primary-light: #16304f;
+  --color-primary-mid: #4d9fda;
+  --color-primary-soft: #2b4a6b;
+  --color-accent: #ffc93c;
+  --color-text: #e8edf6;
+  --color-text-muted: #9aa7bd;
+  --color-border: #2b3a55;
+  --color-bg: #0d1424;
+  --color-surface: #17213a;
+  --color-surface-muted: #1b2847;
+  --color-border-strong: #4a5a78;
+  --color-error: #ff8a7a;
+  --color-error-bg: #3a1f1c;
+  --color-error-border: #6e2a26;
+  --color-success: #7ee2a0;
+  --color-success-bg: #16301f;
+  --color-success-border: #1f4d33;
+  --color-info-border: #24405f;
+  --color-warning: #ffd166;
+  --color-warning-bg: #3a2f10;
+  --color-star: #ffb92e;
+  --color-danger: #ff7a66;
+  --color-video-bg: #000000;
+  --color-overlay: rgba(4, 8, 18, 0.7);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+/* ===== Toggle de tema ===== */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.theme-toggle:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.auth-layout__theme {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.auth-layout__theme .theme-toggle {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.auth-layout__theme .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+/* ===== Iconos de acciones (admin) ===== */
+.admin-icon {
+  width: 1rem;
+  height: 1rem;
+  object-fit: contain;
+}
+
+:root[data-theme='dark'] .admin-icon {
+  filter: brightness(0) invert(0.92);
 }
 
 * {
@@ -82,6 +176,7 @@ body {
 
 /* ===== Layout de autenticación ===== */
 .auth-layout {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -279,7 +374,7 @@ body {
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
+  background: var(--color-primary-hover);
 }
 
 .btn--secondary {
@@ -336,19 +431,19 @@ body {
 .alert--error {
   background: var(--color-error-bg);
   color: var(--color-error);
-  border-color: #f3c6c2;
+  border-color: var(--color-error-border);
 }
 
 .alert--success {
   background: var(--color-success-bg);
   color: var(--color-success);
-  border-color: #bfe3cb;
+  border-color: var(--color-success-border);
 }
 
 .alert--info {
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
-  border-color: #c9d8f5;
+  border-color: var(--color-info-border);
 }
 
 /* ===== Home (sesión) ===== */
@@ -898,7 +993,7 @@ body {
   margin: 0.8rem 0;
   padding: 0.8rem;
   border-radius: 8px;
-  background: #f4f7fb;
+  background: var(--color-surface-muted);
   color: var(--color-text-muted);
   font-size: 0.78rem;
   overflow-x: auto;
@@ -1156,7 +1251,7 @@ body {
 }
 
 .clase__player {
-  background: #000000;
+  background: var(--color-video-bg);
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: var(--shadow-card);
@@ -1166,7 +1261,7 @@ body {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #000000;
+  background: var(--color-video-bg);
 }
 
 .clase__youtube-host iframe {
@@ -1181,7 +1276,7 @@ body {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #000000;
+  background: var(--color-video-bg);
 }
 
 .clase__sin-video {
@@ -1435,7 +1530,7 @@ body {
   cursor: pointer;
   font-size: 1.6rem;
   line-height: 1;
-  color: var(--color-border-strong, #c9c9c9);
+  color: var(--color-border-strong);
   padding: 0.1rem 0.15rem;
   transition: color 0.15s ease, transform 0.15s ease;
 }
@@ -1445,7 +1540,7 @@ body {
 }
 
 .clase__estrella--activa {
-  color: #f59e0b;
+  color: var(--color-star);
 }
 
 .clase__estrella:disabled {
@@ -2023,7 +2118,7 @@ body {
 }
 
 .asig__ir:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 
@@ -2043,8 +2138,8 @@ body {
 }
 
 .asig__badge--pendiente {
-  background: #fff4d6;
-  color: #8a5a00;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
 .asig__badge--retirada {
@@ -2146,8 +2241,8 @@ body {
 }
 
 .mcursos__badge--pendiente {
-  background: #fff4d6;
-  color: #8a5a00;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
 .mcursos__badge--retirada {
@@ -2168,7 +2263,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: rgba(10, 18, 36, 0.55);
+  background: var(--color-overlay);
 }
 
 .mcursos__modal {
@@ -2178,7 +2273,7 @@ body {
   overflow-y: auto;
   background: var(--color-surface);
   border-radius: var(--radius);
-  box-shadow: 0 20px 50px rgba(10, 18, 36, 0.35);
+  box-shadow: var(--shadow-modal);
 }
 
 .mcursos__modal-header {
@@ -2248,7 +2343,7 @@ body {
   }
 }
 
-/* ===== Gestión de Cursos ===== */
+/* ===== Gestión Académica ===== */
 .gcursos {
   display: flex;
   flex-direction: column;
@@ -2321,8 +2416,8 @@ body {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
-  background: #fff4d6;
-  color: #8a5a00;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
   white-space: nowrap;
 }
 
@@ -2666,7 +2761,7 @@ body {
 }
 
 .subirclase__quitar:hover {
-  color: var(--color-danger, #c0392b);
+  color: var(--color-danger);
   border-color: currentColor;
 }
 

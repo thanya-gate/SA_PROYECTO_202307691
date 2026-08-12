@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   adminApi,
   type CargaCsvResult,
@@ -7,7 +8,12 @@ import {
   type EscuelaAdminItem,
   type SemestreAdminItem,
 } from '../../api/admin';
-import { authApi, type PublicUser, type SolicitudEstado, type SolicitudRolItem } from '../../api/auth';
+import {
+  authApi,
+  type PublicUser,
+  type RegisterRole,
+  type SolicitudRolItem,
+} from '../../api/auth';
 import {
   inscripcionApi,
   type AsignacionDocenteItem,
@@ -49,9 +55,36 @@ function rolLegible(rol: string): string {
   return nombres[sinPrefijo] ?? sinPrefijo;
 }
 
-function nombreSolicitante(s: SolicitudRolItem): string {
-  return [s.nombres, s.apellidos].filter(Boolean).join(' ').trim() || s.correo;
+function Icon({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
 }
+
+const TrashIcon = () => <img className="admin-icon" src="/borrar.png" alt="" aria-hidden="true" />;
+
+const EditIcon = () => (
+  <img className="admin-icon" src="/editar-informacion.png" alt="" aria-hidden="true" />
+);
+
+const RestoreIcon = () => (
+  <Icon>
+    <polyline points="1 4 1 10 7 10" />
+    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+  </Icon>
+);
 
 export function TituloSeccion({ titulo, detalle }: { titulo: string; detalle: string }) {
   return (
@@ -218,10 +251,10 @@ export function SemestresTab({ token }: { token: string }) {
                   <td className="asig__celda-accion">
                     <div className="admin-acciones">
                       <Button variant="secondary" onClick={() => editar(s)}>
-                        Editar
+                        <EditIcon /> Editar
                       </Button>
                       <Button variant="secondary" onClick={() => eliminar(s)} disabled={estado.ocupado}>
-                        Eliminar
+                        <TrashIcon /> Eliminar
                       </Button>
                     </div>
                   </td>
@@ -366,10 +399,10 @@ export function EscuelasTab({ token }: { token: string }) {
                   <td className="asig__celda-accion">
                     <div className="admin-acciones">
                       <Button variant="secondary" onClick={() => editar(e)}>
-                        Editar
+                        <EditIcon /> Editar
                       </Button>
                       <Button variant="secondary" onClick={() => eliminar(e)} disabled={estado.ocupado}>
-                        Eliminar
+                        <TrashIcon /> Eliminar
                       </Button>
                     </div>
                   </td>
@@ -550,10 +583,10 @@ export function CursosCatalogoTab({ token }: { token: string }) {
                   <td className="asig__celda-accion">
                     <div className="admin-acciones">
                       <Button variant="secondary" onClick={() => editar(c)}>
-                        Editar
+                        <EditIcon /> Editar
                       </Button>
                       <Button variant="secondary" onClick={() => eliminar(c)} disabled={estado.ocupado}>
-                        Eliminar
+                        <TrashIcon /> Eliminar
                       </Button>
                     </div>
                   </td>
@@ -567,30 +600,60 @@ export function CursosCatalogoTab({ token }: { token: string }) {
   );
 }
 
+type RolDocente = 'CATEDRATICO' | 'AUXILIAR';
+
 export function DocentesTab({ token }: { token: string }) {
   const [docentes, setDocentes] = useState<DocenteAdminItem[]>([]);
   const [candidatos, setCandidatos] = useState<PublicUser[]>([]);
+  const [solicitudes, setSolicitudes] = useState<SolicitudRolItem[]>([]);
   const [cargando, setCargando] = useState(true);
   const [cargaError, setCargaError] = useState<string | null>(null);
 
-  const [usuarioId, setUsuarioId] = useState('');
   const [estado, setEstado] = useState<EstadoCrud>({ mensaje: null, error: null, ocupado: false });
+
+  const [crearAbierto, setCrearAbierto] = useState(false);
+  const [formCrear, setFormCrear] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    carnet: '',
+    dpi: '',
+    fechaNacimiento: '',
+    rol: 'CATEDRATICO' as RolDocente,
+  });
+
+  const [editando, setEditando] = useState<PublicUser | null>(null);
+  const [formEdicion, setFormEdicion] = useState({
+    nombres: '',
+    apellidos: '',
+    carnet: '',
+    dpi: '',
+    telefonoCelular: '',
+    carrera: '',
+  });
+  const [estadoEdicion, setEstadoEdicion] = useState<EstadoCrud>({
+    mensaje: null,
+    error: null,
+    ocupado: false,
+  });
 
   const cargar = useCallback(async () => {
     setCargando(true);
     setCargaError(null);
     try {
-      const [resDocentes, resUsuarios] = await Promise.all([
+      const [resDocentes, resUsuarios, resSolicitudes] = await Promise.all([
         adminApi.listarDocentes(token),
         authApi.listarUsuariosPorRol(token, ['ROLE_CATEDRATICO', 'ROLE_AUXILIAR']),
+        authApi.listarSolicitudesRol(token, 'PENDIENTE'),
       ]);
       setDocentes(resDocentes.docentes);
       setCandidatos(resUsuarios.usuarios);
-      setUsuarioId((prev) => prev || resUsuarios.usuarios[0]?.userId || '');
+      setSolicitudes(resSolicitudes.solicitudes);
     } catch (err: unknown) {
       setCargaError(formatearMensaje(err, 'No se pudieron cargar los docentes'));
       setDocentes([]);
       setCandidatos([]);
+      setSolicitudes([]);
     } finally {
       setCargando(false);
     }
@@ -600,24 +663,69 @@ export function DocentesTab({ token }: { token: string }) {
     void cargar();
   }, [cargar]);
 
-  const docentesPorUsuario = useCallback(() => {
-    const map = new Map<string, DocenteAdminItem>();
-    for (const d of docentes) map.set(d.usuarioId, d);
-    return map;
-  }, [docentes]);
-
   async function registrar() {
-    if (!usuarioId) {
-      setEstado({ mensaje: null, error: 'Selecciona un usuario para registrar como docente.', ocupado: false });
+    const { email, password, confirmPassword, carnet, dpi, fechaNacimiento, rol } = formCrear;
+    if (!email.trim() || !password || password.length < 8) {
+      setEstado({ mensaje: null, error: 'El correo y una contraseña de al menos 8 caracteres son obligatorios.', ocupado: false });
+      return;
+    }
+    if (password !== confirmPassword) {
+      setEstado({ mensaje: null, error: 'Las contraseñas no coinciden.', ocupado: false });
       return;
     }
     setEstado({ ...estado, ocupado: true, error: null, mensaje: null });
     try {
-      await adminApi.registrarDocente(token, usuarioId);
-      setEstado({ mensaje: 'Docente registrado correctamente.', error: null, ocupado: false });
+      const creado = await authApi.crearUsuarioAdmin(token, {
+        email: email.trim(),
+        password,
+        confirmPassword,
+        carnet: carnet.trim(),
+        dpi: dpi.trim(),
+        fechaNacimiento,
+        rol: 'CATEDRATICO',
+      });
+      if (rol === 'AUXILIAR') {
+        await authApi.asignarRol(token, creado.user.userId, 'ROLE_AUXILIAR');
+        await authApi.quitarRol(token, creado.user.userId, 'ROLE_CATEDRATICO');
+      }
+      await adminApi.registrarDocente(token, creado.user.userId);
+      setEstado({ mensaje: `Docente ${email.trim()} (${rol === 'AUXILIAR' ? 'auxiliar' : 'catedrático'}) registrado correctamente.`, error: null, ocupado: false });
+      setFormCrear({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        carnet: '',
+        dpi: '',
+        fechaNacimiento: '',
+        rol: 'CATEDRATICO',
+      });
+      setCrearAbierto(false);
       await cargar();
     } catch (err: unknown) {
       setEstado({ mensaje: null, error: formatearMensaje(err, 'No se pudo registrar el docente'), ocupado: false });
+    }
+  }
+
+  async function resolver(s: SolicitudRolItem, aprobado: boolean) {
+    const persona = s.nombres ? `${s.nombres} ${s.apellidos ?? ''}`.trim() : s.correo;
+    if (!window.confirm(`¿${aprobado ? 'Aprobar' : 'Rechazar'} la solicitud de ${rolLegible(s.rolSolicitado)} de ${persona}?`)) return;
+    setEstado({ ...estado, ocupado: true, error: null, mensaje: null });
+    try {
+      const res = await authApi.resolverSolicitudRol(token, s.solicitudId, aprobado);
+      setEstado({
+        mensaje: aprobado
+          ? `Solicitud de ${rolLegible(res.solicitud.rolSolicitado)} aprobada. ${persona} ya puede publicar clases.`
+          : 'Solicitud rechazada.',
+        error: null,
+        ocupado: false,
+      });
+      await cargar();
+    } catch (err: unknown) {
+      setEstado({
+        mensaje: null,
+        error: formatearMensaje(err, `No se pudo ${aprobado ? 'aprobar' : 'rechazar'} la solicitud`),
+        ocupado: false,
+      });
     }
   }
 
@@ -634,38 +742,220 @@ export function DocentesTab({ token }: { token: string }) {
     }
   }
 
-  const registrados = docentesPorUsuario();
+  function iniciarEdicion(u: PublicUser) {
+    setEditando(u);
+    setFormEdicion({
+      nombres: u.nombres ?? '',
+      apellidos: u.apellidos ?? '',
+      carnet: u.carnet ?? '',
+      dpi: u.dpi ?? '',
+      telefonoCelular: u.telefonoCelular ?? '',
+      carrera: u.carrera ?? '',
+    });
+    setEstadoEdicion({ mensaje: null, error: null, ocupado: false });
+  }
+
+  async function guardarEdicion() {
+    if (!editando) return;
+    setEstadoEdicion({ ...estadoEdicion, ocupado: true, error: null, mensaje: null });
+    try {
+      await authApi.actualizarUsuarioAdmin(token, editando.userId, {
+        nombres: formEdicion.nombres.trim() || undefined,
+        apellidos: formEdicion.apellidos.trim() || undefined,
+        carnet: formEdicion.carnet.trim() || undefined,
+        dpi: formEdicion.dpi.trim() || undefined,
+        telefonoCelular: formEdicion.telefonoCelular.trim() || undefined,
+        carrera: formEdicion.carrera.trim() || undefined,
+      });
+      setEstadoEdicion({
+        mensaje: `Perfil de ${nombreUsuario(editando)} actualizado correctamente.`,
+        error: null,
+        ocupado: false,
+      });
+      setEditando(null);
+      await cargar();
+    } catch (err: unknown) {
+      setEstadoEdicion({
+        mensaje: null,
+        error: formatearMensaje(err, 'No se pudo actualizar el perfil'),
+        ocupado: false,
+      });
+    }
+  }
 
   return (
     <>
       <TituloSeccion
-        titulo="Registros de docentes"
-        detalle="Habilita a catedráticos y auxiliares como docentes con permisos de publicación de clases."
+        titulo="Docentes"
+        detalle="Crea cuentas de catedráticos y auxiliares, aprueba los registros que quedaron pendientes y habilítalos con permisos de publicación de clases."
       />
       <Notificaciones estado={estado} />
+      <Notificaciones estado={estadoEdicion} />
 
-      <div className="gcursos__form">
-        <label className="catalogo__campo">
-          <span className="catalogo__campo-label">Usuario (catedrático o auxiliar)</span>
-          <select
-            className="catalogo__select"
-            value={usuarioId}
-            onChange={(e) => setUsuarioId(e.target.value)}
+      {editando && (
+        <div className="gcursos__form">
+          <TextField
+            label="Nombres"
+            value={formEdicion.nombres}
+            onChange={(e) => setFormEdicion({ ...formEdicion, nombres: e.target.value })}
+          />
+          <TextField
+            label="Apellidos"
+            value={formEdicion.apellidos}
+            onChange={(e) => setFormEdicion({ ...formEdicion, apellidos: e.target.value })}
+          />
+          <TextField
+            label="Carnet"
+            value={formEdicion.carnet}
+            onChange={(e) => setFormEdicion({ ...formEdicion, carnet: e.target.value })}
+          />
+          <TextField
+            label="DPI"
+            value={formEdicion.dpi}
+            onChange={(e) => setFormEdicion({ ...formEdicion, dpi: e.target.value.replace(/\D/g, '') })}
+          />
+          <TextField
+            label="Teléfono celular"
+            value={formEdicion.telefonoCelular}
+            onChange={(e) => setFormEdicion({ ...formEdicion, telefonoCelular: e.target.value })}
+          />
+          <TextField
+            label="Carrera"
+            value={formEdicion.carrera}
+            onChange={(e) => setFormEdicion({ ...formEdicion, carrera: e.target.value })}
+          />
+        </div>
+      )}
+      {editando && (
+        <div className="gcursos__form-acciones">
+          <Button onClick={guardarEdicion} loading={estadoEdicion.ocupado}>
+            Guardar cambios
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setEditando(null);
+              setEstadoEdicion({ mensaje: null, error: null, ocupado: false });
+            }}
           >
-            {candidatos.length === 0 && <option value="">No hay usuarios con rol de docente o auxiliar</option>}
-            {candidatos.map((u) => (
-              <option key={u.userId} value={u.userId} disabled={registrados.has(u.userId)}>
-                {nombreUsuario(u)} ({u.email}) {registrados.has(u.userId) ? '— ya registrado' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+            Cancelar edición
+          </Button>
+        </div>
+      )}
+
       <div className="gcursos__form-acciones">
-        <Button onClick={registrar} loading={estado.ocupado}>
-          Registrar docente
+        <Button onClick={() => setCrearAbierto((v) => !v)} variant={crearAbierto ? 'secondary' : 'primary'}>
+          {crearAbierto ? 'Cerrar formulario' : 'Crear docente'}
         </Button>
       </div>
+
+      {crearAbierto && (
+        <>
+          <div className="gcursos__form">
+            <TextField
+              label="Correo institucional"
+              type="email"
+              value={formCrear.email}
+              onChange={(e) => setFormCrear({ ...formCrear, email: e.target.value })}
+            />
+            <TextField
+              label="Contraseña (mín. 8 caracteres)"
+              type="password"
+              value={formCrear.password}
+              onChange={(e) => setFormCrear({ ...formCrear, password: e.target.value })}
+            />
+            <TextField
+              label="Confirmar contraseña"
+              type="password"
+              value={formCrear.confirmPassword}
+              onChange={(e) => setFormCrear({ ...formCrear, confirmPassword: e.target.value })}
+            />
+            <label className="catalogo__campo">
+              <span className="catalogo__campo-label">Rol</span>
+              <select
+                className="catalogo__select"
+                value={formCrear.rol}
+                onChange={(e) => setFormCrear({ ...formCrear, rol: e.target.value as RolDocente })}
+              >
+                <option value="CATEDRATICO">Catedrático</option>
+                <option value="AUXILIAR">Auxiliar</option>
+              </select>
+            </label>
+            <TextField
+              label="Carnet"
+              value={formCrear.carnet}
+              onChange={(e) => setFormCrear({ ...formCrear, carnet: e.target.value })}
+            />
+            <TextField
+              label="DPI"
+              value={formCrear.dpi}
+              onChange={(e) => setFormCrear({ ...formCrear, dpi: e.target.value.replace(/\D/g, '') })}
+            />
+            <TextField
+              label="Fecha de nacimiento"
+              type="date"
+              value={formCrear.fechaNacimiento}
+              onChange={(e) => setFormCrear({ ...formCrear, fechaNacimiento: e.target.value })}
+            />
+          </div>
+          <div className="gcursos__form-acciones">
+            <Button onClick={registrar} loading={estado.ocupado}>
+              Registrar docente
+            </Button>
+          </div>
+        </>
+      )}
+
+      <section className="gcursos__panel" aria-label="Autorizar docentes">
+        <h2 className="gcursos__panel-titulo">Autorizar docentes</h2>
+        <p className="catalogo__subtitle">
+          Los docentes que se registran por su cuenta quedan pendientes hasta que apruebes su cuenta para publicar clases.
+        </p>
+        {solicitudes.length === 0 ? (
+          <p className="catalogo__estado">No hay solicitudes pendientes de autorización.</p>
+        ) : (
+          <div className="gcursos__tabla-wrap">
+            <table className="asig__tabla">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Rol solicitado</th>
+                  <th>Fecha</th>
+                  <th aria-label="Acciones" />
+                </tr>
+              </thead>
+              <tbody>
+                {solicitudes.map((s) => (
+                  <tr key={s.solicitudId}>
+                    <td>
+                      <span className="asig__curso">
+                        {s.nombres ? `${s.nombres} ${s.apellidos ?? ''}`.trim() : s.correo}
+                      </span>
+                      <span className="asig__escuela">{s.correo}</span>
+                    </td>
+                    <td>
+                      <span className="asig__rol-badge">{rolLegible(s.rolSolicitado)}</span>
+                    </td>
+                    <td className="asig__celda-semestre">
+                      {new Date(s.fechaSolicitud).toLocaleDateString()}
+                    </td>
+                    <td className="asig__celda-accion">
+                      <div className="admin-acciones">
+                        <Button onClick={() => resolver(s, true)} loading={estado.ocupado}>
+                          Aprobar
+                        </Button>
+                        <Button variant="secondary" onClick={() => resolver(s, false)} disabled={estado.ocupado}>
+                          Rechazar
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {cargaError && (
         <Alert tone="error">
@@ -700,8 +990,13 @@ export function DocentesTab({ token }: { token: string }) {
                     <td>{usuario?.roles.includes('ROLE_CATEDRATICO') ? 'Catedrático' : 'Auxiliar'}</td>
                     <td className="asig__celda-accion">
                       <div className="admin-acciones">
+                        {usuario && (
+                          <Button variant="secondary" onClick={() => iniciarEdicion(usuario)} disabled={estado.ocupado}>
+                            <EditIcon /> Editar
+                          </Button>
+                        )}
                         <Button variant="secondary" onClick={() => eliminar(d)} disabled={estado.ocupado}>
-                          Eliminar
+                          <TrashIcon /> Eliminar
                         </Button>
                       </div>
                     </td>
@@ -718,6 +1013,7 @@ export function DocentesTab({ token }: { token: string }) {
 
 export function RolesTab({ token }: { token: string }) {
   const [estudiantes, setEstudiantes] = useState<PublicUser[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
   const [cargaError, setCargaError] = useState<string | null>(null);
   const [estado, setEstado] = useState<EstadoCrud>({ mensaje: null, error: null, ocupado: false });
@@ -740,20 +1036,19 @@ export function RolesTab({ token }: { token: string }) {
     void cargar();
   }, [cargar]);
 
-  async function alternarRol(u: PublicUser, rol: 'ROLE_AUXILIAR' | 'ROLE_CATEDRATICO') {
-    const tieneRol = u.roles.includes(rol);
+  async function alternarRol(u: PublicUser) {
+    const tieneRol = u.roles.includes('ROLE_AUXILIAR');
     const accion = tieneRol ? 'Quitar' : 'Otorgar';
-    const mensajeRol = rol === 'ROLE_AUXILIAR' ? 'auxiliar' : 'catedrático';
-    if (!window.confirm(`¿${accion} el rol de ${mensajeRol} a ${nombreUsuario(u)}?`)) return;
+    if (!window.confirm(`¿${accion} el rol de auxiliar a ${nombreUsuario(u)}?`)) return;
     setEstado({ ...estado, ocupado: true, error: null, mensaje: null });
     try {
       if (tieneRol) {
-        await authApi.quitarRol(token, u.userId, rol);
+        await authApi.quitarRol(token, u.userId, 'ROLE_AUXILIAR');
       } else {
-        await authApi.asignarRol(token, u.userId, rol);
+        await authApi.asignarRol(token, u.userId, 'ROLE_AUXILIAR');
       }
       setEstado({
-        mensaje: `Rol de ${mensajeRol} ${tieneRol ? 'retirado' : 'otorgado'} a ${nombreUsuario(u)}.`,
+        mensaje: `Rol de auxiliar ${tieneRol ? 'retirado' : 'otorgado'} a ${nombreUsuario(u)}.`,
         error: null,
         ocupado: false,
       });
@@ -761,19 +1056,42 @@ export function RolesTab({ token }: { token: string }) {
     } catch (err: unknown) {
       setEstado({
         mensaje: null,
-        error: formatearMensaje(err, `No se pudo ${accion.toLowerCase()} el rol de ${mensajeRol}`),
+        error: formatearMensaje(err, `No se pudo ${accion.toLowerCase()} el rol de auxiliar`),
         ocupado: false,
       });
     }
   }
 
+  const termino = busqueda.trim().toLowerCase();
+  const filtrados = termino
+    ? estudiantes.filter((u) => {
+        const nombre = nombreUsuario(u).toLowerCase();
+        const carnet = (u.carnet ?? '').toLowerCase();
+        const email = u.email.toLowerCase();
+        return nombre.includes(termino) || carnet.includes(termino) || email.includes(termino);
+      })
+    : estudiantes;
+
   return (
     <>
       <TituloSeccion
-        titulo="Roles de los estudiantes"
-        detalle="Determina quién puede ser auxiliar o catedrático: otorga o retira los roles de cada estudiante."
+        titulo="Auxiliaturas"
+        detalle="Busca a un estudiante y otórgale o retírale el rol de auxiliar."
       />
       <Notificaciones estado={estado} />
+
+      <div className="gcursos__form">
+        <label className="catalogo__campo">
+          <span className="catalogo__campo-label">Buscar estudiante</span>
+          <input
+            type="search"
+            className="catalogo__select"
+            placeholder="Nombre, carnet o correo…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </label>
+      </div>
 
       {cargaError && (
         <Alert tone="error">
@@ -784,8 +1102,10 @@ export function RolesTab({ token }: { token: string }) {
         <p className="catalogo__estado" role="status">
           Cargando estudiantes…
         </p>
-      ) : estudiantes.length === 0 ? (
-        <p className="catalogo__estado">Aún no hay estudiantes registrados.</p>
+      ) : filtrados.length === 0 ? (
+        <p className="catalogo__estado">
+          {termino ? 'No se encontró ningún estudiante con ese nombre, carnet o correo.' : 'Aún no hay estudiantes registrados.'}
+        </p>
       ) : (
         <div className="gcursos__tabla-wrap">
           <table className="asig__tabla">
@@ -798,7 +1118,7 @@ export function RolesTab({ token }: { token: string }) {
               </tr>
             </thead>
             <tbody>
-              {estudiantes.map((u) => (
+              {filtrados.map((u) => (
                 <tr key={u.userId}>
                   <td>
                     <span className="asig__curso">{nombreUsuario(u)}</span>
@@ -817,150 +1137,15 @@ export function RolesTab({ token }: { token: string }) {
                   <td className="asig__celda-accion">
                     <div className="admin-acciones">
                       {u.roles.includes('ROLE_AUXILIAR') ? (
-                        <Button variant="secondary" onClick={() => alternarRol(u, 'ROLE_AUXILIAR')} disabled={estado.ocupado}>
+                        <Button variant="secondary" onClick={() => alternarRol(u)} disabled={estado.ocupado}>
                           Quitar auxiliar
                         </Button>
                       ) : (
-                        <Button variant="secondary" onClick={() => alternarRol(u, 'ROLE_AUXILIAR')} disabled={estado.ocupado}>
+                        <Button onClick={() => alternarRol(u)} loading={estado.ocupado}>
                           Hacer auxiliar
                         </Button>
                       )}
-                      {u.roles.includes('ROLE_CATEDRATICO') ? (
-                        <Button variant="secondary" onClick={() => alternarRol(u, 'ROLE_CATEDRATICO')} disabled={estado.ocupado}>
-                          Quitar catedrático
-                        </Button>
-                      ) : (
-                        <Button variant="secondary" onClick={() => alternarRol(u, 'ROLE_CATEDRATICO')} disabled={estado.ocupado}>
-                          Hacer catedrático
-                        </Button>
-                      )}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
-  );
-}
-
-export function SolicitudesTab({ token }: { token: string }) {
-  const [solicitudes, setSolicitudes] = useState<SolicitudRolItem[]>([]);
-  const [filtro, setFiltro] = useState<SolicitudEstado>('PENDIENTE');
-  const [cargando, setCargando] = useState(true);
-  const [cargaError, setCargaError] = useState<string | null>(null);
-  const [estado, setEstado] = useState<EstadoCrud>({ mensaje: null, error: null, ocupado: false });
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setCargaError(null);
-    try {
-      const res = await authApi.listarSolicitudesRol(token, filtro);
-      setSolicitudes(res.solicitudes);
-    } catch (err: unknown) {
-      setCargaError(formatearMensaje(err, 'No se pudieron cargar las solicitudes'));
-      setSolicitudes([]);
-    } finally {
-      setCargando(false);
-    }
-  }, [token, filtro]);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
-
-  async function resolver(s: SolicitudRolItem, aprobado: boolean) {
-    const verbo = aprobado ? 'Aprobar' : 'Rechazar';
-    if (!window.confirm(`¿${verbo} la solicitud de ${nombreSolicitante(s)} para ser ${rolLegible(s.rolSolicitado)}?`)) return;
-    setEstado({ ...estado, ocupado: true, error: null, mensaje: null });
-    try {
-      await authApi.resolverSolicitudRol(token, s.solicitudId, aprobado);
-      setEstado({
-        mensaje: `Solicitud ${aprobado ? 'aprobada' : 'rechazada'}: a ${nombreSolicitante(s)} se le otorgó el rol de ${rolLegible(s.rolSolicitado)}.`,
-        error: null,
-        ocupado: false,
-      });
-      await cargar();
-    } catch (err: unknown) {
-      setEstado({
-        mensaje: null,
-        error: formatearMensaje(err, `No se pudo ${aprobado ? 'aprobar' : 'rechazar'} la solicitud`),
-        ocupado: false,
-      });
-    }
-  }
-
-  return (
-    <>
-      <TituloSeccion
-        titulo="Solicitudes de rol"
-        detalle="Los estudiantes solicitan ser catedráticos o auxiliares. Aprueba o rechaza cada solicitud."
-      />
-      <Notificaciones estado={estado} />
-
-      <div className="gcursos__form">
-        <label className="catalogo__campo">
-          <span className="catalogo__campo-label">Estado</span>
-          <select
-            className="catalogo__select"
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value as SolicitudEstado)}
-          >
-            <option value="PENDIENTE">Pendientes</option>
-            <option value="ACEPTADA">Aprobadas</option>
-            <option value="RECHAZADA">Rechazadas</option>
-          </select>
-        </label>
-      </div>
-
-      {cargaError && (
-        <Alert tone="error">
-          <strong>Error:</strong> {cargaError}
-        </Alert>
-      )}
-      {cargando ? (
-        <p className="catalogo__estado" role="status">
-          Cargando solicitudes…
-        </p>
-      ) : solicitudes.length === 0 ? (
-        <p className="catalogo__estado">No hay solicitudes en este estado.</p>
-      ) : (
-        <div className="gcursos__tabla-wrap">
-          <table className="asig__tabla">
-            <thead>
-              <tr>
-                <th>Solicitante</th>
-                <th>Rol solicitado</th>
-                <th>Fecha</th>
-                <th aria-label="Acciones" />
-              </tr>
-            </thead>
-            <tbody>
-              {solicitudes.map((s) => (
-                <tr key={s.solicitudId}>
-                  <td>
-                    <span className="asig__curso">{nombreSolicitante(s)}</span>
-                    <span className="asig__escuela">{s.correo}</span>
-                  </td>
-                  <td className="asig__celda-semestre">{rolLegible(s.rolSolicitado)}</td>
-                  <td className="asig__celda-semestre">
-                    {new Date(s.fechaSolicitud).toLocaleDateString()}
-                  </td>
-                  <td className="asig__celda-accion">
-                    {s.estado === 'PENDIENTE' ? (
-                      <div className="admin-acciones">
-                        <Button onClick={() => resolver(s, true)} loading={estado.ocupado}>
-                          Aprobar
-                        </Button>
-                        <Button variant="secondary" onClick={() => resolver(s, false)} disabled={estado.ocupado}>
-                          Rechazar
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="asig__muted">Resuelta</span>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -1330,6 +1515,384 @@ export function CsvTab({ token }: { token: string }) {
           duracion_minutos, etiquetas. La primera fila debe ser el encabezado.
         </p>
       </details>
+    </>
+  );
+}
+
+const ROL_ESTUDIANTE = ['ROLE_ESTUDIANTE'];
+
+export function EstudiantesTab({ token }: { token: string }) {
+  const [usuarios, setUsuarios] = useState<PublicUser[]>([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [cargando, setCargando] = useState(true);
+  const [cargaError, setCargaError] = useState<string | null>(null);
+  const [estado, setEstado] = useState<EstadoCrud>({ mensaje: null, error: null, ocupado: false });
+
+  const [editando, setEditando] = useState<PublicUser | null>(null);
+  const [formEdicion, setFormEdicion] = useState({
+    nombres: '',
+    apellidos: '',
+    carnet: '',
+    dpi: '',
+    telefonoCelular: '',
+    carrera: '',
+  });
+  const [estadoEdicion, setEstadoEdicion] = useState<EstadoCrud>({
+    mensaje: null,
+    error: null,
+    ocupado: false,
+  });
+
+  const [crearAbierto, setCrearAbierto] = useState(false);
+  const [formCrear, setFormCrear] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    carnet: '',
+    dpi: '',
+    fechaNacimiento: '',
+    rol: 'ESTUDIANTE' as RegisterRole,
+  });
+  const [estadoCrear, setEstadoCrear] = useState<EstadoCrud>({
+    mensaje: null,
+    error: null,
+    ocupado: false,
+  });
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setCargaError(null);
+    try {
+      const res = await authApi.listarUsuariosPorRol(token, ROL_ESTUDIANTE, true);
+      setUsuarios(res.usuarios);
+    } catch (err: unknown) {
+      setCargaError(formatearMensaje(err, 'No se pudieron cargar los usuarios'));
+      setUsuarios([]);
+    } finally {
+      setCargando(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  async function crear() {
+    const { email, password, confirmPassword, carnet, dpi, fechaNacimiento, rol } = formCrear;
+    if (!email.trim() || !password || password.length < 8) {
+      setEstadoCrear({ mensaje: null, error: 'El correo y una contraseña de al menos 8 caracteres son obligatorios.', ocupado: false });
+      return;
+    }
+    if (password !== confirmPassword) {
+      setEstadoCrear({ mensaje: null, error: 'Las contraseñas no coinciden.', ocupado: false });
+      return;
+    }
+    setEstadoCrear({ ...estadoCrear, ocupado: true, error: null, mensaje: null });
+    try {
+      await authApi.crearUsuarioAdmin(token, {
+        email: email.trim(),
+        password,
+        confirmPassword,
+        carnet: carnet.trim(),
+        dpi: dpi.trim(),
+        fechaNacimiento,
+        rol,
+      });
+      setEstadoCrear({
+        mensaje: `Usuario ${email.trim()} creado correctamente.`,
+        error: null,
+        ocupado: false,
+      });
+      setFormCrear({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        carnet: '',
+        dpi: '',
+        fechaNacimiento: '',
+        rol: 'ESTUDIANTE',
+      });
+      setCrearAbierto(false);
+      await cargar();
+    } catch (err: unknown) {
+      setEstadoCrear({
+        mensaje: null,
+        error: formatearMensaje(err, 'No se pudo crear el usuario'),
+        ocupado: false,
+      });
+    }
+  }
+
+  function iniciarEdicion(u: PublicUser) {
+    setEditando(u);
+    setFormEdicion({
+      nombres: u.nombres ?? '',
+      apellidos: u.apellidos ?? '',
+      carnet: u.carnet ?? '',
+      dpi: u.dpi ?? '',
+      telefonoCelular: u.telefonoCelular ?? '',
+      carrera: u.carrera ?? '',
+    });
+    setEstadoEdicion({ mensaje: null, error: null, ocupado: false });
+  }
+
+  async function guardarEdicion() {
+    if (!editando) return;
+    setEstadoEdicion({ ...estadoEdicion, ocupado: true, error: null, mensaje: null });
+    try {
+      await authApi.actualizarUsuarioAdmin(token, editando.userId, {
+        nombres: formEdicion.nombres.trim() || undefined,
+        apellidos: formEdicion.apellidos.trim() || undefined,
+        carnet: formEdicion.carnet.trim() || undefined,
+        dpi: formEdicion.dpi.trim() || undefined,
+        telefonoCelular: formEdicion.telefonoCelular.trim() || undefined,
+        carrera: formEdicion.carrera.trim() || undefined,
+      });
+      setEstadoEdicion({
+        mensaje: `Perfil de ${nombreUsuario(editando)} actualizado correctamente.`,
+        error: null,
+        ocupado: false,
+      });
+      setEditando(null);
+      await cargar();
+    } catch (err: unknown) {
+      setEstadoEdicion({
+        mensaje: null,
+        error: formatearMensaje(err, 'No se pudo actualizar el perfil'),
+        ocupado: false,
+      });
+    }
+  }
+
+  async function desactivar(u: PublicUser) {
+    if (!window.confirm(`¿Desactivar la cuenta de ${nombreUsuario(u)}? El usuario no podrá iniciar sesión.`)) return;
+    setEstado({ ...estado, ocupado: true, error: null, mensaje: null });
+    try {
+      await authApi.desactivarUsuario(token, u.userId);
+      setEstado({ mensaje: `Cuenta de ${nombreUsuario(u)} desactivada.`, error: null, ocupado: false });
+      await cargar();
+    } catch (err: unknown) {
+      setEstado({ mensaje: null, error: formatearMensaje(err, 'No se pudo desactivar la cuenta'), ocupado: false });
+    }
+  }
+
+  async function reactivar(u: PublicUser) {
+    setEstado({ ...estado, ocupado: true, error: null, mensaje: null });
+    try {
+      await authApi.reactivarUsuario(token, u.userId);
+      setEstado({ mensaje: `Cuenta de ${nombreUsuario(u)} reactivada.`, error: null, ocupado: false });
+      await cargar();
+    } catch (err: unknown) {
+      setEstado({ mensaje: null, error: formatearMensaje(err, 'No se pudo reactivar la cuenta'), ocupado: false });
+    }
+  }
+
+  const termino = busqueda.trim().toLowerCase();
+  const filtrados = termino
+    ? usuarios.filter((u) => {
+        const nombre = nombreUsuario(u).toLowerCase();
+        const carnet = (u.carnet ?? '').toLowerCase();
+        const email = u.email.toLowerCase();
+        return nombre.includes(termino) || carnet.includes(termino) || email.includes(termino);
+      })
+    : usuarios;
+
+  return (
+    <>
+      <TituloSeccion
+        titulo="Estudiantes"
+        detalle="Gestiona las cuentas de estudiantes: crea, edita perfiles y cambia el estado de la cuenta."
+      />
+      <Notificaciones estado={estado} />
+      <Notificaciones estado={estadoEdicion} />
+      <Notificaciones estado={estadoCrear} />
+
+      <div className="gcursos__form">
+        <label className="catalogo__campo">
+          <span className="catalogo__campo-label">Buscar estudiante</span>
+          <input
+            type="search"
+            className="catalogo__select"
+            placeholder="Nombre, carnet o correo…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </label>
+      </div>
+      <div className="gcursos__form-acciones">
+        <Button onClick={() => setCrearAbierto((v) => !v)} variant={crearAbierto ? 'secondary' : 'primary'}>
+          {crearAbierto ? 'Cerrar formulario' : 'Crear estudiante'}
+        </Button>
+      </div>
+
+      {crearAbierto && (
+        <>
+          <div className="gcursos__form">
+            <TextField
+              label="Correo institucional"
+              type="email"
+              value={formCrear.email}
+              onChange={(e) => setFormCrear({ ...formCrear, email: e.target.value })}
+            />
+            <TextField
+              label="Contraseña (mín. 8 caracteres)"
+              type="password"
+              value={formCrear.password}
+              onChange={(e) => setFormCrear({ ...formCrear, password: e.target.value })}
+            />
+            <TextField
+              label="Confirmar contraseña"
+              type="password"
+              value={formCrear.confirmPassword}
+              onChange={(e) => setFormCrear({ ...formCrear, confirmPassword: e.target.value })}
+            />
+            <TextField
+              label="Carnet"
+              value={formCrear.carnet}
+              onChange={(e) => setFormCrear({ ...formCrear, carnet: e.target.value })}
+            />
+            <TextField
+              label="DPI"
+              value={formCrear.dpi}
+              onChange={(e) => setFormCrear({ ...formCrear, dpi: e.target.value.replace(/\D/g, '') })}
+            />
+            <TextField
+              label="Fecha de nacimiento"
+              type="date"
+              value={formCrear.fechaNacimiento}
+              onChange={(e) => setFormCrear({ ...formCrear, fechaNacimiento: e.target.value })}
+            />
+          </div>
+          <div className="gcursos__form-acciones">
+            <Button onClick={crear} loading={estadoCrear.ocupado}>
+              Crear estudiante
+            </Button>
+          </div>
+        </>
+      )}
+
+      {editando && (
+        <>
+          <div className="gcursos__form">
+            <TextField
+              label="Nombres"
+              value={formEdicion.nombres}
+              onChange={(e) => setFormEdicion({ ...formEdicion, nombres: e.target.value })}
+            />
+            <TextField
+              label="Apellidos"
+              value={formEdicion.apellidos}
+              onChange={(e) => setFormEdicion({ ...formEdicion, apellidos: e.target.value })}
+            />
+            <TextField
+              label="Carnet"
+              value={formEdicion.carnet}
+              onChange={(e) => setFormEdicion({ ...formEdicion, carnet: e.target.value })}
+            />
+            <TextField
+              label="DPI"
+              value={formEdicion.dpi}
+              onChange={(e) => setFormEdicion({ ...formEdicion, dpi: e.target.value.replace(/\D/g, '') })}
+            />
+            <TextField
+              label="Teléfono celular"
+              value={formEdicion.telefonoCelular}
+              onChange={(e) => setFormEdicion({ ...formEdicion, telefonoCelular: e.target.value })}
+            />
+            <TextField
+              label="Carrera"
+              value={formEdicion.carrera}
+              onChange={(e) => setFormEdicion({ ...formEdicion, carrera: e.target.value })}
+            />
+          </div>
+          <div className="gcursos__form-acciones">
+            <Button onClick={guardarEdicion} loading={estadoEdicion.ocupado}>
+              Guardar cambios
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setEditando(null);
+                setEstadoEdicion({ mensaje: null, error: null, ocupado: false });
+              }}
+            >
+              Cancelar edición
+            </Button>
+          </div>
+        </>
+      )}
+
+      {cargaError && (
+        <Alert tone="error">
+          <strong>Error:</strong> {cargaError}
+        </Alert>
+      )}
+      {cargando ? (
+        <p className="catalogo__estado" role="status">
+          Cargando estudiantes…
+        </p>
+      ) : filtrados.length === 0 ? (
+        <p className="catalogo__estado">
+          {termino ? 'No se encontró ningún estudiante con ese nombre, carnet o correo.' : 'Aún no hay estudiantes registrados.'}
+        </p>
+      ) : (
+        <div className="gcursos__tabla-wrap">
+          <table className="asig__tabla">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Carnet</th>
+                <th>Roles</th>
+                <th>Estado</th>
+                <th aria-label="Acciones" />
+              </tr>
+            </thead>
+            <tbody>
+              {filtrados.map((u) => (
+                <tr key={u.userId}>
+                  <td>
+                    <span className="asig__curso">{nombreUsuario(u)}</span>
+                    <span className="asig__escuela">{u.email}</span>
+                  </td>
+                  <td className="asig__celda-semestre">{u.carnet ?? '—'}</td>
+                  <td>
+                    <div className="asig__roles">
+                      {u.roles.map((r) => (
+                        <span key={r} className="asig__rol-badge">
+                          {rolLegible(r)}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    {u.activo === false ? (
+                      <span className="asig__rol-badge asig__rol-badge--inactivo">Inactivo</span>
+                    ) : (
+                      <span className="asig__rol-badge">Activo</span>
+                    )}
+                  </td>
+                  <td className="asig__celda-accion">
+                    <div className="admin-acciones">
+                      <Button variant="secondary" onClick={() => iniciarEdicion(u)} disabled={estado.ocupado || estadoEdicion.ocupado}>
+                        <EditIcon /> Editar
+                      </Button>
+                      {u.activo === false ? (
+                        <Button variant="secondary" onClick={() => reactivar(u)} disabled={estado.ocupado}>
+                          <RestoreIcon /> Reactivar
+                        </Button>
+                      ) : (
+                        <Button variant="secondary" onClick={() => desactivar(u)} disabled={estado.ocupado}>
+                          <TrashIcon /> Desactivar
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }

@@ -11,6 +11,7 @@ import HistorialPage from './pages/HistorialPage';
 import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
 import GestionCursosPage from './pages/GestionCursosPage';
+import GestionContenidoPage from './pages/GestionContenidoPage';
 import GestionUsuariosPage from './pages/GestionUsuariosPage';
 import MisCursosPage from './pages/MisCursosPage';
 import SubirClasePage from './pages/SubirClasePage';
@@ -120,6 +121,22 @@ export default function App() {
             element={
               <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
                 <GestionCursosPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/contenido"
+            element={
+              <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
+                <GestionContenidoPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/contenido/subir/:cursoId"
+            element={
+              <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
+                <SubirClasePage />
               </RequireRole>
             }
           />

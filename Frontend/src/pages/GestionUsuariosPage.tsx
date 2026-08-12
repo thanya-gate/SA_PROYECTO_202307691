@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
-import { DocentesTab, RolesTab, SolicitudesTab } from '../components/admin/AdminTabs';
+import { DocentesTab, EstudiantesTab, RolesTab } from '../components/admin/AdminTabs';
 
-type Tab = 'docentes' | 'roles' | 'solicitudes';
+type Tab = 'estudiantes' | 'roles' | 'docentes';
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'estudiantes', label: 'Estudiantes' },
+  { id: 'roles', label: 'Auxiliaturas' },
   { id: 'docentes', label: 'Docentes' },
-  { id: 'roles', label: 'Roles de estudiantes' },
-  { id: 'solicitudes', label: 'Solicitudes de rol' },
 ];
 
 export default function GestionUsuariosPage() {
   const { token } = useAuth();
   const tokenActual = token ?? '';
-  const [tab, setTab] = useState<Tab>('docentes');
+  const [tab, setTab] = useState<Tab>('estudiantes');
 
   return (
     <AppLayout>
@@ -23,10 +23,8 @@ export default function GestionUsuariosPage() {
           <div>
             <h1 className="admin__title">Gestión de Usuarios</h1>
             <p className="admin__subtitle">
-              Administra los registros de docentes de la plataforma. Habilita a catedráticos y
-              auxiliares con permisos de publicación de clases.
-            </p>
-          </div>
+              Administra las cuentas de estudiantes, auxiliaturas y docentes de la plataforma.
+            </p>          </div>
           <span className="admin__badge">Administrador</span>
         </header>
 
@@ -45,9 +43,9 @@ export default function GestionUsuariosPage() {
           ))}
         </nav>
 
-        {tab === 'docentes' && <DocentesTab token={tokenActual} />}
+        {tab === 'estudiantes' && <EstudiantesTab token={tokenActual} />}
         {tab === 'roles' && <RolesTab token={tokenActual} />}
-        {tab === 'solicitudes' && <SolicitudesTab token={tokenActual} />}
+        {tab === 'docentes' && <DocentesTab token={tokenActual} />}
       </div>
     </AppLayout>
   );

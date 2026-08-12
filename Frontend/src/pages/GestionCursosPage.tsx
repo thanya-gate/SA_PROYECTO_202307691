@@ -1,43 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
-import { inscripcionApi, type CursoRegistrado } from '../api/inscripcion';
-import { authApi, type PublicUser } from '../api/auth';
+import { useState } from 'react';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import {
   AsignarCursosTab,
-  CsvTab,
   CursosCatalogoTab,
   EscuelasTab,
   SemestresTab,
 } from '../components/admin/AdminTabs';
-import { Alert } from '../components/ui/Alert';
-import { Button } from '../components/ui/Button';
-import { TextField } from '../components/ui/TextField';
 
-type Tab = 'cursos' | 'semestres' | 'escuelas' | 'catalogo' | 'asignar' | 'csv';
+type Tab = 'cursos' | 'semestres' | 'escuelas' | 'asignar';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'cursos', label: 'Cursos del semestre' },
+  { id: 'cursos', label: 'Cursos' },
   { id: 'semestres', label: 'Semestres' },
   { id: 'escuelas', label: 'Escuelas / Áreas' },
-  { id: 'catalogo', label: 'Cursos del catálogo' },
   { id: 'asignar', label: 'Asignar catedráticos' },
-  { id: 'csv', label: 'Carga CSV' },
 ];
-
-interface Asignaciones {
-  [cursoId: string]: { usuarioId: string; semestre: string };
-}
-
-function semestreCorto(semestre: string): string {
-  const partes = semestre.split('-');
-  return partes.length === 2 ? `${partes[1]} ${partes[0]}` : semestre;
-}
-
-function nombreUsuario(u: PublicUser): string {
-  const nombre = [u.nombres, u.apellidos].filter(Boolean).join(' ').trim();
-  return nombre || u.email;
-}
 
 export default function GestionCursosPage() {
   const { token, user } = useAuth();
@@ -49,10 +27,10 @@ export default function GestionCursosPage() {
       <div className="admin">
         <header className="admin__hero">
           <div>
-            <h1 className="admin__title">Gestión de Cursos</h1>
+            <h1 className="admin__title">Gestión Académica</h1>
             <p className="admin__subtitle">
-              Gestiona los cursos del semestre, la asignación de docentes y el catálogo: semestres,
-              escuelas o áreas y cursos con sus clases grabadas. Todos los cambios se persisten
+              Administra el catálogo de cursos (crear, editar y eliminar), los semestres, las
+              escuelas o áreas y la asignación de catedráticos. Todos los cambios se persisten
               mediante procedimientos almacenados del catálogo.
             </p>
           </div>
@@ -61,7 +39,7 @@ export default function GestionCursosPage() {
           </span>
         </header>
 
-        <nav className="admin-tabs" role="tablist" aria-label="Módulos de gestión de cursos">
+        <nav className="admin-tabs" role="tablist" aria-label="Módulos de gestión académica">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -76,299 +54,11 @@ export default function GestionCursosPage() {
           ))}
         </nav>
 
-        {tab === 'cursos' && <CursosSemestreTab token={tokenActual} />}
+        {tab === 'cursos' && <CursosCatalogoTab token={tokenActual} />}
         {tab === 'semestres' && <SemestresTab token={tokenActual} />}
         {tab === 'escuelas' && <EscuelasTab token={tokenActual} />}
-        {tab === 'catalogo' && <CursosCatalogoTab token={tokenActual} />}
         {tab === 'asignar' && <AsignarCursosTab token={tokenActual} />}
-        {tab === 'csv' && <CsvTab token={tokenActual} />}
       </div>
     </AppLayout>
-  );
-}
-
-function CursosSemestreTab({ token }: { token: string }) {
-  const [cursos, setCursos] = useState<CursoRegistrado[]>([]);
-  const [usuarios, setUsuarios] = useState<PublicUser[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [form, setForm] = useState({ codigo: '', nombre: '', escuela: '', semestre: '', anio: '' });
-  const [creando, setCreando] = useState(false);
-  const [mensaje, setMensaje] = useState<string | null>(null);
-  const [errorForm, setErrorForm] = useState<string | null>(null);
-
-  const [asignaciones, setAsignaciones] = useState<Asignaciones>({});
-  const [asignando, setAsignando] = useState<string | null>(null);
-  const [errorAsignacion, setErrorAsignacion] = useState<string | null>(null);
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError(null);
-    try {
-      const [resCursos, resUsuarios] = await Promise.all([
-        inscripcionApi.listarCursos(token),
-        authApi.listarUsuariosPorRol(token, ['ROLE_CATEDRATICO', 'ROLE_AUXILIAR']),
-      ]);
-      setCursos(resCursos.cursos);
-      setUsuarios(resUsuarios.usuarios);
-      const preferido =
-        resUsuarios.usuarios.find((u) => u.roles.includes('ROLE_CATEDRATICO'))?.userId ??
-        resUsuarios.usuarios[0]?.userId ??
-        '';
-      setAsignaciones((prev) => {
-        const next: Asignaciones = {};
-        for (const curso of resCursos.cursos) {
-          const previo = prev[curso.cursoId];
-          next[curso.cursoId] = {
-            usuarioId: previo?.usuarioId ?? preferido,
-            semestre: previo?.semestre ?? curso.semestre,
-          };
-        }
-        return next;
-      });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar los cursos');
-      setCursos([]);
-      setUsuarios([]);
-    } finally {
-      setCargando(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
-
-  async function crearCurso() {
-    const anio = Number(form.anio);
-    if (!form.codigo.trim() || !form.nombre.trim() || !form.escuela.trim() || !form.semestre.trim() || !anio) {
-      setErrorForm('Completa todos los campos: código, nombre, escuela, semestre y año.');
-      return;
-    }
-    setCreando(true);
-    setErrorForm(null);
-    setMensaje(null);
-    try {
-      const res = await inscripcionApi.registrarCurso(token, {
-        codigo: form.codigo.trim().toUpperCase(),
-        nombre: form.nombre.trim(),
-        escuela: form.escuela.trim(),
-        semestre: form.semestre.trim(),
-        anio,
-      });
-      setMensaje(`Curso ${res.curso.codigo} registrado correctamente.`);
-      setForm({ codigo: '', nombre: '', escuela: '', semestre: '', anio: '' });
-      await cargar();
-    } catch (err: unknown) {
-      setErrorForm(err instanceof Error ? err.message : 'No se pudo registrar el curso');
-    } finally {
-      setCreando(false);
-    }
-  }
-
-  function cambiarAsignacion(cursoId: string, campo: 'usuarioId' | 'semestre', valor: string) {
-    setAsignaciones((prev) => ({
-      ...prev,
-      [cursoId]: { ...prev[cursoId], [campo]: valor },
-    }));
-  }
-
-  async function asignarDocente(cursoId: string) {
-    const config = asignaciones[cursoId];
-    if (!config?.usuarioId || !config?.semestre) return;
-    setAsignando(cursoId);
-    setErrorAsignacion(null);
-    setMensaje(null);
-    try {
-      const res = await inscripcionApi.asignarDocenteCurso(
-        token,
-        config.usuarioId,
-        cursoId,
-        config.semestre,
-      );
-      setMensaje(
-        `Docente asignado al curso (asignación ${res.asignacionId.slice(0, 8)}…).`,
-      );
-    } catch (err: unknown) {
-      setErrorAsignacion(err instanceof Error ? err.message : 'No se pudo asignar el docente');
-    } finally {
-      setAsignando(null);
-    }
-  }
-
-  return (
-    <>
-      {error && (
-        <Alert tone="error">
-          <strong>Error:</strong> {error}
-        </Alert>
-      )}
-      {mensaje && (
-        <Alert tone="success">
-          <strong>¡Listo!</strong> {mensaje}
-        </Alert>
-      )}
-
-      <section className="gcursos__panel" aria-label="Registrar curso">
-        <h2 className="gcursos__panel-titulo">Registrar curso</h2>
-        <div className="gcursos__form">
-          <TextField
-            label="Código"
-            placeholder="CC308"
-            value={form.codigo}
-            onChange={(e) => setForm({ ...form, codigo: e.target.value })}
-          />
-          <TextField
-            label="Nombre"
-            placeholder="Comunicaciones y Redes de Computadoras"
-            value={form.nombre}
-            onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-          />
-          <TextField
-            label="Escuela"
-            placeholder="Escuela de Ciencias y Sistemas"
-            value={form.escuela}
-            onChange={(e) => setForm({ ...form, escuela: e.target.value })}
-          />
-          <TextField
-            label="Semestre"
-            placeholder="2026-2"
-            value={form.semestre}
-            onChange={(e) => setForm({ ...form, semestre: e.target.value })}
-          />
-          <TextField
-            label="Año"
-            placeholder="2026"
-            inputMode="numeric"
-            value={form.anio}
-            onChange={(e) => setForm({ ...form, anio: e.target.value.replace(/\D/g, '') })}
-          />
-        </div>
-        {errorForm && (
-          <Alert tone="error">
-            <strong>Error:</strong> {errorForm}
-          </Alert>
-        )}
-        <div className="gcursos__form-acciones">
-          <Button onClick={crearCurso} loading={creando}>
-            Crear curso
-          </Button>
-        </div>
-      </section>
-
-      <section className="gcursos__panel" aria-label="Cursos registrados">
-        <h2 className="gcursos__panel-titulo">Cursos registrados</h2>
-        {cargando ? (
-          <p className="catalogo__estado" role="status">
-            Cargando cursos…
-          </p>
-        ) : cursos.length === 0 ? (
-          <p className="catalogo__estado">Aún no hay cursos registrados.</p>
-        ) : (
-          <div className="gcursos__tabla-wrap">
-            <table className="asig__tabla">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Curso</th>
-                  <th>Semestre</th>
-                  <th>Quien imparte</th>
-                  <th aria-label="Acción" />
-                </tr>
-              </thead>
-              <tbody>
-                {cursos.map((curso) => {
-                  const config = asignaciones[curso.cursoId];
-                  return (
-                    <tr key={curso.cursoId}>
-                      <td className="asig__celda-id">{curso.codigo}</td>
-                      <td>
-                        <span className="asig__curso">{curso.nombre}</span>
-                        <span className="asig__escuela">{curso.escuela}</span>
-                      </td>
-                      <td className="asig__celda-semestre">
-                        {semestreCorto(curso.semestre)} · {curso.anio}
-                      </td>
-                      <td>
-                        {usuarios.length === 0 ? (
-                          <span className="asig__muted">
-                            No hay usuarios con rol de docente o auxiliar registrados.
-                          </span>
-                        ) : (
-                          <div className="gcursos__asignar">
-                            <select
-                              className="catalogo__select"
-                              value={config?.usuarioId ?? ''}
-                              onChange={(e) => cambiarAsignacion(curso.cursoId, 'usuarioId', e.target.value)}
-                            >
-                              {usuarios.map((u) => (
-                                <option key={u.userId} value={u.userId}>
-                                  {nombreUsuario(u)} ({u.email})
-                                </option>
-                              ))}
-                            </select>
-                            <select
-                              className="catalogo__select"
-                              value={config?.semestre ?? curso.semestre}
-                              onChange={(e) => cambiarAsignacion(curso.cursoId, 'semestre', e.target.value)}
-                            >
-                              {[...new Set(cursos.map((c) => c.semestre))]
-                                .sort((a, b) => (a < b ? 1 : -1))
-                                .map((semestre) => (
-                                  <option key={semestre} value={semestre}>
-                                    {semestreCorto(semestre)}
-                                  </option>
-                                ))}
-                            </select>
-                            <Button
-                              variant="secondary"
-                              onClick={() => asignarDocente(curso.cursoId)}
-                              loading={asignando === curso.cursoId}
-                            >
-                              Asignar
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="asig__celda-accion">
-                        {config?.usuarioId &&
-                          (() => {
-                            const asignado = usuarios.find((u) => u.userId === config.usuarioId);
-                            return asignado ? (
-                              <span className="asig__muted">
-                                {asignado.roles.includes('ROLE_CATEDRATICO') ? 'Docente' : 'Auxiliar'}
-                              </span>
-                            ) : null;
-                          })()}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {errorAsignacion && (
-          <Alert tone="error">
-            <strong>Error:</strong> {errorAsignacion}
-          </Alert>
-        )}
-      </section>
-
-      <section className="gcursos__panel" aria-label="Solicitudes de catedráticos">
-        <h2 className="gcursos__panel-titulo">Solicitudes de asignación de catedráticos</h2>
-        <div className="gcursos__pendiente">
-          <p>
-            Aquí llegarán las solicitudes de los catedráticos que quieran ser asignados a un curso.
-          </p>
-          <p className="gcursos__pendiente-nota">
-            <span className="gcursos__pendiente-badge">PENDIENTE</span>
-            Se habilitará con el microservicio de notificaciones, que aún no forma parte de la
-            plataforma.
-          </p>
-        </div>
-      </section>
-    </>
   );
 }

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
+import { Alert } from './ui/Alert';
 import { Logo } from './Logo';
+import { ThemeToggle } from './ThemeToggle';
 
 const COLLAPSED_KEY = 'yousac_sidebar_collapsed';
 const MOBILE_BREAKPOINT = '(max-width: 767px)';
@@ -83,6 +85,13 @@ const ContentIcon = () => (
     <line x1="12" y1="2" x2="12" y2="4" />
   </Icon>
 );
+const UploadIcon = () => (
+  <Icon>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </Icon>
+);
 const BellIcon = () => (
   <Icon>
     <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -133,9 +142,15 @@ const DOCENTE_NAV_ITEMS: NavItem[] = [
   { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
   {
     to: '/admin/cursos',
-    label: 'Gestión de Cursos',
+    label: 'Gestión Académica',
     icon: <DashboardIcon />,
-    description: 'Cursos del semestre, semestres, escuelas, catálogo y carga CSV',
+    description: 'Cursos, semestres, escuelas y asignación de catedráticos',
+  },
+  {
+    to: '/admin/contenido',
+    label: 'Gestión de Contenido',
+    icon: <UploadIcon />,
+    description: 'Subir videos y material por curso y carga masiva CSV',
   },
   {
     to: '',
@@ -164,9 +179,15 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   },
   {
     to: '/admin/cursos',
-    label: 'Gestión de Cursos',
+    label: 'Gestión Académica',
     icon: <ContentIcon />,
-    description: 'Crear cursos y asignar catedráticos',
+    description: 'Administrar cursos del catálogo, semestres, escuelas y asignación de catedráticos',
+  },
+  {
+    to: '/admin/contenido',
+    label: 'Gestión de Contenido',
+    icon: <UploadIcon />,
+    description: 'Subir videos y material por curso y carga masiva CSV',
   },
   {
     to: '',
@@ -264,6 +285,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <NavLink to="/" className="app-layout__brand" aria-label="YoUSAC" onClick={handleNavClick}>
             <Logo size="small" />
           </NavLink>
+          <ThemeToggle />
           <button
             className="app-layout__toggle"
             onClick={handleToggle}
@@ -336,7 +358,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
       {mobile && mobileOpen && <div className="app-layout__backdrop" onClick={() => setMobileOpen(false)} />}
-      <main className="app-layout__main">{children}</main>
+      <main className="app-layout__main">
+        {user?.docentePendiente && (
+          <Alert tone="info">
+            <strong>Cuenta pendiente de autorización.</strong> Te registraste como docente. Un administrador debe
+            autorizar tu cuenta antes de que puedas publicar clases.
+          </Alert>
+        )}
+        {children}
+      </main>
     </div>
   );
 }
