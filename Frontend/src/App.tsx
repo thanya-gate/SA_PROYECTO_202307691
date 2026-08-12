@@ -16,6 +16,7 @@ import GestionUsuariosPage from './pages/GestionUsuariosPage';
 import MisCursosPage from './pages/MisCursosPage';
 import SubirClasePage from './pages/SubirClasePage';
 import ProfilePage from './pages/ProfilePage';
+import AutorizacionPendientePage from './pages/AutorizacionPendientePage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -29,6 +30,9 @@ function RequireAuth({ children }: { children: ReactElement }) {
   }
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  if (user.docentePendiente) {
+    return <AutorizacionPendientePage />;
   }
   return children;
 }
@@ -45,6 +49,9 @@ function RequireRole({ roles, children }: { roles: string[]; children: ReactElem
   }
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  if (user.docentePendiente) {
+    return <AutorizacionPendientePage />;
   }
   if (!roles.some((role) => user.roles.includes(role))) {
     return <Navigate to="/" replace />;

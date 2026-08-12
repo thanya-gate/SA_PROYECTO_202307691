@@ -511,6 +511,10 @@ body {
   color: var(--color-text-muted);
 }
 
+.home__acceso {
+  margin: 0 0 2rem;
+}
+
 .home__identity {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -902,6 +906,12 @@ body {
   margin: 0 0 1rem;
   color: var(--color-primary-dark);
   font-size: 1.05rem;
+}
+
+.admin__acceso {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .admin__empty {

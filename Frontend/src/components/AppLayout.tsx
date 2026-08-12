@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
-import { Alert } from './ui/Alert';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -139,7 +138,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const DOCENTE_NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
-  { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
+  { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
   {
     to: '/admin/cursos',
     label: 'Gestión Académica',
@@ -171,6 +170,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     icon: <DashboardIcon />,
     description: 'Resumen general de la plataforma',
   },
+  { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
   {
     to: '/admin/usuarios',
     label: 'Gestión de Usuarios',
@@ -359,12 +359,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </aside>
       {mobile && mobileOpen && <div className="app-layout__backdrop" onClick={() => setMobileOpen(false)} />}
       <main className="app-layout__main">
-        {user?.docentePendiente && (
-          <Alert tone="info">
-            <strong>Cuenta pendiente de autorización.</strong> Te registraste como docente. Un administrador debe
-            autorizar tu cuenta antes de que puedas publicar clases.
-          </Alert>
-        )}
         {children}
       </main>
     </div>

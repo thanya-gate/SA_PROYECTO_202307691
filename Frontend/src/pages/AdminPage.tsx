@@ -1,4 +1,5 @@
-﻿import { AppLayout } from '../components/AppLayout';
+﻿import { Link } from 'react-router-dom';
+import { AppLayout } from '../components/AppLayout';
 
 const STATS = [
   { label: 'Usuarios', value: '—' },
@@ -29,6 +30,15 @@ export default function AdminPage() {
               <span className="admin__stat-value">{stat.value}</span>
             </article>
           ))}
+        </section>
+
+        <section className="admin__panel" aria-label="Acceso rápido">
+          <h2 className="admin__panel-title">Acceso rápido</h2>
+          <div className="admin__acceso">
+            <Link to="/catalogo" className="asig__ir">
+              Ver catálogo de clases
+            </Link>
+          </div>
         </section>
 
         <section className="admin__panel" aria-label="Actividad reciente">
