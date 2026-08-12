@@ -58,6 +58,7 @@ function rowToUser(row: UserRow): User {
     emailVerified: row.email_verified,
     roles: (row.roles ?? []).map((r) => r as Role),
     oauthProviders: row.proveedor_oauth ? [row.proveedor_oauth] : [],
+    activo: row.activo,
     nombres: row.nombres ?? null,
     apellidos: row.apellidos ?? null,
     carnet: row.carnet ?? null,
@@ -70,10 +71,6 @@ function rowToUser(row: UserRow): User {
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
-}
-
-interface IdRow {
-  id: string;
 }
 
 interface SolicitudRow {
@@ -222,11 +219,12 @@ export class PostgresUserRepository implements UserRepository {
     return result.rows[0] ? rowToUser(result.rows[0]) : null;
   }
 
-  async findByRoles(roles: Role[]): Promise<User[]> {
+  async findByRoles(roles: Role[], incluirInactivos?: boolean): Promise<User[]> {
     if (roles.length === 0) return [];
+    const filtroActivo = incluirInactivos ? 'TRUE' : 'u.activo = TRUE';
     const result = await query<UserRow>(
       `${USER_SELECT}
-       WHERE u.activo = TRUE
+       WHERE ${filtroActivo}
          AND u.id IN (
            SELECT ur.usuario_id
            FROM usuario_rol ur
@@ -293,6 +291,20 @@ export class PostgresUserRepository implements UserRepository {
     return this.requireUser(userId);
   }
 
+  async desactivarUsuario(userId: string): Promise<User> {
+    await query(`UPDATE usuario SET activo = FALSE, fecha_actualizacion = NOW() WHERE id = $1`, [
+      userId,
+    ]);
+    return this.requireUser(userId);
+  }
+
+  async reactivarUsuario(userId: string): Promise<User> {
+    await query(`UPDATE usuario SET activo = TRUE, fecha_actualizacion = NOW() WHERE id = $1`, [
+      userId,
+    ]);
+    return this.requireUser(userId);
+  }
+
   async markEmailVerified(userId: string): Promise<User> {
     await query(
       `UPDATE usuario SET email_verificado = TRUE, fecha_actualizacion = NOW() WHERE id = $1`,
@@ -316,25 +328,38 @@ export class PostgresUserRepository implements UserRepository {
 
   /** sp_crear_solicitud_rol: registra la solicitud de rol pendiente. */
   async crearSolicitudRol(usuarioId: string, rolSolicitado: Role): Promise<SolicitudRol> {
-    const res = await query<IdRow>('CALL sp_crear_solicitud_rol($1, $2, NULL)', [
-      usuarioId,
-      rolSolicitado,
-    ]);
-    const solicitudId = res.rows[0]?.id;
-    if (!solicitudId) {
+    await query('CALL sp_crear_solicitud_rol($1, $2, NULL)', [usuarioId, rolSolicitado]);
+    // El procedimiento devuelve el id por parámetro INOUT (p_solicitud_id);
+    // se recupera la solicitud pendiente recién creada de forma robusta.
+    const pendiente = await query<SolicitudRow>(
+      `${SOLICITUD_SELECT}
+        WHERE sr.usuario_id = $1 AND sr.rol_solicitado = $2 AND sr.estado = 'PENDIENTE'
+        ORDER BY sr.fecha_solicitud DESC LIMIT 1`,
+      [usuarioId, rolSolicitado],
+    );
+    if (pendiente.rows.length === 0) {
       throw new DomainError('ERROR_INTERNO', 'No se pudo crear la solicitud de rol', 500);
     }
-    return this.requireSolicitud(solicitudId);
+    return rowToSolicitud(pendiente.rows[0]);
   }
 
-  /** Lista las solicitudes de rol (opcionalmente filtradas por estado). */
-  async listarSolicitudesRol(estado?: SolicitudEstado): Promise<SolicitudRol[]> {
-    const res = estado
-      ? await query<SolicitudRow>(
-          `${SOLICITUD_SELECT} WHERE sr.estado = $1 ORDER BY sr.fecha_solicitud DESC`,
-          [estado],
-        )
-      : await query<SolicitudRow>(`${SOLICITUD_SELECT} ORDER BY sr.fecha_solicitud DESC`);
+  /** Lista las solicitudes de rol (opcionalmente filtradas por estado y/o usuario). */
+  async listarSolicitudesRol(estado?: SolicitudEstado, usuarioId?: string): Promise<SolicitudRol[]> {
+    const condiciones: string[] = [];
+    const params: unknown[] = [];
+    if (estado) {
+      params.push(estado);
+      condiciones.push(`sr.estado = $${params.length}`);
+    }
+    if (usuarioId) {
+      params.push(usuarioId);
+      condiciones.push(`sr.usuario_id = $${params.length}`);
+    }
+    const where = condiciones.length > 0 ? ` WHERE ${condiciones.join(' AND ')}` : '';
+    const res = await query<SolicitudRow>(
+      `${SOLICITUD_SELECT}${where} ORDER BY sr.fecha_solicitud DESC`,
+      params,
+    );
     return res.rows.map(rowToSolicitud);
   }
 

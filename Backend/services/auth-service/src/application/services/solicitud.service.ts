@@ -22,8 +22,8 @@ export class SolicitudService {
     return this.users.crearSolicitudRol(usuarioId, rolSolicitado);
   }
 
-  async listarSolicitudes(estado?: SolicitudEstado): Promise<SolicitudRol[]> {
-    return this.users.listarSolicitudesRol(estado);
+  async listarSolicitudes(estado?: SolicitudEstado, usuarioId?: string): Promise<SolicitudRol[]> {
+    return this.users.listarSolicitudesRol(estado, usuarioId);
   }
 
   async resolverSolicitud(

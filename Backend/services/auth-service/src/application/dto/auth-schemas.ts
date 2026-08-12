@@ -9,6 +9,7 @@ export const registerSchema = z.object({
   carnet: z.string(),
   dpi: z.string().regex(/^\d{13}$/, 'DPI inválido (debe tener 13 dígitos)'),
   fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha de nacimiento inválida'),
+  requiereAutorizacion: z.boolean().optional(),
 }).superRefine((d, ctx) => {
   if (d.rol === Role.ESTUDIANTE && !/^\d{8,10}$/.test(d.carnet)) {
     ctx.addIssue({
@@ -79,6 +80,7 @@ export const crearSolicitudRolSchema = z.object({
 
 export const listarSolicitudesRolSchema = z.object({
   estado: z.enum(['PENDIENTE', 'ACEPTADA', 'RECHAZADA']).optional(),
+  usuarioId: z.string().uuid('Usuario inválido').optional(),
 });
 
 export const resolverSolicitudRolSchema = z.object({

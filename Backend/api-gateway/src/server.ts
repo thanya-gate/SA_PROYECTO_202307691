@@ -67,6 +67,7 @@ function publicUser(u: {
   apellidos?: string | null;
   telefonoCelular?: string | null;
   carrera?: string | null;
+  activo?: boolean;
 }) {
   return {
     userId: u.userId,
@@ -80,6 +81,7 @@ function publicUser(u: {
     apellidos: u.apellidos ?? null,
     telefonoCelular: u.telefonoCelular ?? null,
     carrera: u.carrera ?? null,
+    activo: u.activo ?? true,
   };
 }
 
@@ -87,6 +89,23 @@ function toOptionalString(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * Indica si el usuario tiene una solicitud de CATEDRATICO pendiente de
+ * autorización (registro público de docentes). El gateway lo expone como
+ * `docentePendiente` para que la UI muestre el aviso al docente.
+ */
+async function tieneDocentePendiente(userId: string): Promise<boolean> {
+  try {
+    const res = await authGrpc.listarSolicitudesRol('SOLICITUD_ESTADO_PENDIENTE', userId);
+    return (res.solicitudes ?? []).some(
+      (s: { usuarioId: string; rolSolicitado: string }) =>
+        s.usuarioId === userId && s.rolSolicitado === 'ROLE_CATEDRATICO',
+    );
+  } catch {
+    return false;
+  }
 }
 
 function toProtoRole(role: string): string {
@@ -168,6 +187,8 @@ export function createGateway(): Express {
         throw new DomainError('ENTRADA_INVALIDA', 'Contraseña inválida o no coincide', 400);
       }
       const normalizedRol = rol === 'CATEDRATICO' ? 'CATEDRATICO' : 'ESTUDIANTE';
+      // El registro público como docente queda pendiente de autorización del admin.
+      const requiereAutorizacion = normalizedRol === 'CATEDRATICO';
       const result = await authGrpc.register({
         email: String(email),
         password,
@@ -176,13 +197,16 @@ export function createGateway(): Express {
         dpi: String(dpi ?? ''),
         fechaNacimiento: String(fechaNacimiento ?? ''),
         rol: normalizedRol,
+        requiereAutorizacion,
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
       setSessionCookie(res, result.accessToken, cookieMaxAge);
       res.status(201).json({
-        message: 'Cuenta creada. Revisa tu correo para confirmar el registro.',
-        user: publicUser(result.user),
+        message: requiereAutorizacion
+          ? 'Cuenta creada. Un administrador debe autorizar tu cuenta como docente antes de que puedas publicar clases.'
+          : 'Cuenta creada. Revisa tu correo para confirmar el registro.',
+        user: { ...publicUser(result.user), docentePendiente: requiereAutorizacion },
         accessToken: result.accessToken,
         expiresAt: result.expiresAt,
       });
@@ -204,9 +228,10 @@ export function createGateway(): Express {
         userAgent: req.headers['user-agent'],
       });
       setSessionCookie(res, result.accessToken, cookieMaxAge);
+      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId) };
       res.json({
         message: 'Sesión iniciada',
-        user: publicUser(result.user),
+        user,
         accessToken: result.accessToken,
         expiresAt: result.expiresAt,
       });
@@ -228,7 +253,8 @@ export function createGateway(): Express {
   app.get('/auth/me', authenticate, async (req, res, next) => {
     try {
       const result = await authGrpc.getCurrentUser(req.context!.sessionId);
-      res.json({ user: publicUser(result.user), sessionId: result.sessionId });
+      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId) };
+      res.json({ user, sessionId: result.sessionId });
     } catch (err) {
       next(err);
     }
@@ -263,8 +289,79 @@ export function createGateway(): Express {
       if (roles.length === 0) {
         throw new DomainError('ENTRADA_INVALIDA', 'Indica al menos un rol (?rol=ROLE_CATEDRATICO)', 400);
       }
-      const result = await authGrpc.listUsersByRole(roles);
+      const incluirInactivos = req.query.incluirInactivos === 'true';
+      const result = await authGrpc.listUsersByRole(roles, incluirInactivos);
       res.json({ usuarios: result.users });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Admin crea un usuario (sin iniciar sesión). El rol debe ser uno de los
+  // permitidos por el contrato de registro (ESTUDIANTE/CATEDRATICO) o se
+  // asigna después vía PATCH de roles.
+  app.post('/auth/usuarios', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { email, password, confirmPassword, carnet, dpi, fechaNacimiento, rol } = req.body as Record<string, unknown>;
+      if (typeof password !== 'string' || password.length < 8 || password !== confirmPassword) {
+        throw new DomainError('ENTRADA_INVALIDA', 'Contraseña inválida o no coincide', 400);
+      }
+      const normalizedRol = rol === 'CATEDRATICO' ? 'CATEDRATICO' : 'ESTUDIANTE';
+      const result = await authGrpc.register({
+        email: String(email),
+        password,
+        confirmPassword: String(confirmPassword),
+        carnet: String(carnet ?? ''),
+        dpi: String(dpi ?? ''),
+        fechaNacimiento: String(fechaNacimiento ?? ''),
+        rol: normalizedRol,
+        // El admin crea el usuario directamente: no requiere autorización posterior.
+        requiereAutorizacion: false,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      res.status(201).json({ message: 'Usuario creado', user: publicUser(result.user) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Admin edita el perfil de cualquier usuario (reutiliza UpdateProfile).
+  app.patch('/auth/usuarios/:userId', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { nombres, apellidos, carnet, dpi, fechaNacimiento, telefonoCelular, carrera } =
+        req.body as Record<string, unknown>;
+      const result = await authGrpc.updateProfile({
+        userId: req.params.userId,
+        nombres: toOptionalString(nombres),
+        apellidos: toOptionalString(apellidos),
+        carnet: toOptionalString(carnet),
+        dpi: toOptionalString(dpi),
+        fechaNacimiento: toOptionalString(fechaNacimiento),
+        telefonoCelular: toOptionalString(telefonoCelular),
+        carrera: toOptionalString(carrera),
+      });
+      res.json({ user: publicUser(result.user) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Admin desactiva (borrado lógico) una cuenta.
+  app.delete('/auth/usuarios/:userId', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      await authGrpc.desactivarUsuario(req.params.userId);
+      res.json({ message: 'Usuario desactivado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Admin reactiva una cuenta desactivada.
+  app.post('/auth/usuarios/:userId/reactivar', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      await authGrpc.reactivarUsuario(req.params.userId);
+      res.json({ message: 'Usuario reactivado' });
     } catch (err) {
       next(err);
     }

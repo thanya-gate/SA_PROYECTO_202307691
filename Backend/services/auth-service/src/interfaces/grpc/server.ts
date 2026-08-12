@@ -92,6 +92,7 @@ function userToProto(u: User) {
     apellidos: u.apellidos ?? '',
     telefonoCelular: u.telefonoCelular ?? '',
     carrera: u.carrera ?? '',
+    activo: u.activo,
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
   };
@@ -225,7 +226,7 @@ export function createGrpcServer(): grpc.Server {
         if (roles.length === 0) {
           throw new DomainError('ROL_INVALIDO', 'Debes indicar al menos un rol', 400);
         }
-        const users = await container.userRepository.findByRoles(roles);
+        const users = await container.userRepository.findByRoles(roles, call.request.incluirInactivos === true);
         callback(null, { users: users.map(userToProto) });
       } catch (err: any) {
         callback(mapError(err));
@@ -243,6 +244,7 @@ export function createGrpcServer(): grpc.Server {
           dpi: call.request.dpi,
           fechaNacimiento: call.request.fechaNacimiento,
           rol: call.request.rol,
+          requiereAutorizacion: call.request.requiereAutorizacion === true,
         });
         const result = await container.authService.register(input, {
           ip: call.request.ip,
@@ -330,6 +332,24 @@ export function createGrpcServer(): grpc.Server {
           telefonoCelular: patch(call.request.telefonoCelular),
           carrera: patch(call.request.carrera),
         });
+        callback(null, { user: userToProto(user) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    DesactivarUsuario: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const user = await container.profileService.desactivarUsuario(call.request.userId);
+        callback(null, { user: userToProto(user) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ReactivarUsuario: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const user = await container.profileService.reactivarUsuario(call.request.userId);
         callback(null, { user: userToProto(user) });
       } catch (err: any) {
         callback(mapError(err));
@@ -468,7 +488,11 @@ export function createGrpcServer(): grpc.Server {
           call.request.estado && call.request.estado !== 'SOLICITUD_ESTADO_UNSPECIFIED'
             ? protoToEstado[call.request.estado]
             : undefined;
-        const solicitudes = await container.solicitudService.listarSolicitudes(estado);
+        const usuarioId =
+          typeof call.request.usuarioId === 'string' && call.request.usuarioId.trim() !== ''
+            ? call.request.usuarioId
+            : undefined;
+        const solicitudes = await container.solicitudService.listarSolicitudes(estado, usuarioId);
         callback(null, { solicitudes: solicitudes.map(solicitudToProto) });
       } catch (err: any) {
         callback(mapError(err));

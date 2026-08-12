@@ -46,9 +46,13 @@ export class InMemoryUserRepository implements UserRepository {
     return null;
   }
 
-  async findByRoles(roles: Role[]): Promise<User[]> {
+  async findByRoles(roles: Role[], incluirInactivos?: boolean): Promise<User[]> {
     const wanted = new Set(roles);
-    return [...this.store.values()].filter((u) => u.roles.some((r) => wanted.has(r)));
+    return [...this.store.values()].filter(
+      (u) =>
+        (incluirInactivos || u.activo !== false) &&
+        u.roles.some((r) => wanted.has(r)),
+    );
   }
 
   async addRole(userId: string, role: Role): Promise<User> {
@@ -89,6 +93,20 @@ export class InMemoryUserRepository implements UserRepository {
       carrera: data.carrera !== undefined ? data.carrera : user.carrera,
       updatedAt: new Date(),
     };
+    this.store.set(userId, updated);
+    return updated;
+  }
+
+  async desactivarUsuario(userId: string): Promise<User> {
+    const user = await this.requireUser(userId);
+    const updated: User = { ...user, activo: false, updatedAt: new Date() };
+    this.store.set(userId, updated);
+    return updated;
+  }
+
+  async reactivarUsuario(userId: string): Promise<User> {
+    const user = await this.requireUser(userId);
+    const updated: User = { ...user, activo: true, updatedAt: new Date() };
     this.store.set(userId, updated);
     return updated;
   }
@@ -154,10 +172,12 @@ export class InMemoryUserRepository implements UserRepository {
     return solicitud;
   }
 
-  async listarSolicitudesRol(estado?: SolicitudEstado): Promise<SolicitudRol[]> {
-    const filtradas = estado
-      ? [...this.solicitudes.values()].filter((s) => s.estado === estado)
-      : [...this.solicitudes.values()];
+  async listarSolicitudesRol(estado?: SolicitudEstado, usuarioId?: string): Promise<SolicitudRol[]> {
+    const filtradas = [...this.solicitudes.values()].filter(
+      (s) =>
+        (!estado || s.estado === estado) &&
+        (!usuarioId || s.usuarioId === usuarioId),
+    );
     return filtradas.sort((a, b) => b.fechaSolicitud.getTime() - a.fechaSolicitud.getTime());
   }
 

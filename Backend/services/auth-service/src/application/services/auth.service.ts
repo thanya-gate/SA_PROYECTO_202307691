@@ -52,6 +52,12 @@ export class AuthService {
     const carnet = rol === Role.ESTUDIANTE ? input.carnet.trim() : '';
     const dpi = input.dpi.trim();
 
+    // Registro público de docentes: la cuenta se crea con rol ESTUDIANTE para que
+    // pueda iniciar sesión y se genera una solicitud de CATEDRATICO que el
+    // administrador debe autorizar antes de poder publicar clases.
+    const requiereAutorizacion = input.requiereAutorizacion === true && rol === Role.CATEDRATICO;
+    const rolesIniciales = requiereAutorizacion ? [Role.ESTUDIANTE] : [rol];
+
     if (carnet && (await this.users.findByCarnet(carnet))) {
       throw new DomainError('CARNET_YA_REGISTRADO', 'Este carnet ya está registrado', 409);
     }
@@ -67,11 +73,14 @@ export class AuthService {
       carnet: carnet || null,
       dpi,
       fechaNacimiento: input.fechaNacimiento,
-      roles: [rol],
+      roles: rolesIniciales,
     });
 
     await this.users.save(user);
 
+    if (requiereAutorizacion) {
+      await this.users.crearSolicitudRol(user.userId, Role.CATEDRATICO);
+    }
 
     return this.establishSession(user, meta);
   }
@@ -89,6 +98,9 @@ export class AuthService {
         'Credenciales incorrectas',
         401,
       );
+    }
+    if (user.activo === false) {
+      throw new DomainError('CUENTA_INACTIVA', 'La cuenta está desactivada', 403);
     }
 
     const valid = await this.password.verify(input.password, user.passwordHash);
@@ -120,6 +132,9 @@ export class AuthService {
         'Credenciales incorrectas',
         401,
       );
+    }
+    if (user.activo === false) {
+      throw new DomainError('CUENTA_INACTIVA', 'La cuenta está desactivada', 403);
     }
 
     const valid = await this.password.verify(password, user.passwordHash);
