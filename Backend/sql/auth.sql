@@ -356,6 +356,15 @@ BEGIN
 
     IF p_aprobado THEN
         CALL sp_asignar_rol(p_usuario_id, p_rol_solicitado);
+        -- Un catedrático aprobado deja de ser estudiante: se le retira el rol
+        -- ESTUDIANTE para que quede únicamente con CATEDRATICO.
+        IF upper(p_rol_solicitado) = 'CATEDRATICO' THEN
+            DELETE FROM usuario_rol ur
+            USING rol r
+            WHERE ur.rol_id = r.id
+              AND ur.usuario_id = p_usuario_id
+              AND r.nombre = 'ESTUDIANTE';
+        END IF;
     END IF;
 END;
 $$;

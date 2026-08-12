@@ -52,11 +52,11 @@ export class AuthService {
     const carnet = rol === Role.ESTUDIANTE ? input.carnet.trim() : '';
     const dpi = input.dpi.trim();
 
-    // Registro público de docentes: la cuenta se crea con rol ESTUDIANTE para que
-    // pueda iniciar sesión y se genera una solicitud de CATEDRATICO que el
-    // administrador debe autorizar antes de poder publicar clases.
+    // Registro público de docentes: la cuenta se crea sin roles hasta que el
+    // administrador autorice la solicitud de CATEDRATICO. Al aprobar, se le
+    // otorga únicamente el rol CATEDRATICO.
     const requiereAutorizacion = input.requiereAutorizacion === true && rol === Role.CATEDRATICO;
-    const rolesIniciales = requiereAutorizacion ? [Role.ESTUDIANTE] : [rol];
+    const rolesIniciales = requiereAutorizacion ? [] : [rol];
 
     if (carnet && (await this.users.findByCarnet(carnet))) {
       throw new DomainError('CARNET_YA_REGISTRADO', 'Este carnet ya está registrado', 409);
