@@ -134,6 +134,42 @@ message ListarDocentesResponse {
   repeated DocenteInscripcion docentes = 1;
 }
 
+message AuxiliarInscripcion {
+  string auxiliar_id = 1;
+  string usuario_id = 2;
+}
+
+message AsignacionDocenteItem {
+  string asignacion_id = 1;
+  string docente_id = 2;
+  string docente_usuario_id = 3;
+  string curso_id = 4;
+  string codigo = 5;
+  string curso = 6;
+  string semestre = 7;
+  int32 anio = 8;
+  string auxiliar_id = 9;
+  string auxiliar_usuario_id = 10;
+}
+
+message ListarAuxiliaresRequest {}
+
+message ListarAuxiliaresResponse {
+  repeated AuxiliarInscripcion auxiliares = 1;
+}
+
+message ListarAsignacionesRequest {}
+
+message ListarAsignacionesResponse {
+  repeated AsignacionDocenteItem asignaciones = 1;
+}
+
+message EliminarDocenteRequest {
+  string docente_id = 1;
+}
+
+message EliminarDocenteResponse {}
+
 message HealthRequest {}
 
 message HealthResponse {
@@ -157,6 +193,9 @@ service InscripcionService {
 
   rpc ListarCursos(ListarCursosRequest) returns (ListarCursosResponse);
   rpc ListarDocentes(ListarDocentesRequest) returns (ListarDocentesResponse);
+  rpc ListarAuxiliares(ListarAuxiliaresRequest) returns (ListarAuxiliaresResponse);
+  rpc ListarAsignaciones(ListarAsignacionesRequest) returns (ListarAsignacionesResponse);
+  rpc EliminarDocente(EliminarDocenteRequest) returns (EliminarDocenteResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
 }

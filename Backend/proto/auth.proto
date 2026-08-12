@@ -29,6 +29,13 @@ enum SessionStatus {
   SESSION_STATUS_REVOCADA = 3;
 }
 
+enum SolicitudEstado {
+  SOLICITUD_ESTADO_UNSPECIFIED = 0;
+  SOLICITUD_ESTADO_PENDIENTE = 1;
+  SOLICITUD_ESTADO_ACEPTADA = 2;
+  SOLICITUD_ESTADO_RECHAZADA = 3;
+}
+
 // Mensajes de dominio
 
 message User {
@@ -278,6 +285,49 @@ message SwitchProfileResponse {
   string pending_role = 2;
 }
 
+// ---- Solicitudes de rol (catedrático / auxiliar) ----
+
+message SolicitudRol {
+  string solicitud_id = 1;
+  string usuario_id = 2;
+  string correo = 3;
+  string nombres = 4;
+  string apellidos = 5;
+  string carnet = 6;
+  Role rol_solicitado = 7;
+  SolicitudEstado estado = 8;
+  string fecha_solicitud = 9;
+  string fecha_resolucion = 10;
+  string resuelto_por = 11;
+}
+
+message CrearSolicitudRolRequest {
+  string usuario_id = 1;
+  Role rol_solicitado = 2;
+}
+
+message CrearSolicitudRolResponse {
+  SolicitudRol solicitud = 1;
+}
+
+message ListarSolicitudesRolRequest {
+  SolicitudEstado estado = 1;
+}
+
+message ListarSolicitudesRolResponse {
+  repeated SolicitudRol solicitudes = 1;
+}
+
+message ResolverSolicitudRolRequest {
+  string solicitud_id = 1;
+  bool aprobado = 2;
+  string resuelto_por = 3;
+}
+
+message ResolverSolicitudRolResponse {
+  SolicitudRol solicitud = 1;
+}
+
 // ---- OAuth 2.0 institucional (mock) ----
 
 message OAuthAuthorizeRequest {
@@ -337,6 +387,11 @@ service AuthService {
   rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
   rpc RemoveRole(RemoveRoleRequest) returns (RemoveRoleResponse);
   rpc SwitchProfile(SwitchProfileRequest) returns (SwitchProfileResponse);
+
+  // --- Solicitudes de rol ---
+  rpc CrearSolicitudRol(CrearSolicitudRolRequest) returns (CrearSolicitudRolResponse);
+  rpc ListarSolicitudesRol(ListarSolicitudesRolRequest) returns (ListarSolicitudesRolResponse);
+  rpc ResolverSolicitudRol(ResolverSolicitudRolRequest) returns (ResolverSolicitudRolResponse);
 
   // --- OAuth 2.0 ---
   rpc OAuthAuthorize(OAuthAuthorizeRequest) returns (OAuthAuthorizeResponse);
