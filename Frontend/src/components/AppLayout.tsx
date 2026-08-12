@@ -132,6 +132,12 @@ const DOCENTE_NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
   { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
   {
+    to: '/admin/cursos',
+    label: 'Gestión de Cursos',
+    icon: <DashboardIcon />,
+    description: 'Cursos del semestre, semestres, escuelas, catálogo y carga CSV',
+  },
+  {
     to: '',
     label: 'Notificaciones',
     icon: <BellIcon />,
@@ -143,12 +149,17 @@ const DOCENTE_NAV_ITEMS: NavItem[] = [
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
-  { to: '/admin', label: 'Dashboard', end: true, icon: <DashboardIcon /> },
   {
-    to: '',
+    to: '/admin',
+    label: 'Dashboard',
+    end: true,
+    icon: <DashboardIcon />,
+    description: 'Resumen general de la plataforma',
+  },
+  {
+    to: '/admin/usuarios',
     label: 'Gestión de Usuarios',
     icon: <UsersIcon />,
-    disabled: true,
     description: 'Administrar cuentas, roles y permisos',
   },
   {

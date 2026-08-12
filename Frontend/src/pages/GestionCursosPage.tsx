@@ -3,9 +3,27 @@ import { inscripcionApi, type CursoRegistrado } from '../api/inscripcion';
 import { authApi, type PublicUser } from '../api/auth';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
+import {
+  AsignarCursosTab,
+  CsvTab,
+  CursosCatalogoTab,
+  EscuelasTab,
+  SemestresTab,
+} from '../components/admin/AdminTabs';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
 import { TextField } from '../components/ui/TextField';
+
+type Tab = 'cursos' | 'semestres' | 'escuelas' | 'catalogo' | 'asignar' | 'csv';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'cursos', label: 'Cursos del semestre' },
+  { id: 'semestres', label: 'Semestres' },
+  { id: 'escuelas', label: 'Escuelas / Áreas' },
+  { id: 'catalogo', label: 'Cursos del catálogo' },
+  { id: 'asignar', label: 'Asignar catedráticos' },
+  { id: 'csv', label: 'Carga CSV' },
+];
 
 interface Asignaciones {
   [cursoId: string]: { usuarioId: string; semestre: string };
@@ -22,9 +40,54 @@ function nombreUsuario(u: PublicUser): string {
 }
 
 export default function GestionCursosPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const tokenActual = token ?? '';
+  const [tab, setTab] = useState<Tab>('cursos');
 
+  return (
+    <AppLayout>
+      <div className="admin">
+        <header className="admin__hero">
+          <div>
+            <h1 className="admin__title">Gestión de Cursos</h1>
+            <p className="admin__subtitle">
+              Gestiona los cursos del semestre, la asignación de docentes y el catálogo: semestres,
+              escuelas o áreas y cursos con sus clases grabadas. Todos los cambios se persisten
+              mediante procedimientos almacenados del catálogo.
+            </p>
+          </div>
+          <span className="admin__badge">
+            {user?.roles.includes('ROLE_ADMIN') ? 'Administrador' : 'Docente'}
+          </span>
+        </header>
+
+        <nav className="admin-tabs" role="tablist" aria-label="Módulos de gestión de cursos">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`admin-tabs__tab${tab === t.id ? ' admin-tabs__tab--active' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+
+        {tab === 'cursos' && <CursosSemestreTab token={tokenActual} />}
+        {tab === 'semestres' && <SemestresTab token={tokenActual} />}
+        {tab === 'escuelas' && <EscuelasTab token={tokenActual} />}
+        {tab === 'catalogo' && <CursosCatalogoTab token={tokenActual} />}
+        {tab === 'asignar' && <AsignarCursosTab token={tokenActual} />}
+        {tab === 'csv' && <CsvTab token={tokenActual} />}
+      </div>
+    </AppLayout>
+  );
+}
+
+function CursosSemestreTab({ token }: { token: string }) {
   const [cursos, setCursos] = useState<CursoRegistrado[]>([]);
   const [usuarios, setUsuarios] = useState<PublicUser[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -44,8 +107,8 @@ export default function GestionCursosPage() {
     setError(null);
     try {
       const [resCursos, resUsuarios] = await Promise.all([
-        inscripcionApi.listarCursos(tokenActual),
-        authApi.listarUsuariosPorRol(tokenActual, ['ROLE_CATEDRATICO', 'ROLE_AUXILIAR']),
+        inscripcionApi.listarCursos(token),
+        authApi.listarUsuariosPorRol(token, ['ROLE_CATEDRATICO', 'ROLE_AUXILIAR']),
       ]);
       setCursos(resCursos.cursos);
       setUsuarios(resUsuarios.usuarios);
@@ -71,7 +134,7 @@ export default function GestionCursosPage() {
     } finally {
       setCargando(false);
     }
-  }, [tokenActual]);
+  }, [token]);
 
   useEffect(() => {
     void cargar();
@@ -87,7 +150,7 @@ export default function GestionCursosPage() {
     setErrorForm(null);
     setMensaje(null);
     try {
-      const res = await inscripcionApi.registrarCurso(tokenActual, {
+      const res = await inscripcionApi.registrarCurso(token, {
         codigo: form.codigo.trim().toUpperCase(),
         nombre: form.nombre.trim(),
         escuela: form.escuela.trim(),
@@ -119,7 +182,7 @@ export default function GestionCursosPage() {
     setMensaje(null);
     try {
       const res = await inscripcionApi.asignarDocenteCurso(
-        tokenActual,
+        token,
         config.usuarioId,
         cursoId,
         config.semestre,
@@ -135,186 +198,177 @@ export default function GestionCursosPage() {
   }
 
   return (
-    <AppLayout>
-      <section className="gcursos">
-        <div className="catalogo__hero">
-          <h1 className="catalogo__title">Gestión de Cursos</h1>
-          <p className="catalogo__subtitle">
-            Crea los cursos del semestre y asigna a la persona (docente o auxiliar) que impartirá el curso.
-          </p>
+    <>
+      {error && (
+        <Alert tone="error">
+          <strong>Error:</strong> {error}
+        </Alert>
+      )}
+      {mensaje && (
+        <Alert tone="success">
+          <strong>¡Listo!</strong> {mensaje}
+        </Alert>
+      )}
+
+      <section className="gcursos__panel" aria-label="Registrar curso">
+        <h2 className="gcursos__panel-titulo">Registrar curso</h2>
+        <div className="gcursos__form">
+          <TextField
+            label="Código"
+            placeholder="CC308"
+            value={form.codigo}
+            onChange={(e) => setForm({ ...form, codigo: e.target.value })}
+          />
+          <TextField
+            label="Nombre"
+            placeholder="Comunicaciones y Redes de Computadoras"
+            value={form.nombre}
+            onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+          />
+          <TextField
+            label="Escuela"
+            placeholder="Escuela de Ciencias y Sistemas"
+            value={form.escuela}
+            onChange={(e) => setForm({ ...form, escuela: e.target.value })}
+          />
+          <TextField
+            label="Semestre"
+            placeholder="2026-2"
+            value={form.semestre}
+            onChange={(e) => setForm({ ...form, semestre: e.target.value })}
+          />
+          <TextField
+            label="Año"
+            placeholder="2026"
+            inputMode="numeric"
+            value={form.anio}
+            onChange={(e) => setForm({ ...form, anio: e.target.value.replace(/\D/g, '') })}
+          />
         </div>
-
-        {error && (
+        {errorForm && (
           <Alert tone="error">
-            <strong>Error:</strong> {error}
+            <strong>Error:</strong> {errorForm}
           </Alert>
         )}
-        {mensaje && (
-          <Alert tone="success">
-            <strong>¡Listo!</strong> {mensaje}
-          </Alert>
-        )}
+        <div className="gcursos__form-acciones">
+          <Button onClick={crearCurso} loading={creando}>
+            Crear curso
+          </Button>
+        </div>
+      </section>
 
-        <section className="gcursos__panel" aria-label="Registrar curso">
-          <h2 className="gcursos__panel-titulo">Registrar curso</h2>
-          <div className="gcursos__form">
-            <TextField
-              label="Código"
-              placeholder="CC308"
-              value={form.codigo}
-              onChange={(e) => setForm({ ...form, codigo: e.target.value })}
-            />
-            <TextField
-              label="Nombre"
-              placeholder="Comunicaciones y Redes de Computadoras"
-              value={form.nombre}
-              onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-            />
-            <TextField
-              label="Escuela"
-              placeholder="Escuela de Ciencias y Sistemas"
-              value={form.escuela}
-              onChange={(e) => setForm({ ...form, escuela: e.target.value })}
-            />
-            <TextField
-              label="Semestre"
-              placeholder="2026-2"
-              value={form.semestre}
-              onChange={(e) => setForm({ ...form, semestre: e.target.value })}
-            />
-            <TextField
-              label="Año"
-              placeholder="2026"
-              inputMode="numeric"
-              value={form.anio}
-              onChange={(e) => setForm({ ...form, anio: e.target.value.replace(/\D/g, '') })}
-            />
-          </div>
-          {errorForm && (
-            <Alert tone="error">
-              <strong>Error:</strong> {errorForm}
-            </Alert>
-          )}
-          <div className="gcursos__form-acciones">
-            <Button onClick={crearCurso} loading={creando}>
-              Crear curso
-            </Button>
-          </div>
-        </section>
-
-        <section className="gcursos__panel" aria-label="Cursos registrados">
-          <h2 className="gcursos__panel-titulo">Cursos registrados</h2>
-          {cargando ? (
-            <p className="catalogo__estado" role="status">
-              Cargando cursos…
-            </p>
-          ) : cursos.length === 0 ? (
-            <p className="catalogo__estado">Aún no hay cursos registrados.</p>
-          ) : (
-            <div className="gcursos__tabla-wrap">
-              <table className="asig__tabla">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Curso</th>
-                    <th>Semestre</th>
-                    <th>Quien imparte</th>
-                    <th aria-label="Acción" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {cursos.map((curso) => {
-                    const config = asignaciones[curso.cursoId];
-                    return (
-                      <tr key={curso.cursoId}>
-                        <td className="asig__celda-id">{curso.codigo}</td>
-                        <td>
-                          <span className="asig__curso">{curso.nombre}</span>
-                          <span className="asig__escuela">{curso.escuela}</span>
-                        </td>
-                        <td className="asig__celda-semestre">
-                          {semestreCorto(curso.semestre)} · {curso.anio}
-                        </td>
-                        <td>
-                          {usuarios.length === 0 ? (
-                            <span className="asig__muted">
-                              No hay usuarios con rol de docente o auxiliar registrados.
-                            </span>
-                          ) : (
-                            <div className="gcursos__asignar">
-                              <select
-                                className="catalogo__select"
-                                value={config?.usuarioId ?? ''}
-                                onChange={(e) => cambiarAsignacion(curso.cursoId, 'usuarioId', e.target.value)}
-                              >
-                                {usuarios.map((u) => (
-                                  <option key={u.userId} value={u.userId}>
-                                    {nombreUsuario(u)} ({u.email})
+      <section className="gcursos__panel" aria-label="Cursos registrados">
+        <h2 className="gcursos__panel-titulo">Cursos registrados</h2>
+        {cargando ? (
+          <p className="catalogo__estado" role="status">
+            Cargando cursos…
+          </p>
+        ) : cursos.length === 0 ? (
+          <p className="catalogo__estado">Aún no hay cursos registrados.</p>
+        ) : (
+          <div className="gcursos__tabla-wrap">
+            <table className="asig__tabla">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Curso</th>
+                  <th>Semestre</th>
+                  <th>Quien imparte</th>
+                  <th aria-label="Acción" />
+                </tr>
+              </thead>
+              <tbody>
+                {cursos.map((curso) => {
+                  const config = asignaciones[curso.cursoId];
+                  return (
+                    <tr key={curso.cursoId}>
+                      <td className="asig__celda-id">{curso.codigo}</td>
+                      <td>
+                        <span className="asig__curso">{curso.nombre}</span>
+                        <span className="asig__escuela">{curso.escuela}</span>
+                      </td>
+                      <td className="asig__celda-semestre">
+                        {semestreCorto(curso.semestre)} · {curso.anio}
+                      </td>
+                      <td>
+                        {usuarios.length === 0 ? (
+                          <span className="asig__muted">
+                            No hay usuarios con rol de docente o auxiliar registrados.
+                          </span>
+                        ) : (
+                          <div className="gcursos__asignar">
+                            <select
+                              className="catalogo__select"
+                              value={config?.usuarioId ?? ''}
+                              onChange={(e) => cambiarAsignacion(curso.cursoId, 'usuarioId', e.target.value)}
+                            >
+                              {usuarios.map((u) => (
+                                <option key={u.userId} value={u.userId}>
+                                  {nombreUsuario(u)} ({u.email})
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              className="catalogo__select"
+                              value={config?.semestre ?? curso.semestre}
+                              onChange={(e) => cambiarAsignacion(curso.cursoId, 'semestre', e.target.value)}
+                            >
+                              {[...new Set(cursos.map((c) => c.semestre))]
+                                .sort((a, b) => (a < b ? 1 : -1))
+                                .map((semestre) => (
+                                  <option key={semestre} value={semestre}>
+                                    {semestreCorto(semestre)}
                                   </option>
                                 ))}
-                              </select>
-                              <select
-                                className="catalogo__select"
-                                value={config?.semestre ?? curso.semestre}
-                                onChange={(e) => cambiarAsignacion(curso.cursoId, 'semestre', e.target.value)}
-                              >
-                                {[...new Set(cursos.map((c) => c.semestre))]
-                                  .sort((a, b) => (a < b ? 1 : -1))
-                                  .map((semestre) => (
-                                    <option key={semestre} value={semestre}>
-                                      {semestreCorto(semestre)}
-                                    </option>
-                                  ))}
-                              </select>
-                              <Button
-                                variant="secondary"
-                                onClick={() => asignarDocente(curso.cursoId)}
-                                loading={asignando === curso.cursoId}
-                              >
-                                Asignar
-                              </Button>
-                            </div>
-                          )}
-                        </td>
-                        <td className="asig__celda-accion">
-                          {config?.usuarioId &&
-                            (() => {
-                              const asignado = usuarios.find((u) => u.userId === config.usuarioId);
-                              return asignado ? (
-                                <span className="asig__muted">
-                                  {asignado.roles.includes('ROLE_CATEDRATICO') ? 'Docente' : 'Auxiliar'}
-                                </span>
-                              ) : null;
-                            })()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {errorAsignacion && (
-            <Alert tone="error">
-              <strong>Error:</strong> {errorAsignacion}
-            </Alert>
-          )}
-        </section>
-
-        <section className="gcursos__panel" aria-label="Solicitudes de catedráticos">
-          <h2 className="gcursos__panel-titulo">Solicitudes de asignación de catedráticos</h2>
-          <div className="gcursos__pendiente">
-            <p>
-              Aquí llegarán las solicitudes de los catedráticos que quieran ser asignados a un curso.
-            </p>
-            <p className="gcursos__pendiente-nota">
-              <span className="gcursos__pendiente-badge">PENDIENTE</span>
-              Se habilitará con el microservicio de notificaciones, que aún no forma parte de la
-              plataforma.
-            </p>
+                            </select>
+                            <Button
+                              variant="secondary"
+                              onClick={() => asignarDocente(curso.cursoId)}
+                              loading={asignando === curso.cursoId}
+                            >
+                              Asignar
+                            </Button>
+                          </div>
+                        )}
+                      </td>
+                      <td className="asig__celda-accion">
+                        {config?.usuarioId &&
+                          (() => {
+                            const asignado = usuarios.find((u) => u.userId === config.usuarioId);
+                            return asignado ? (
+                              <span className="asig__muted">
+                                {asignado.roles.includes('ROLE_CATEDRATICO') ? 'Docente' : 'Auxiliar'}
+                              </span>
+                            ) : null;
+                          })()}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </section>
+        )}
+        {errorAsignacion && (
+          <Alert tone="error">
+            <strong>Error:</strong> {errorAsignacion}
+          </Alert>
+        )}
       </section>
-    </AppLayout>
+
+      <section className="gcursos__panel" aria-label="Solicitudes de catedráticos">
+        <h2 className="gcursos__panel-titulo">Solicitudes de asignación de catedráticos</h2>
+        <div className="gcursos__pendiente">
+          <p>
+            Aquí llegarán las solicitudes de los catedráticos que quieran ser asignados a un curso.
+          </p>
+          <p className="gcursos__pendiente-nota">
+            <span className="gcursos__pendiente-badge">PENDIENTE</span>
+            Se habilitará con el microservicio de notificaciones, que aún no forma parte de la
+            plataforma.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }

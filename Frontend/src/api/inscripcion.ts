@@ -34,6 +34,24 @@ export interface DocenteInscripcion {
   usuarioId: string;
 }
 
+export interface AuxiliarInscripcion {
+  auxiliarId: string;
+  usuarioId: string;
+}
+
+export interface AsignacionDocenteItem {
+  asignacionId: string;
+  docenteId: string;
+  docenteUsuarioId: string;
+  cursoId: string;
+  codigo: string;
+  curso: string;
+  semestre: string;
+  anio: number;
+  auxiliarId: string | null;
+  auxiliarUsuarioId: string | null;
+}
+
 export interface RegistrarCursoInput {
   codigo: string;
   nombre: string;
@@ -97,6 +115,14 @@ interface ListarCursosResponse {
 
 interface ListarDocentesResponse {
   docentes: DocenteInscripcion[];
+}
+
+interface ListarAuxiliaresResponse {
+  auxiliares: AuxiliarInscripcion[];
+}
+
+interface ListarAsignacionesResponse {
+  asignaciones: AsignacionDocenteItem[];
 }
 
 export const inscripcionApi = {
@@ -175,6 +201,12 @@ export const inscripcionApi = {
 
   listarDocentes: (token: string): Promise<ListarDocentesResponse> =>
     apiFetch<ListarDocentesResponse>('/inscripcion/docentes', { token }),
+
+  listarAuxiliares: (token: string): Promise<ListarAuxiliaresResponse> =>
+    apiFetch<ListarAuxiliaresResponse>('/inscripcion/auxiliares', { token }),
+
+  listarAsignaciones: (token: string): Promise<ListarAsignacionesResponse> =>
+    apiFetch<ListarAsignacionesResponse>('/inscripcion/asignaciones', { token }),
 
   autoInscribirse: (token: string, cursoId: string, semestre: string): Promise<InscribirEstudianteResponse> =>
     apiFetch<InscribirEstudianteResponse>('/inscripcion/inscripciones/auto', {

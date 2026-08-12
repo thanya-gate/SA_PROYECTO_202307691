@@ -11,6 +11,7 @@ import HistorialPage from './pages/HistorialPage';
 import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
 import GestionCursosPage from './pages/GestionCursosPage';
+import GestionUsuariosPage from './pages/GestionUsuariosPage';
 import MisCursosPage from './pages/MisCursosPage';
 import SubirClasePage from './pages/SubirClasePage';
 import ProfilePage from './pages/ProfilePage';
@@ -31,7 +32,7 @@ function RequireAuth({ children }: { children: ReactElement }) {
   return children;
 }
 
-function RequireRole({ role, children }: { role: string; children: ReactElement }) {
+function RequireRole({ roles, children }: { roles: string[]; children: ReactElement }) {
   const { user, initializing } = useAuth();
 
   if (initializing) {
@@ -44,7 +45,7 @@ function RequireRole({ role, children }: { role: string; children: ReactElement 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (!user.roles.includes(role)) {
+  if (!roles.some((role) => user.roles.includes(role))) {
     return <Navigate to="/" replace />;
   }
   return children;
@@ -107,10 +108,26 @@ export default function App() {
             }
           />
           <Route
+            path="/admin"
+            element={
+              <RequireRole roles={['ROLE_ADMIN']}>
+                <AdminPage />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/admin/cursos"
             element={
-              <RequireRole role="ROLE_ADMIN">
+              <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
                 <GestionCursosPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/usuarios"
+            element={
+              <RequireRole roles={['ROLE_ADMIN']}>
+                <GestionUsuariosPage />
               </RequireRole>
             }
           />
@@ -128,14 +145,6 @@ export default function App() {
               <RequireAuth>
                 <ProfilePage />
               </RequireAuth>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <RequireRole role="ROLE_ADMIN">
-                <AdminPage />
-              </RequireRole>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
