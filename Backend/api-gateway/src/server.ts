@@ -270,6 +270,67 @@ export function createGateway(): Express {
     }
   });
 
+  // ===== Solicitudes de rol =====
+  app.post('/auth/solicitudes', authenticate, async (req, res, next) => {
+    try {
+      const { rolSolicitado } = req.body as Record<string, unknown>;
+      const role = toProtoRole(String(rolSolicitado ?? ''));
+      if (role !== 'ROLE_CATEDRATICO' && role !== 'ROLE_AUXILIAR') {
+        throw new DomainError(
+          'ENTRADA_INVALIDA',
+          'Solo se puede solicitar el rol CATEDRATICO o AUXILIAR',
+          400,
+        );
+      }
+      const result = await authGrpc.crearSolicitudRol(req.context!.userId, role);
+      res.status(201).json({ message: 'Solicitud enviada', solicitud: result.solicitud });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/auth/solicitudes', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const raw = req.query.estado;
+      const estado =
+        typeof raw === 'string' && raw.trim().length > 0
+          ? `SOLICITUD_ESTADO_${raw.trim().toUpperCase()}`
+          : undefined;
+      const result = await authGrpc.listarSolicitudesRol(estado);
+      res.json({ solicitudes: result.solicitudes });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/auth/solicitudes/:solicitudId/resolver', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { aprobado } = req.body as Record<string, unknown>;
+      if (typeof aprobado !== 'boolean') {
+        throw new DomainError('ENTRADA_INVALIDA', 'aprobado (booleano) es obligatorio', 400);
+      }
+      const result = await authGrpc.resolverSolicitudRol(
+        req.params.solicitudId,
+        aprobado,
+        req.context!.userId,
+      );
+      const solicitud = result.solicitud;
+      if (aprobado) {
+        if (solicitud.rolSolicitado === 'ROLE_CATEDRATICO') {
+          await inscripcionGrpc.registrarDocente(solicitud.usuarioId);
+        } else if (solicitud.rolSolicitado === 'ROLE_AUXILIAR') {
+          await inscripcionGrpc.registrarAuxiliar(solicitud.usuarioId);
+        }
+      }
+      res.json({
+        message: aprobado ? 'Solicitud aprobada' : 'Solicitud rechazada',
+        solicitud,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // ===== Perfiles / RBAC =====
   app.get('/profiles/me', authenticate, async (req, res, next) => {
     try {
@@ -575,6 +636,177 @@ export function createGateway(): Express {
       }
     },
   );
+
+  // =====================================================================
+  // Panel Web Admin (Práctica 3): CRUD de Semestres, Escuelas/Áreas,
+  // Cursos y Docentes. Protegido por RBAC para Admin/Catedrático/Auxiliar.
+  // Todos los cambios en el catálogo se ejecutan vía SPs en la BD.
+  // =====================================================================
+  const adminRoles = ['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'] as const;
+  const adminGuard = requireAnyRole(...adminRoles);
+
+  app.get('/admin/semestres', authenticate, adminGuard, async (_req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarSemestres();
+      res.json({ semestres: result.semestres });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/admin/semestres', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { nombre, anio } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string' || typeof anio !== 'number') {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre y anio son obligatorios', 400);
+      }
+      const result = await catalogGrpc.registrarSemestre({ nombre, anio });
+      res.status(201).json({ message: 'Semestre registrado', semestreId: result.semestreId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/admin/semestres/:semestreId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { nombre, anio } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string' || typeof anio !== 'number') {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre y anio son obligatorios', 400);
+      }
+      await catalogGrpc.actualizarSemestre({ semestreId: req.params.semestreId, nombre, anio });
+      res.json({ message: 'Semestre actualizado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/admin/semestres/:semestreId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      await catalogGrpc.eliminarSemestre(req.params.semestreId);
+      res.json({ message: 'Semestre eliminado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/admin/escuelas', authenticate, adminGuard, async (_req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarEscuelas();
+      res.json({ escuelas: result.escuelas });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/admin/escuelas', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { nombre } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre es obligatorio', 400);
+      }
+      const result = await catalogGrpc.registrarEscuela({ nombre });
+      res.status(201).json({ message: 'Escuela registrada', escuelaId: result.escuelaId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/admin/escuelas/:escuelaId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { nombre } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre es obligatorio', 400);
+      }
+      await catalogGrpc.actualizarEscuela({ escuelaId: req.params.escuelaId, nombre });
+      res.json({ message: 'Escuela actualizada' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/admin/escuelas/:escuelaId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      await catalogGrpc.eliminarEscuela(req.params.escuelaId);
+      res.json({ message: 'Escuela eliminada' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/admin/cursos', authenticate, adminGuard, async (_req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarCursos();
+      res.json({ cursos: result.cursos });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/admin/cursos', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { codigo, nombre, escuela } = req.body as Record<string, unknown>;
+      if (typeof codigo !== 'string' || typeof nombre !== 'string' || typeof escuela !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'codigo, nombre y escuela son obligatorios', 400);
+      }
+      const result = await catalogGrpc.registrarCurso({ codigo, nombre, escuela });
+      res.status(201).json({ message: 'Curso registrado en el catálogo', curso: result.curso });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/admin/cursos/:cursoId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { codigo, nombre, escuela } = req.body as Record<string, unknown>;
+      if (typeof codigo !== 'string' || typeof nombre !== 'string' || typeof escuela !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'codigo, nombre y escuela son obligatorios', 400);
+      }
+      await catalogGrpc.actualizarCurso({ cursoId: req.params.cursoId, codigo, nombre, escuela });
+      res.json({ message: 'Curso actualizado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/admin/cursos/:cursoId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      await catalogGrpc.eliminarCurso(req.params.cursoId);
+      res.json({ message: 'Curso eliminado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/admin/docentes', authenticate, adminGuard, async (_req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.listarDocentes();
+      res.json({ docentes: result.docentes });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/admin/docentes', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { usuarioId } = req.body as Record<string, unknown>;
+      if (typeof usuarioId !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'usuarioId es obligatorio', 400);
+      }
+      const result = await inscripcionGrpc.registrarDocente(usuarioId);
+      res.status(201).json({ message: 'Docente registrado', docenteId: result.docenteId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/admin/docentes/:docenteId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      await inscripcionGrpc.eliminarDocente(req.params.docenteId);
+      res.json({ message: 'Docente eliminado' });
+    } catch (err) {
+      next(err);
+    }
+  });
 
   app.post('/catalog/classes/:claseId/video', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
     const claseId = req.params.claseId;
@@ -968,6 +1200,24 @@ export function createGateway(): Express {
     try {
       const result = await inscripcionGrpc.listarDocentes();
       res.json({ docentes: result.docentes });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/inscripcion/auxiliares', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.listarAuxiliares();
+      res.json({ auxiliares: result.auxiliares });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/inscripcion/asignaciones', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.listarAsignaciones();
+      res.json({ asignaciones: result.asignaciones });
     } catch (err) {
       next(err);
     }

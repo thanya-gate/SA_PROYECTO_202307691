@@ -94,6 +94,13 @@ export const authGrpc = {
   assignRole: (userId: string, role: string) => unary('AssignRole', { userId, role }),
   removeRole: (userId: string, role: string) => unary('RemoveRole', { userId, role }),
 
+  crearSolicitudRol: (usuarioId: string, rolSolicitado: string) =>
+    unary('CrearSolicitudRol', { usuarioId, rolSolicitado }),
+  listarSolicitudesRol: (estado?: string) =>
+    unary('ListarSolicitudesRol', { estado: estado ?? 'SOLICITUD_ESTADO_UNSPECIFIED' }),
+  resolverSolicitudRol: (solicitudId: string, aprobado: boolean, resueltoPor: string) =>
+    unary('ResolverSolicitudRol', { solicitudId, aprobado, resueltoPor }),
+
   requestEmailVerification: (email: string) => unary('RequestEmailVerification', { email }),
   confirmEmailVerification: (token: string) => unary('ConfirmEmailVerification', { token }),
   requestPasswordReset: (email: string) => unary('RequestPasswordReset', { email }),

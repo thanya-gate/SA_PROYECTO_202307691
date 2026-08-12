@@ -67,4 +67,7 @@ export const inscripcionGrpc = {
 
   listarCursos: () => unary('ListarCursos', {}),
   listarDocentes: () => unary('ListarDocentes', {}),
+  listarAuxiliares: () => unary('ListarAuxiliares', {}),
+  listarAsignaciones: () => unary('ListarAsignaciones', {}),
+  eliminarDocente: (docenteId: string) => unary('EliminarDocente', { docenteId }),
 };
