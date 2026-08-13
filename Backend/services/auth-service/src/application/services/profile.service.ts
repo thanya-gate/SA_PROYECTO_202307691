@@ -29,6 +29,16 @@ export class ProfileService {
     return this.users.updateProfile(userId, validated);
   }
 
+  async desactivarUsuario(userId: string): Promise<User> {
+    await this.requireUser(userId);
+    return this.users.desactivarUsuario(userId);
+  }
+
+  async reactivarUsuario(userId: string): Promise<User> {
+    await this.requireUser(userId);
+    return this.users.reactivarUsuario(userId);
+  }
+
   async assignRole(userId: string, role: Role): Promise<ProfileView> {
     const user = await this.requireUser(userId);
     if (user.roles.includes(role)) {

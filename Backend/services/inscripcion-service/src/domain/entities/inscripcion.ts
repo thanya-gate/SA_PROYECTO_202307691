@@ -31,3 +31,21 @@ export interface DocenteInscripcion {
   docenteId: string;
   usuarioId: string;
 }
+
+export interface AuxiliarInscripcion {
+  auxiliarId: string;
+  usuarioId: string;
+}
+
+export interface AsignacionDocenteItem {
+  asignacionId: string;
+  docenteId: string;
+  docenteUsuarioId: string;
+  cursoId: string;
+  codigo: string;
+  curso: string;
+  semestre: string;
+  anio: number;
+  auxiliarId: string | null;
+  auxiliarUsuarioId: string | null;
+}

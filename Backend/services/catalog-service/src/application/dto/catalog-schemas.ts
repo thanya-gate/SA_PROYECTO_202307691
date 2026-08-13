@@ -51,6 +51,38 @@ export const registrarCursoSchema = z.object({
 });
 export type RegistrarCursoInput = z.infer<typeof registrarCursoSchema>;
 
+export const registrarSemestreSchema = z.object({
+  nombre: z.string().trim().regex(semestreRegex, 'Semestre inválido (formato AAAA-1 o AAAA-2)'),
+  anio: z.number().int().min(2000, 'año inválido').max(2100, 'año inválido'),
+});
+export type RegistrarSemestreInput = z.infer<typeof registrarSemestreSchema>;
+
+export const actualizarSemestreSchema = z.object({
+  semestreId: z.string().uuid('semestreId inválido'),
+  nombre: z.string().trim().regex(semestreRegex, 'Semestre inválido (formato AAAA-1 o AAAA-2)'),
+  anio: z.number().int().min(2000, 'año inválido').max(2100, 'año inválido'),
+});
+export type ActualizarSemestreInput = z.infer<typeof actualizarSemestreSchema>;
+
+export const registrarEscuelaSchema = z.object({
+  nombre: z.string().trim().min(1, 'nombre es obligatorio').max(100),
+});
+export type RegistrarEscuelaInput = z.infer<typeof registrarEscuelaSchema>;
+
+export const actualizarEscuelaSchema = z.object({
+  escuelaId: z.string().uuid('escuelaId inválido'),
+  nombre: z.string().trim().min(1, 'nombre es obligatorio').max(100),
+});
+export type ActualizarEscuelaInput = z.infer<typeof actualizarEscuelaSchema>;
+
+export const actualizarCursoSchema = z.object({
+  cursoId: z.string().uuid('cursoId inválido'),
+  codigo: z.string().trim().min(1, 'codigo es obligatorio').max(20),
+  nombre: z.string().trim().min(1, 'nombre es obligatorio').max(200),
+  escuela: z.string().trim().min(1, 'escuela es obligatoria').max(100),
+});
+export type ActualizarCursoInput = z.infer<typeof actualizarCursoSchema>;
+
 export const claseCSVSchema = z.object({
   codigoCurso: z.string().trim().optional(),
   nombreCurso: z.string().trim().optional(),

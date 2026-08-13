@@ -16,6 +16,7 @@ interface Filtros {
 }
 
 const FILTROS_VACIOS: Filtros = { semestre: '', curso: '', catedratico: '', escuela: '', tema: '' };
+const PAGE_SIZE = 10;
 
 export default function CatalogPage() {
   const { token } = useAuth();
@@ -24,6 +25,9 @@ export default function CatalogPage() {
   const [semestres, setSemestres] = useState<SemestreResumen[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(0);
 
   const tokenActual = token ?? '';
 
@@ -46,14 +50,20 @@ export default function CatalogPage() {
     setCargando(true);
     setError(null);
     catalogApi
-      .search(filtros, tokenActual)
+      .search({ ...filtros, page: pagina, pageSize: PAGE_SIZE }, tokenActual)
       .then((res) => {
-        if (active) setClases(res.resultados);
+        if (active) {
+          setClases(res.resultados);
+          setTotal(res.total);
+          setTotalPaginas(res.totalPages);
+        }
       })
       .catch((err: unknown) => {
         if (active) {
           setError(err instanceof Error ? err.message : 'No se pudo cargar el catálogo');
           setClases([]);
+          setTotal(0);
+          setTotalPaginas(0);
         }
       })
       .finally(() => {
@@ -62,13 +72,15 @@ export default function CatalogPage() {
     return () => {
       active = false;
     };
-  }, [filtros, tokenActual]);
+  }, [filtros, pagina, tokenActual]);
 
   function actualizar(campo: keyof Filtros, valor: string) {
+    setPagina(1);
     setFiltros((prev) => ({ ...prev, [campo]: valor }));
   }
 
   function limpiar() {
+    setPagina(1);
     setFiltros(FILTROS_VACIOS);
   }
 
@@ -81,6 +93,12 @@ export default function CatalogPage() {
   }, [semestres]);
 
   const hayFiltros = Object.values(filtros).some((v) => v.trim().length > 0);
+
+  function irAPagina(siguiente: number) {
+    if (siguiente >= 1 && siguiente <= totalPaginas && siguiente !== pagina) {
+      setPagina(siguiente);
+    }
+  }
 
   return (
     <AppLayout>
@@ -167,11 +185,39 @@ export default function CatalogPage() {
           ) : clases.length === 0 ? (
             <p className="catalogo__estado">No se encontraron clases con los filtros seleccionados.</p>
           ) : (
-            <div className="catalogo__grid">
-              {clases.map((clase) => (
-                <ClaseCard key={clase.claseId} clase={clase} />
-              ))}
-            </div>
+            <>
+              <p className="catalogo__estado">
+                {total} clase{total === 1 ? '' : 's'} encontrada{total === 1 ? '' : 's'}
+              </p>
+              <div className="catalogo__grid">
+                {clases.map((clase) => (
+                  <ClaseCard key={clase.claseId} clase={clase} />
+                ))}
+              </div>
+              {totalPaginas > 1 && (
+                <nav className="paginacion" aria-label="Paginación de resultados">
+                  <button
+                    type="button"
+                    className="paginacion__boton"
+                    disabled={pagina <= 1}
+                    onClick={() => irAPagina(pagina - 1)}
+                  >
+                    Anterior
+                  </button>
+                  <span className="paginacion__info" role="status">
+                    Página {pagina} de {totalPaginas}
+                  </span>
+                  <button
+                    type="button"
+                    className="paginacion__boton"
+                    disabled={pagina >= totalPaginas}
+                    onClick={() => irAPagina(pagina + 1)}
+                  >
+                    Siguiente
+                  </button>
+                </nav>
+              )}
+            </>
           )}
         </section>
       </section>

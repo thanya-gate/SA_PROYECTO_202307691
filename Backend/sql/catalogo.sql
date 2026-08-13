@@ -557,6 +557,71 @@ BEGIN
 END;
 $$;
 
+-- Actualiza un curso del catálogo (código único, validando reuso).
+CREATE OR REPLACE PROCEDURE sp_actualizar_curso_catalogo(
+    p_curso_id UUID,
+    p_codigo VARCHAR(20),
+    p_nombre VARCHAR(200),
+    p_escuela VARCHAR(100),
+    INOUT p_actualizado BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_codigo_actual VARCHAR(20);
+BEGIN
+    IF p_codigo IS NULL OR length(trim(p_codigo)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: codigo es obligatorio';
+    END IF;
+    IF p_nombre IS NULL OR length(trim(p_nombre)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: nombre es obligatorio';
+    END IF;
+    IF p_escuela IS NULL OR length(trim(p_escuela)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: escuela es obligatoria';
+    END IF;
+
+    SELECT codigo INTO v_codigo_actual FROM curso_catalogo WHERE id = p_curso_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'CURSO_NO_ENCONTRADO: el curso no existe en el catálogo';
+    END IF;
+
+    IF trim(p_codigo) <> v_codigo_actual AND EXISTS (
+        SELECT 1 FROM curso_catalogo WHERE codigo = trim(p_codigo) AND id <> p_curso_id
+    ) THEN
+        RAISE EXCEPTION 'CURSO_CODIGO_DUPLICADO: el código ya pertenece a otro curso';
+    END IF;
+
+    PERFORM fn_registrar_escuela(p_escuela);
+
+    UPDATE curso_catalogo SET codigo = trim(p_codigo), nombre = trim(p_nombre), escuela = trim(p_escuela)
+    WHERE id = p_curso_id;
+    p_actualizado := TRUE;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_eliminar_curso_catalogo(
+    p_curso_id UUID,
+    INOUT p_eliminado BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_codigo VARCHAR(20);
+BEGIN
+    SELECT codigo INTO v_codigo FROM curso_catalogo WHERE id = p_curso_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'CURSO_NO_ENCONTRADO: el curso no existe en el catálogo';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM clase_grabada WHERE curso_id = p_curso_id) THEN
+        RAISE EXCEPTION 'CURSO_EN_USO: no se puede eliminar un curso con clases asociadas';
+    END IF;
+
+    DELETE FROM curso_catalogo WHERE id = p_curso_id;
+    p_eliminado := TRUE;
+END;
+$$;
+
 -- Vistas para el panel admin (con conteo de uso)
 CREATE OR REPLACE VIEW vw_escuelas AS
 SELECT e.id, e.nombre, COUNT(cc.id) AS cursos

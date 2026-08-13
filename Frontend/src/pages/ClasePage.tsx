@@ -47,7 +47,7 @@ export default function ClasePage() {
   const tokenActual = token ?? '';
   const videoId = clase ? youtubeVideoId(clase.urlVideo) : null;
   const videoLocal = clase ? esVideoLocal(clase.urlVideo) : false;
-  const puedeSubirVideo = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN');
+  const puedeSubirVideo = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN' || rol === 'ROLE_AUXILIAR');
 
   const guardarCheckpoint = useCallback(
     async (segundos: number) => {

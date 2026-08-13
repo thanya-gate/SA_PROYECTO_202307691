@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 
@@ -15,6 +15,12 @@ export default function HomePage() {
       <p className="home__subtitle">
         Sesión institucional activa. Verifica tu identidad y roles antes de continuar.
       </p>
+
+      <div className="home__acceso">
+        <Link to="/catalogo" className="asig__ir">
+          Ver catálogo de clases
+        </Link>
+      </div>
 
       <section className="home__identity" aria-label="Datos de sesión">
         <h2>Mi sesión</h2>

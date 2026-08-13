@@ -10,6 +10,7 @@ import { isInstitutionalEmail } from '../utils/domain';
 
 interface LocationState {
   registered?: string;
+  docente?: boolean;
 }
 
 export default function LoginPage() {
@@ -76,7 +77,11 @@ export default function LoginPage() {
         <p className="auth-card__hint">Accede con tu correo institucional de la Facultad de Ingeniería.</p>
 
         {state?.registered ? (
-          <Alert tone="success">Cuenta creada. Ahora puedes iniciar sesión.</Alert>
+          <Alert tone="success">
+            {state.docente
+              ? 'Cuenta creada. Ahora puedes iniciar sesión; un administrador debe autorizar tu cuenta de docente.'
+              : 'Cuenta creada. Ahora puedes iniciar sesión.'}
+          </Alert>
         ) : null}
         {error ? <Alert tone="error">{error}</Alert> : null}
 

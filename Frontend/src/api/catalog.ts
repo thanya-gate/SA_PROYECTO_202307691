@@ -54,6 +54,16 @@ export interface SearchParams {
   curso?: string;
   catedratico?: string;
   tema?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginaClases {
+  resultados: ClaseResumen[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export interface ParticipanteInput {
@@ -75,10 +85,6 @@ export interface PublicarClaseInput {
   participantes: ParticipanteInput[];
 }
 
-interface SearchResponse {
-  resultados: ClaseResumen[];
-}
-
 interface GetClaseResponse {
   clase: ClaseDetalle;
 }
@@ -96,7 +102,10 @@ interface PublicarClaseResponse {
 function toQuery(params: SearchParams): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value && value.trim().length > 0) {
+    if (value === undefined) continue;
+    if (typeof value === 'number') {
+      query.set(key, String(value));
+    } else if (value && value.trim().length > 0) {
       query.set(key, value.trim());
     }
   }
@@ -105,8 +114,8 @@ function toQuery(params: SearchParams): string {
 }
 
 export const catalogApi = {
-  search: (params: SearchParams, token: string): Promise<SearchResponse> =>
-    apiFetch<SearchResponse>(`/catalog/classes${toQuery(params)}`, { token }),
+  search: (params: SearchParams, token: string): Promise<PaginaClases> =>
+    apiFetch<PaginaClases>(`/catalog/classes${toQuery(params)}`, { token }),
 
   getClase: (claseId: string, token: string): Promise<GetClaseResponse> =>
     apiFetch<GetClaseResponse>(`/catalog/classes/${claseId}`, { token }),

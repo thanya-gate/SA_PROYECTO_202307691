@@ -9,8 +9,21 @@ import {
   BuscarResult,
   ClaseCSVInput,
   CargarClasesCSVResult,
+  RegistrarSemestreInput,
+  ActualizarSemestreInput,
+  RegistrarEscuelaInput,
+  ActualizarEscuelaInput,
+  ActualizarCursoInput,
 } from '../../../application/ports/catalog-repository';
-import { ClaseDetalle, CursoCatalogo, Participante, SemestreResumen } from '../../../domain/entities/clase';
+import {
+  ClaseDetalle,
+  CursoAdmin,
+  CursoCatalogo,
+  EscuelaAdmin,
+  Participante,
+  SemestreAdmin,
+  SemestreResumen,
+} from '../../../domain/entities/clase';
 
 interface BuscarRow {
   clase_id: string;
@@ -54,6 +67,19 @@ interface CursoRow {
   codigo: string;
   nombre: string;
   escuela: string;
+}
+
+interface SemestreAdminRow {
+  id: string;
+  nombre: string;
+  año: number;
+  clases: string;
+}
+
+interface EscuelaAdminRow {
+  id: string;
+  nombre: string;
+  cursos: string;
 }
 
 const PARTICIPANTE_REGEX = /^(.+) \((CATEDRATICO|AUXILIAR)\)$/;
@@ -301,5 +327,118 @@ export class PostgresCatalogRepository implements CatalogRepository {
       participantes.map((p) => p.nombre),
       participantes.map((p) => p.rol),
     ]);
+  }
+
+  async listarSemestres(): Promise<SemestreAdmin[]> {
+    const res = await query<SemestreAdminRow>('SELECT * FROM vw_semestres ORDER BY año DESC, nombre');
+    return res.rows.map((r) => ({
+      semestreId: r.id,
+      nombre: r.nombre,
+      anio: r.año,
+      clases: Number(r.clases),
+    }));
+  }
+
+  async registrarSemestre(input: RegistrarSemestreInput): Promise<{ semestreId: string }> {
+    const res = await query<{ p_semestre_id: string }>(
+      'CALL sp_registrar_semestre($1, $2, NULL)',
+      [input.nombre, input.anio],
+    );
+    const semestreId = res.rows[0]?.p_semestre_id;
+    if (!semestreId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se pudo registrar el semestre', 400);
+    }
+    return { semestreId };
+  }
+
+  async actualizarSemestre(input: ActualizarSemestreInput): Promise<void> {
+    const res = await query<{ p_actualizado: boolean }>(
+      'CALL sp_actualizar_semestre($1, $2, $3, NULL)',
+      [input.semestreId, input.nombre, input.anio],
+    );
+    if (!res.rows[0]?.p_actualizado) {
+      throw new DomainError('SEMESTRE_NO_ENCONTRADO', 'El semestre no existe', 404);
+    }
+  }
+
+  async eliminarSemestre(semestreId: string): Promise<void> {
+    const res = await query<{ p_eliminado: boolean }>(
+      'CALL sp_eliminar_semestre($1, NULL)',
+      [semestreId],
+    );
+    if (!res.rows[0]?.p_eliminado) {
+      throw new DomainError('SEMESTRE_NO_ENCONTRADO', 'El semestre no existe', 404);
+    }
+  }
+
+  async listarEscuelas(): Promise<EscuelaAdmin[]> {
+    const res = await query<EscuelaAdminRow>('SELECT * FROM vw_escuelas ORDER BY nombre');
+    return res.rows.map((r) => ({
+      escuelaId: r.id,
+      nombre: r.nombre,
+      cursos: Number(r.cursos),
+    }));
+  }
+
+  async registrarEscuela(input: RegistrarEscuelaInput): Promise<{ escuelaId: string }> {
+    const res = await query<{ p_escuela_id: string }>(
+      'CALL sp_registrar_escuela($1, NULL)',
+      [input.nombre],
+    );
+    const escuelaId = res.rows[0]?.p_escuela_id;
+    if (!escuelaId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se pudo registrar la escuela', 400);
+    }
+    return { escuelaId };
+  }
+
+  async actualizarEscuela(input: ActualizarEscuelaInput): Promise<void> {
+    const res = await query<{ p_actualizado: boolean }>(
+      'CALL sp_actualizar_escuela($1, $2, NULL)',
+      [input.escuelaId, input.nombre],
+    );
+    if (!res.rows[0]?.p_actualizado) {
+      throw new DomainError('ESCUELA_NO_ENCONTRADA', 'La escuela no existe', 404);
+    }
+  }
+
+  async eliminarEscuela(escuelaId: string): Promise<void> {
+    const res = await query<{ p_eliminado: boolean }>(
+      'CALL sp_eliminar_escuela($1, NULL)',
+      [escuelaId],
+    );
+    if (!res.rows[0]?.p_eliminado) {
+      throw new DomainError('ESCUELA_NO_ENCONTRADA', 'La escuela no existe', 404);
+    }
+  }
+
+  async listarCursos(): Promise<CursoAdmin[]> {
+    const res = await query<CursoRow>('SELECT id, codigo, nombre, escuela FROM curso_catalogo ORDER BY codigo');
+    return res.rows.map((r) => ({
+      cursoId: r.id,
+      codigo: r.codigo,
+      nombre: r.nombre,
+      escuela: r.escuela,
+    }));
+  }
+
+  async actualizarCurso(input: ActualizarCursoInput): Promise<void> {
+    const res = await query<{ p_actualizado: boolean }>(
+      'CALL sp_actualizar_curso_catalogo($1, $2, $3, $4, NULL)',
+      [input.cursoId, input.codigo, input.nombre, input.escuela],
+    );
+    if (!res.rows[0]?.p_actualizado) {
+      throw new DomainError('CURSO_NO_ENCONTRADO', 'El curso no existe en el catálogo', 404);
+    }
+  }
+
+  async eliminarCurso(cursoId: string): Promise<void> {
+    const res = await query<{ p_eliminado: boolean }>(
+      'CALL sp_eliminar_curso_catalogo($1, NULL)',
+      [cursoId],
+    );
+    if (!res.rows[0]?.p_eliminado) {
+      throw new DomainError('CURSO_NO_ENCONTRADO', 'El curso no existe en el catálogo', 404);
+    }
   }
 }

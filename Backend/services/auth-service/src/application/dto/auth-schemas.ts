@@ -9,6 +9,7 @@ export const registerSchema = z.object({
   carnet: z.string(),
   dpi: z.string().regex(/^\d{13}$/, 'DPI inválido (debe tener 13 dígitos)'),
   fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha de nacimiento inválida'),
+  requiereAutorizacion: z.boolean().optional(),
 }).superRefine((d, ctx) => {
   if (d.rol === Role.ESTUDIANTE && !/^\d{8,10}$/.test(d.carnet)) {
     ctx.addIssue({
@@ -71,6 +72,22 @@ export const checkPermissionSchema = z.object({
   action: z.string().min(1),
 });
 
+export const crearSolicitudRolSchema = z.object({
+  rolSolicitado: z.enum([Role.CATEDRATICO, Role.AUXILIAR], {
+    errorMap: () => ({ message: 'Solo se puede solicitar el rol CATEDRATICO o AUXILIAR' }),
+  }),
+});
+
+export const listarSolicitudesRolSchema = z.object({
+  estado: z.enum(['PENDIENTE', 'ACEPTADA', 'RECHAZADA']).optional(),
+  usuarioId: z.string().uuid('Usuario inválido').optional(),
+});
+
+export const resolverSolicitudRolSchema = z.object({
+  solicitudId: z.string().uuid('Solicitud inválida'),
+  aprobado: z.boolean(),
+});
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
@@ -89,3 +106,6 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type AssignRoleInput = z.infer<typeof assignRoleSchema>;
 export type CheckPermissionInput = z.infer<typeof checkPermissionSchema>;
+export type CrearSolicitudRolInput = z.infer<typeof crearSolicitudRolSchema>;
+export type ListarSolicitudesRolInput = z.infer<typeof listarSolicitudesRolSchema>;
+export type ResolverSolicitudRolInput = z.infer<typeof resolverSolicitudRolSchema>;

@@ -11,9 +11,12 @@ import HistorialPage from './pages/HistorialPage';
 import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
 import GestionCursosPage from './pages/GestionCursosPage';
+import GestionContenidoPage from './pages/GestionContenidoPage';
+import GestionUsuariosPage from './pages/GestionUsuariosPage';
 import MisCursosPage from './pages/MisCursosPage';
 import SubirClasePage from './pages/SubirClasePage';
 import ProfilePage from './pages/ProfilePage';
+import AutorizacionPendientePage from './pages/AutorizacionPendientePage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -28,10 +31,13 @@ function RequireAuth({ children }: { children: ReactElement }) {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+  if (user.docentePendiente) {
+    return <AutorizacionPendientePage />;
+  }
   return children;
 }
 
-function RequireRole({ role, children }: { role: string; children: ReactElement }) {
+function RequireRole({ roles, children }: { roles: string[]; children: ReactElement }) {
   const { user, initializing } = useAuth();
 
   if (initializing) {
@@ -44,7 +50,10 @@ function RequireRole({ role, children }: { role: string; children: ReactElement 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (!user.roles.includes(role)) {
+  if (user.docentePendiente) {
+    return <AutorizacionPendientePage />;
+  }
+  if (!roles.some((role) => user.roles.includes(role))) {
     return <Navigate to="/" replace />;
   }
   return children;
@@ -107,10 +116,42 @@ export default function App() {
             }
           />
           <Route
+            path="/admin"
+            element={
+              <RequireRole roles={['ROLE_ADMIN']}>
+                <AdminPage />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/admin/cursos"
             element={
-              <RequireRole role="ROLE_ADMIN">
+              <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
                 <GestionCursosPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/contenido"
+            element={
+              <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
+                <GestionContenidoPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/contenido/subir/:cursoId"
+            element={
+              <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
+                <SubirClasePage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/usuarios"
+            element={
+              <RequireRole roles={['ROLE_ADMIN']}>
+                <GestionUsuariosPage />
               </RequireRole>
             }
           />
@@ -128,14 +169,6 @@ export default function App() {
               <RequireAuth>
                 <ProfilePage />
               </RequireAuth>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <RequireRole role="ROLE_ADMIN">
-                <AdminPage />
-              </RequireRole>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

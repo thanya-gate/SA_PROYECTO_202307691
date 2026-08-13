@@ -82,4 +82,21 @@ export const catalogGrpc = {
     unary('RegistrarCurso', req),
   obtenerCursoPorCodigo: (codigo: string) => unary('ObtenerCursoPorCodigo', { codigo }),
   cargarClasesCSV: (clases: unknown[]) => unary('CargarClasesCSV', { clases }),
+
+  listarSemestres: () => unary('ListarSemestres', {}),
+  registrarSemestre: (req: { nombre: string; anio: number }) => unary('RegistrarSemestre', req),
+  actualizarSemestre: (req: { semestreId: string; nombre: string; anio: number }) =>
+    unary('ActualizarSemestre', req),
+  eliminarSemestre: (semestreId: string) => unary('EliminarSemestre', { semestreId }),
+
+  listarEscuelas: () => unary('ListarEscuelas', {}),
+  registrarEscuela: (req: { nombre: string }) => unary('RegistrarEscuela', req),
+  actualizarEscuela: (req: { escuelaId: string; nombre: string }) =>
+    unary('ActualizarEscuela', req),
+  eliminarEscuela: (escuelaId: string) => unary('EliminarEscuela', { escuelaId }),
+
+  listarCursos: () => unary('ListarCursos', {}),
+  actualizarCurso: (req: { cursoId: string; codigo: string; nombre: string; escuela: string }) =>
+    unary('ActualizarCurso', req),
+  eliminarCurso: (cursoId: string) => unary('EliminarCurso', { cursoId }),
 };

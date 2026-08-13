@@ -2,6 +2,7 @@ import { User } from '../../../domain/entities/user';
 import { Role } from '../../../domain/enums/role';
 import { DomainError } from '../../../domain/errors/domain-error';
 import { UserRepository, UpdateProfileData } from '../../../application/ports/user-repository';
+import { SolicitudEstado, SolicitudRol } from '../../../domain/entities/solicitud-rol';
 
 /**
  * Implementación en memoria del repositorio de usuarios.
@@ -12,6 +13,8 @@ import { UserRepository, UpdateProfileData } from '../../../application/ports/us
 export class InMemoryUserRepository implements UserRepository {
   private readonly store = new Map<string, User>();
   private readonly emailIndex = new Map<string, string>();
+  private readonly solicitudes = new Map<string, SolicitudRol>();
+  private solicitudSeq = 0;
 
   async save(user: User): Promise<User> {
     this.store.set(user.userId, user);
@@ -43,9 +46,13 @@ export class InMemoryUserRepository implements UserRepository {
     return null;
   }
 
-  async findByRoles(roles: Role[]): Promise<User[]> {
+  async findByRoles(roles: Role[], incluirInactivos?: boolean): Promise<User[]> {
     const wanted = new Set(roles);
-    return [...this.store.values()].filter((u) => u.roles.some((r) => wanted.has(r)));
+    return [...this.store.values()].filter(
+      (u) =>
+        (incluirInactivos || u.activo !== false) &&
+        u.roles.some((r) => wanted.has(r)),
+    );
   }
 
   async addRole(userId: string, role: Role): Promise<User> {
@@ -90,6 +97,20 @@ export class InMemoryUserRepository implements UserRepository {
     return updated;
   }
 
+  async desactivarUsuario(userId: string): Promise<User> {
+    const user = await this.requireUser(userId);
+    const updated: User = { ...user, activo: false, updatedAt: new Date() };
+    this.store.set(userId, updated);
+    return updated;
+  }
+
+  async reactivarUsuario(userId: string): Promise<User> {
+    const user = await this.requireUser(userId);
+    const updated: User = { ...user, activo: true, updatedAt: new Date() };
+    this.store.set(userId, updated);
+    return updated;
+  }
+
   async markEmailVerified(userId: string): Promise<User> {
     const user = await this.requireUser(userId);
     const updated: User = { ...user, emailVerified: true, updatedAt: new Date() };
@@ -115,6 +136,74 @@ export class InMemoryUserRepository implements UserRepository {
     const user = await this.findByEmail(email);
     if (user && user.oauthProviders.includes(provider)) return user;
     return null;
+  }
+
+  async crearSolicitudRol(usuarioId: string, rolSolicitado: Role): Promise<SolicitudRol> {
+    const user = await this.requireUser(usuarioId);
+    if (rolSolicitado !== Role.CATEDRATICO && rolSolicitado !== Role.AUXILIAR) {
+      throw new DomainError('ROL_INVALIDO', 'Solo se puede solicitar el rol CATEDRATICO o AUXILIAR', 400);
+    }
+    if (user.roles.includes(rolSolicitado)) {
+      throw new DomainError('ROL_YA_ASIGNADO', 'El usuario ya posee ese rol', 409);
+    }
+    const duplicada = [...this.solicitudes.values()].some(
+      (s) =>
+        s.usuarioId === usuarioId &&
+        s.rolSolicitado === rolSolicitado &&
+        s.estado === 'PENDIENTE',
+    );
+    if (duplicada) {
+      throw new DomainError('SOLICITUD_DUPLICADA', 'Ya existe una solicitud pendiente para ese rol', 409);
+    }
+    const solicitud: SolicitudRol = {
+      solicitudId: `sol-${++this.solicitudSeq}`,
+      usuarioId,
+      correo: user.email,
+      nombres: user.nombres ?? null,
+      apellidos: user.apellidos ?? null,
+      carnet: user.carnet ?? null,
+      rolSolicitado,
+      estado: 'PENDIENTE',
+      fechaSolicitud: new Date(),
+      fechaResolucion: null,
+      resueltoPor: null,
+    };
+    this.solicitudes.set(solicitud.solicitudId, solicitud);
+    return solicitud;
+  }
+
+  async listarSolicitudesRol(estado?: SolicitudEstado, usuarioId?: string): Promise<SolicitudRol[]> {
+    const filtradas = [...this.solicitudes.values()].filter(
+      (s) =>
+        (!estado || s.estado === estado) &&
+        (!usuarioId || s.usuarioId === usuarioId),
+    );
+    return filtradas.sort((a, b) => b.fechaSolicitud.getTime() - a.fechaSolicitud.getTime());
+  }
+
+  async resolverSolicitudRol(
+    solicitudId: string,
+    aprobado: boolean,
+    resueltoPor: string,
+  ): Promise<SolicitudRol> {
+    const solicitud = this.solicitudes.get(solicitudId);
+    if (!solicitud) {
+      throw new DomainError('SOLICITUD_NO_ENCONTRADA', 'Solicitud de rol no encontrada', 404);
+    }
+    if (solicitud.estado !== 'PENDIENTE') {
+      throw new DomainError('SOLICITUD_RESUELTA', 'La solicitud ya fue resuelta', 409);
+    }
+    const updated: SolicitudRol = {
+      ...solicitud,
+      estado: aprobado ? 'ACEPTADA' : 'RECHAZADA',
+      fechaResolucion: new Date(),
+      resueltoPor,
+    };
+    this.solicitudes.set(solicitudId, updated);
+    if (aprobado) {
+      await this.addRole(solicitud.usuarioId, solicitud.rolSolicitado);
+    }
+    return updated;
   }
 
   private async requireUser(userId: string): Promise<User> {

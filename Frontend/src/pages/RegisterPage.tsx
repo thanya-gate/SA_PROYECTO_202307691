@@ -71,7 +71,7 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       await register({ carnet: esEstudiante ? carnet : '', dpi, fechaNacimiento, email, password, confirmPassword, rol });
-      navigate('/login', { state: { registered: email } });
+      navigate('/login', { state: { registered: email, docente: tipo === 'docente' } });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo crear la cuenta. Intenta de nuevo.');
     } finally {

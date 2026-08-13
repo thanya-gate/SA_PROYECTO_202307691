@@ -17,6 +17,7 @@ import { SessionService } from './application/services/session.service';
 import { AuthService } from './application/services/auth.service';
 import { ProfileService } from './application/services/profile.service';
 import { AccountService } from './application/services/account.service';
+import { SolicitudService } from './application/services/solicitud.service';
 
 
 export class Container {
@@ -32,6 +33,7 @@ export class Container {
   readonly authService: AuthService;
   readonly profileService: ProfileService;
   readonly accountService: AccountService;
+  readonly solicitudService: SolicitudService;
 
   constructor() {
     const usePostgres = config.DATABASE_URL.trim().length > 0;
@@ -73,6 +75,7 @@ export class Container {
       this.tokenService,
       this.domainValidator,
     );
+    this.solicitudService = new SolicitudService(this.userRepository);
   }
 }
 

@@ -1,4 +1,6 @@
 import {
+  AsignacionDocenteItem,
+  AuxiliarInscripcion,
   CursoCatedraticoItem,
   CursoInscripcion,
   DocenteInscripcion,
@@ -56,4 +58,7 @@ export interface InscripcionRepository {
   consultarEstadoMatricula(estudianteId: string, cursoId: string): Promise<string>;
   listarCursos(): Promise<CursoInscripcion[]>;
   listarDocentes(): Promise<DocenteInscripcion[]>;
+  listarAuxiliares(): Promise<AuxiliarInscripcion[]>;
+  listarAsignaciones(): Promise<AsignacionDocenteItem[]>;
+  eliminarDocente(docenteId: string): Promise<void>;
 }

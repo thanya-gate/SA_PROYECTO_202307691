@@ -5,6 +5,7 @@ import * as protoLoader from '@grpc/proto-loader';
 import { config } from '../../config/env';
 import { container } from '../../container';
 import {
+  AsignacionDocenteItem,
   CursoCatedraticoItem,
   CursoInscripcion,
   DocenteInscripcion,
@@ -66,12 +67,28 @@ function docenteToProto(d: DocenteInscripcion) {
   };
 }
 
+function asignacionToProto(a: AsignacionDocenteItem) {
+  return {
+    asignacionId: a.asignacionId,
+    docenteId: a.docenteId,
+    docenteUsuarioId: a.docenteUsuarioId,
+    cursoId: a.cursoId,
+    codigo: a.codigo,
+    curso: a.curso,
+    semestre: a.semestre,
+    anio: a.anio,
+    auxiliarId: a.auxiliarId ?? '',
+    auxiliarUsuarioId: a.auxiliarUsuarioId ?? '',
+  };
+}
+
 const domainErrorToGrpcCode: Record<string, number> = {
   CURSO_NO_ENCONTRADO: 5,
   DOCENTE_NO_ENCONTRADO: 5,
   AUXILIAR_NO_ENCONTRADO: 5,
   INSCRIPCION_DUPLICADA: 6,
   CONFLICTO: 6,
+  DOCENTE_EN_USO: 9,
   ENTRADA_INVALIDA: 3,
 };
 
@@ -227,6 +244,35 @@ export function createGrpcServer(): grpc.Server {
       try {
         const docentes = await container.inscripcionService.listarDocentes();
         callback(null, { docentes: docentes.map(docenteToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarAuxiliares: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const auxiliares = await container.inscripcionService.listarAuxiliares();
+        callback(null, {
+          auxiliares: auxiliares.map((a) => ({ auxiliarId: a.auxiliarId, usuarioId: a.usuarioId })),
+        });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarAsignaciones: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const asignaciones = await container.inscripcionService.listarAsignaciones();
+        callback(null, { asignaciones: asignaciones.map(asignacionToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarDocente: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.inscripcionService.eliminarDocente(call.request.docenteId);
+        callback(null, {});
       } catch (err: any) {
         callback(mapError(err));
       }

@@ -1,8 +1,11 @@
 import {
   ClaseDetalle,
   ClaseResumen,
+  CursoAdmin,
   CursoCatalogo,
+  EscuelaAdmin,
   Participante,
+  SemestreAdmin,
   SemestreResumen,
 } from '../../domain/entities/clase';
 
@@ -66,6 +69,33 @@ export interface RegistrarCursoInput {
   escuela: string;
 }
 
+export interface RegistrarSemestreInput {
+  nombre: string;
+  anio: number;
+}
+
+export interface ActualizarSemestreInput {
+  semestreId: string;
+  nombre: string;
+  anio: number;
+}
+
+export interface RegistrarEscuelaInput {
+  nombre: string;
+}
+
+export interface ActualizarEscuelaInput {
+  escuelaId: string;
+  nombre: string;
+}
+
+export interface ActualizarCursoInput {
+  cursoId: string;
+  codigo: string;
+  nombre: string;
+  escuela: string;
+}
+
 export interface CatalogRepository {
   buscar(criteria: SearchCriteria): Promise<BuscarResult>;
   getClase(claseId: string): Promise<ClaseDetalle | null>;
@@ -79,4 +109,18 @@ export interface CatalogRepository {
   actualizarDuracion(claseId: string, duracion: number): Promise<ClaseDetalle | null>;
   registrarCurso(input: RegistrarCursoInput): Promise<CursoCatalogo>;
   cargarClasesCSV(clases: ClaseCSVInput[]): Promise<CargarClasesCSVResult>;
+
+  listarSemestres(): Promise<SemestreAdmin[]>;
+  registrarSemestre(input: RegistrarSemestreInput): Promise<{ semestreId: string }>;
+  actualizarSemestre(input: ActualizarSemestreInput): Promise<void>;
+  eliminarSemestre(semestreId: string): Promise<void>;
+
+  listarEscuelas(): Promise<EscuelaAdmin[]>;
+  registrarEscuela(input: RegistrarEscuelaInput): Promise<{ escuelaId: string }>;
+  actualizarEscuela(input: ActualizarEscuelaInput): Promise<void>;
+  eliminarEscuela(escuelaId: string): Promise<void>;
+
+  listarCursos(): Promise<CursoAdmin[]>;
+  actualizarCurso(input: ActualizarCursoInput): Promise<void>;
+  eliminarCurso(cursoId: string): Promise<void>;
 }

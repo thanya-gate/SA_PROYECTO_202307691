@@ -23,6 +23,8 @@ export interface User {
   fechaNacimiento?: string | null;
   telefonoCelular?: string | null;
   carrera?: string | null;
+  /** Indica si la cuenta está activa (borrado lógico) */
+  activo: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +42,7 @@ export function createUser(params: {
   fechaNacimiento?: string | null;
   telefonoCelular?: string | null;
   carrera?: string | null;
+  activo?: boolean;
 }): User {
   return {
     userId: params.userId,
@@ -55,6 +58,7 @@ export function createUser(params: {
     fechaNacimiento: params.fechaNacimiento ?? null,
     telefonoCelular: params.telefonoCelular ?? null,
     carrera: params.carrera ?? null,
+    activo: params.activo ?? true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

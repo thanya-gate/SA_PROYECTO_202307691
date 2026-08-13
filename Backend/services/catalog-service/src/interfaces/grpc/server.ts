@@ -68,8 +68,15 @@ function semestreToProto(s: SemestreResumen) {
 const domainErrorToGrpcCode: Record<string, number> = {
   CLASE_NO_ENCONTRADA: 5, 
   CURSO_NO_ENCONTRADO: 5, 
+  SEMESTRE_NO_ENCONTRADO: 5,
+  ESCUELA_NO_ENCONTRADA: 5,
+  DOCENTE_NO_ENCONTRADO: 5,
   ENTRADA_INVALIDA: 3, 
   CONFLICTO: 6,
+  CURSO_CODIGO_DUPLICADO: 6,
+  SEMESTRE_EN_USO: 9,
+  ESCUELA_EN_USO: 9,
+  CURSO_EN_USO: 9,
 };
 
 function mapError(err: any): grpc.ServiceError {
@@ -266,6 +273,142 @@ export function createGrpcServer(): grpc.Server {
           registradas: result.registradas,
           omitidas: result.omitidas,
         });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarSemestres: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const semestres = await container.catalogService.listarSemestres();
+        callback(null, {
+          semestres: semestres.map((s) => ({
+            semestreId: s.semestreId,
+            nombre: s.nombre,
+            anio: s.anio,
+            clases: s.clases,
+          })),
+        });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    RegistrarSemestre: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const result = await container.catalogService.registrarSemestre({
+          nombre: call.request.nombre,
+          anio: call.request.anio,
+        });
+        callback(null, { semestreId: result.semestreId });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ActualizarSemestre: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.catalogService.actualizarSemestre({
+          semestreId: call.request.semestreId,
+          nombre: call.request.nombre,
+          anio: call.request.anio,
+        });
+        callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarSemestre: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.catalogService.eliminarSemestre(call.request.semestreId);
+        callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarEscuelas: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const escuelas = await container.catalogService.listarEscuelas();
+        callback(null, {
+          escuelas: escuelas.map((e) => ({
+            escuelaId: e.escuelaId,
+            nombre: e.nombre,
+            cursos: e.cursos,
+          })),
+        });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    RegistrarEscuela: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const result = await container.catalogService.registrarEscuela({
+          nombre: call.request.nombre,
+        });
+        callback(null, { escuelaId: result.escuelaId });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ActualizarEscuela: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.catalogService.actualizarEscuela({
+          escuelaId: call.request.escuelaId,
+          nombre: call.request.nombre,
+        });
+        callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarEscuela: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.catalogService.eliminarEscuela(call.request.escuelaId);
+        callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarCursos: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const cursos = await container.catalogService.listarCursos();
+        callback(null, {
+          cursos: cursos.map((c) => ({
+            cursoId: c.cursoId,
+            codigo: c.codigo,
+            nombre: c.nombre,
+            escuela: c.escuela,
+          })),
+        });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ActualizarCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.catalogService.actualizarCurso({
+          cursoId: call.request.cursoId,
+          codigo: call.request.codigo,
+          nombre: call.request.nombre,
+          escuela: call.request.escuela,
+        });
+        callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.catalogService.eliminarCurso(call.request.cursoId);
+        callback(null, {});
       } catch (err: any) {
         callback(mapError(err));
       }
