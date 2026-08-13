@@ -638,7 +638,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/catalog/classes', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/catalog/classes', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const body = req.body as Record<string, unknown>;
       if (typeof body.cursoId !== 'string' || typeof body.semestre !== 'string') {
@@ -701,7 +701,7 @@ export function createGateway(): Express {
   app.post(
     '/admin/catalogo/csv',
     authenticate,
-    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    requireRole('ROLE_ADMIN'),
     express.text({ type: ['text/csv', 'application/csv', 'text/plain'], limit: '2mb' }),
     async (req, res, next) => {
       try {
@@ -905,7 +905,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/catalog/classes/:claseId/video', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/catalog/classes/:claseId/video', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     const claseId = req.params.claseId;
     const targetPath = path.join(config.MEDIA_DIR, 'clases', `${claseId}.mp4`);
     const contentLength = Number(req.headers['content-length'] ?? 0);
@@ -957,7 +957,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/catalog/classes/:claseId/video-url', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/catalog/classes/:claseId/video-url', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { urlVideo } = req.body as Record<string, unknown>;
       if (typeof urlVideo !== 'string' || !/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(urlVideo)) {
@@ -970,7 +970,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/catalog/classes/:claseId/material', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/catalog/classes/:claseId/material', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     const claseId = req.params.claseId;
     const contentLength = Number(req.headers['content-length'] ?? 0);
     if (!contentLength || contentLength > MAX_MATERIAL_BYTES) {
@@ -1011,7 +1011,7 @@ export function createGateway(): Express {
   });
 
 //reproduccion
-  app.post('/reproduccion/checkpoint', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/reproduccion/checkpoint', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { claseId, segundoActual, duracion } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof segundoActual !== 'number' || typeof duracion !== 'number') {
@@ -1033,7 +1033,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.get('/reproduccion/checkpoint/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/reproduccion/checkpoint/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const result = await reproductionGrpc.obtenerCheckpoint({
         estudianteId: req.context!.userId,
@@ -1045,7 +1045,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.get('/reproduccion/historial', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/reproduccion/historial', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const result = await reproductionGrpc.historialReciente({ estudianteId: req.context!.userId });
       const items = await Promise.all(
@@ -1074,7 +1074,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/reproduccion/calificaciones', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/reproduccion/calificaciones', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { historialId, puntuacion, comentario } = req.body as Record<string, unknown>;
       if (typeof historialId !== 'string' || typeof puntuacion !== 'number') {
@@ -1130,7 +1130,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.get('/analitica/recomendaciones/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/analitica/recomendaciones/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const limite = Number(req.query.limite ?? 0);
       const result = await analiticaGrpc.recomendacionesEstudiante({
@@ -1143,7 +1143,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/analitica/sincronizar/vista', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/analitica/sincronizar/vista', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { claseId, duracionVista } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof duracionVista !== 'number') {
@@ -1160,7 +1160,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/analitica/sincronizar/calificacion', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/analitica/sincronizar/calificacion', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { claseId, puntuacion } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof puntuacion !== 'number' || puntuacion < 1 || puntuacion > 5) {
@@ -1209,7 +1209,7 @@ export function createGateway(): Express {
   });
 
 //inscripcion
-  app.get('/inscripcion/panel/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/inscripcion/panel/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const estudianteId = req.context!.roles?.includes('ROLE_ADMIN')
         ? (req.query.estudianteId as string | undefined) ?? req.context!.userId
@@ -1221,7 +1221,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.get('/inscripcion/cursos-catedratico', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/inscripcion/cursos-catedratico', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const catedraticoId = req.context!.roles?.includes('ROLE_ADMIN')
         ? (req.query.catedraticoId as string | undefined) ?? req.context!.userId
