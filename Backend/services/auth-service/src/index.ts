@@ -10,7 +10,7 @@ async function bootstrap(): Promise<void> {
     console.log('[auth-service] Conectado a PostgreSQL (Database per Microservice)');
   }
 
-  if (config.NODE_ENV === 'development') {
+  if (config.SEED_DEMO) {
     await seedDevData(container);
     console.log('[auth-service] Datos de desarrollo sembrados');
   }

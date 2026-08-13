@@ -6,6 +6,10 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  SEED_DEMO: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
   ALLOWED_EMAIL_DOMAINS: z
     .string()
     .default('ingenieria.usac.edu.gt,ing.usac.edu.gt')

@@ -752,7 +752,7 @@ export function createGateway(): Express {
   app.post(
     '/admin/catalogo/csv',
     authenticate,
-    requireRole('ROLE_ADMIN'),
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
     express.text({ type: ['text/csv', 'application/csv', 'text/plain'], limit: '2mb' }),
     async (req, res, next) => {
       try {
