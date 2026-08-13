@@ -222,6 +222,7 @@ services:
     container_name: yousac-api-gateway
     ports:
       - "8080:8080" 
+    volumes:
       - media-data:/app/media
     environment:
       NODE_ENV: development

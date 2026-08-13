@@ -56,7 +56,7 @@ CREATE INDEX idx_clase_etiqueta ON clase_etiqueta (etiqueta_id);
 CREATE INDEX idx_participante_clase ON participante_clase (clase_id);
 
 --funciones
--- Vista base para búsqueda con paginación (evita duplicados por joins).
+-- Vista base para búsqueda con paginación evita duplicados.
 CREATE OR REPLACE VIEW vw_clases_busqueda AS
 SELECT DISTINCT
     cg.id AS clase_id,
@@ -74,9 +74,8 @@ LEFT JOIN participante_clase pc ON pc.clase_id = cg.id
 LEFT JOIN clase_etiqueta ce ON ce.clase_id = cg.id
 LEFT JOIN etiqueta et ON et.id = ce.etiqueta_id;
 
--- Búsqueda paginada desde la base de datos (Práctica 3: máx. 10 por página).
--- El total filtrado se calcula con un subquery sobre el CTE (sin LIMIT), por
--- lo que es correcto incluso cuando la página solicitada está vacía.
+
+-- Funcion para buscar clasesusando la paginacion usando un subquery para contar el total de clases filtradas
 CREATE OR REPLACE FUNCTION fn_buscar_clases(
     p_semestre VARCHAR(10) DEFAULT NULL,
     p_escuela VARCHAR(100) DEFAULT NULL,
@@ -146,9 +145,8 @@ BEGIN
 END;
 $$;
 
--- Total de clases que cumplen los filtros (independiente de la página).
--- Se usa cuando la página solicitada está vacía, donde fn_buscar_clases no
--- devuelve filas de las que leer el total.
+-- Consigue el total de clases que cumplen los filtros independientemente de la pagina y se usa cunado la pagina
+-- solicitada esta vacia
 CREATE OR REPLACE FUNCTION fn_contar_clases(
     p_semestre VARCHAR(10) DEFAULT NULL,
     p_escuela VARCHAR(100) DEFAULT NULL,
@@ -718,14 +716,7 @@ LEFT JOIN clase_grabada cg ON cg.semestre = s.nombre
 GROUP BY s.id, s.nombre, s.año
 ORDER BY s.año DESC, s.nombre;
 
--- =====================================================================
--- Ingesta masiva de clases vía CSV (Práctica 3)
--- p_clases: JSONB con un arreglo de objetos; cada objeto es una fila CSV:
---   { codigo_curso, nombre_curso, escuela, unidad, tema, fecha_imparticion,
---     semestre, año, url_video, url_material, duracion,
---     etiquetas: [], docentes: [], auxiliares: [] }
--- Inserta de forma transaccional reusando los SPs existentes del catálogo.
--- =====================================================================
+--ingesta masiva de datos
 CREATE OR REPLACE PROCEDURE sp_cargar_clases_csv(
     p_clases JSONB,
     INOUT p_registradas INT DEFAULT 0,
@@ -767,9 +758,7 @@ BEGIN
         )
     LOOP
         BEGIN
-        -- Fila incompleta o fuera de rango → se omite y se cuenta. Los campos
-        -- se validan contra la longitud de las columnas destino para no abortar
-        -- el lote completo por una fila inválida.
+-- validaciones básicas de campos obligatorios y longitudes.
         IF v_clase.codigo_curso IS NULL OR length(trim(v_clase.codigo_curso)) NOT BETWEEN 1 AND 20
            OR v_clase.semestre IS NULL OR length(trim(v_clase.semestre)) NOT BETWEEN 1 AND 10
            OR v_clase.año IS NULL
@@ -783,7 +772,7 @@ BEGIN
             CONTINUE;
         END IF;
 
-        -- Curso: usa el existente o lo registra si vienen sus datos.
+-- registra el curso en el catálogo si no existe de lo contrario, obtiene su ID.
         IF NOT EXISTS (SELECT 1 FROM curso_catalogo WHERE codigo = trim(v_clase.codigo_curso)) THEN
             IF v_clase.nombre_curso IS NULL OR length(trim(v_clase.nombre_curso)) NOT BETWEEN 1 AND 200
                OR v_clase.escuela IS NULL OR length(trim(v_clase.escuela)) NOT BETWEEN 1 AND 100 THEN
@@ -803,7 +792,7 @@ BEGIN
             WHERE codigo = trim(v_clase.codigo_curso);
         END IF;
 
-        -- Evita duplicados por curso + semestre + video.
+        -- Para evitar duplicados y omite las filas
         IF EXISTS (
             SELECT 1 FROM clase_grabada cg
             WHERE cg.curso_id = v_curso_id
@@ -814,14 +803,9 @@ BEGIN
             CONTINUE;
         END IF;
 
-        -- Mantiene el registro admin de semestres y escuelas.
         PERFORM fn_registrar_semestre(trim(v_clase.semestre), v_clase.año);
         PERFORM fn_registrar_escuela(trim(v_clase.escuela));
 
-        -- Publica la clase (transacción interna). El cast explícito ::DATE es
-        -- necesario porque la columna llega como TEXT y PL/pgSQL no resuelve
-        -- el procedimiento con cast implícito; una fecha inválida se captura
-        -- en el bloque EXCEPTION de la fila.
         CALL sp_publicar_clase(
             v_curso_id,
             v_clase.unidad,
@@ -840,7 +824,7 @@ BEGIN
             CALL sp_asociar_etiquetas(v_clase_id, v_clase.etiquetas);
         END IF;
 
-        -- Participantes (docentes + auxiliares).
+        -- Participantes 
         v_nombres := '{}';
         v_roles := '{}';
         IF v_clase.docentes IS NOT NULL AND cardinality(v_clase.docentes) > 0 THEN
@@ -858,8 +842,7 @@ BEGIN
         p_registradas := p_registradas + 1;
         EXCEPTION
             WHEN OTHERS THEN
-                -- Cualquier error de una fila concreta (p. ej. fecha inválida)
-                -- se cuenta como omitida sin abortar el lote completo.
+                -- omisiones
                 p_omitidas := p_omitidas + 1;
         END;
     END LOOP;

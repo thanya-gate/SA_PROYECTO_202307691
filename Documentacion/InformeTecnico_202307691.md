@@ -6,7 +6,7 @@ Proyecto: YoUSAC · Práctica: 2 · Carné: 202307691 · Curso: Software Avanzad
 
 ## Índice
 
-1. [Introducción](#1-introducción)
+1. [Introducción](#1-introducciónb)
 2. [Arquitectura implementada](#2-arquitectura-implementada)
    - 2.0 [Visión general de la arquitectura](#20-visión-general-de-la-arquitectura)
    - 2.1 [Malla poliglota y backend](#21-malla-poliglota-y-backend)
@@ -15,6 +15,11 @@ Proyecto: YoUSAC · Práctica: 2 · Carné: 202307691 · Curso: Software Avanzad
    - 2.4 [Contratos gRPC (.proto)](#24-contratos-grpc-proto)
    - 2.5 [Persistencia con objetos programables base](#25-persistencia-con-objetos-programables-base)
    - 2.6 [Orquestación local (Docker Compose)](#26-orquestación-local-docker-compose)
+3. [Evidencias de pruebas — Práctica 3](#3-evidencias-de-pruebas--práctica-3)
+   - 3.1 [Panel Web Administrativo y Control RBAC](#31-panel-web-administrativo-y-control-rbac)
+   - 3.2 [Ingesta masiva mediante CSV](#32-ingesta-masiva-mediante-csv)
+   - 3.3 [Comprobación de registros en BD mediante SPs](#33-comprobación-de-registros-en-bd-mediante-sps)
+   - 3.4 [Paginación desde el servidor (máximo 10 por página)](#34-paginación-desde-el-servidor-máximo-10-por-página)
 4. [Matriz SOLID](#4-matriz-solid)
    - 4.0 [Matriz resumen general de SOLID en el proyecto](#40-matriz-resumen-general-de-solid-en-el-proyecto)
    - 4.1 [Principio de Responsabilidad Única (SRP)](#41-principio-de-responsabilidad-única-srp)
@@ -119,6 +124,58 @@ docker compose -f docker-compose.local.yml up --build -d
 ```
 
 Cada servicio define sus variables por entorno (`.env.example`), incluidas las del flujo OAuth (`OAUTH_MOCK_ENABLED`, `OAUTH_MOCK_ISSUER`, `OAUTH_REDIRECT_URI`, `OAUTH_ISSUER_PUBLIC`, `OAUTH_CLIENT_ID`).
+
+---
+
+## 3. Evidencias de pruebas — Práctica 3
+
+### 3.1 Panel Web Administrativo y Control RBAC
+Al iniciar se ve asi, dashboard en un futuro tendrá toda la parte analitica.
+
+![alt text](img/image-4.png)
+
+![alt text](img/image.png)
+
+![alt text](img/image-1.png)
+
+![alt text](img/image-2.png)
+
+![alt text](img/image-3.png)
+### 3.2 Ingesta masiva mediante CSV
+Desde el Endpoint:`POST /api/admin/catalogo/csv`,exclusivo para los roles ADMIN/CATEDRATICO/AUXILIAR.
+
+Catalogo vacio sin ingesta masiva
+![alt text](img/image-5.png)
+
+Carga exitosa de 20 clases
+![alt text](img/image-6.png)
+
+Catalogo con las clases cargadas y paginacion
+![alt text](img/image-7.png)
+
+### 3.3 Comprobación de registros en BD mediante SPs
+Procedimiento almacenado encargado de la carga masiva
+![alt text](img/image-8.png)
+
+```powershell
+docker exec yousac-catalog-db psql -U yousac -d yousac_catalogo -c "SELECT cc.codigo, cc.nombre, cg.tema, cg.semestre, cg.año, cg.url_video FROM clase_grabada cg JOIN curso_catalogo cc ON cc.id=cg.curso_id ORDER BY cg.año DESC;"
+```
+
+Ingresadas por medio de carga masiva
+![alt text](img/image-9.png)
+
+
+
+
+### 3.4 Paginación desde el servidor (máximo 10 por página)
+En la base de datos se agrego en la función de buscar clase un limite de paginas
+![alt text](img/image-12.png)
+
+Paginación solo muestra 10
+![alt text](img/image-10.png)
+
+Aplicando filtros
+![alt text](img/image-11.png)
 
 ---
 
