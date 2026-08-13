@@ -4,6 +4,7 @@ import { DomainError } from '../../../domain/errors/domain-error';
 import {
   CatalogRepository,
   PublicarClaseInput,
+  ActualizarClaseInput,
   RegistrarCursoInput,
   SearchCriteria,
   BuscarResult,
@@ -272,6 +273,45 @@ export class PostgresCatalogRepository implements CatalogRepository {
     const res = await query('UPDATE clase_grabada SET duracion = $2 WHERE id = $1', [claseId, duracion]);
     if (res.rowCount === 0) return null;
     return this.getClase(claseId);
+  }
+
+  async actualizarClase(input: ActualizarClaseInput): Promise<ClaseDetalle | null> {
+    await withTransaction(async (client) => {
+      await client.query(
+        `CALL sp_actualizar_clase(
+           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL
+         )`,
+        [
+          input.claseId,
+          input.cursoId,
+          input.unidad ?? null,
+          input.tema ?? null,
+          input.fechaImparticion ?? null,
+          input.semestre,
+          input.anio,
+          input.duracion,
+          input.urlVideo ?? '',
+          input.urlMaterial ?? null,
+        ],
+      );
+
+      await client.query('DELETE FROM clase_etiqueta WHERE clase_id = $1', [input.claseId]);
+      await client.query('DELETE FROM participante_clase WHERE clase_id = $1', [input.claseId]);
+
+      await this.asociarEtiquetas(client, input.claseId, input.etiquetas);
+      await this.asociarParticipantes(client, input.claseId, input.participantes);
+    });
+    return this.getClase(input.claseId);
+  }
+
+  async eliminarClase(claseId: string): Promise<void> {
+    const res = await query<{ p_eliminado: boolean }>(
+      'CALL sp_eliminar_clase($1, NULL)',
+      [claseId],
+    );
+    if (!res.rows[0]?.p_eliminado) {
+      throw new DomainError('CLASE_NO_ENCONTRADA', 'La clase no existe', 404);
+    }
   }
 
   async cargarClasesCSV(clases: ClaseCSVInput[]): Promise<CargarClasesCSVResult> {

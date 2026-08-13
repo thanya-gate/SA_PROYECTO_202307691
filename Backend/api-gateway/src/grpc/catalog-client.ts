@@ -78,6 +78,21 @@ export const catalogGrpc = {
     unary('ActualizarUrlMaterial', { claseId, urlMaterial }),
   actualizarDuracion: (claseId: string, duracion: number) =>
     unary('ActualizarDuracion', { claseId, duracion }),
+  editarClase: (req: {
+    claseId: string;
+    cursoId: string;
+    unidad?: string;
+    tema?: string;
+    fechaImparticion?: string;
+    semestre: string;
+    anio: number;
+    urlVideo: string;
+    urlMaterial?: string;
+    duracion: number;
+    etiquetas?: string[];
+    participantes?: Array<{ nombre: string; rol: string }>;
+  }) => unary('EditarClase', req),
+  eliminarClase: (claseId: string) => unary('EliminarClase', { claseId }),
   registrarCurso: (req: { codigo: string; nombre: string; escuela: string }) =>
     unary('RegistrarCurso', req),
   obtenerCursoPorCodigo: (codigo: string) => unary('ObtenerCursoPorCodigo', { codigo }),

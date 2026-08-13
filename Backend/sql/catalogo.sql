@@ -622,6 +622,87 @@ BEGIN
 END;
 $$;
 
+-- =====================================================================
+-- CRUD completo de clases (Práctica 4): editar y eliminar una clase.
+-- sp_actualizar_clase actualiza los datos de la clase; la re-asociación de
+-- etiquetas y participantes se hace en el repositorio dentro de la misma
+-- transacción (se borran las asociaciones previas y se insertan las nuevas).
+-- Las asociaciones (participante_clase, clase_etiqueta y el evento de
+-- publicación) se eliminan en cascada al borrar la clase.
+-- =====================================================================
+CREATE OR REPLACE PROCEDURE sp_actualizar_clase(
+    p_clase_id UUID,
+    p_curso_id UUID,
+    p_unidad VARCHAR(200),
+    p_tema VARCHAR(200),
+    p_fecha_imparticion DATE,
+    p_semestre VARCHAR(10),
+    p_año INT,
+    p_duracion INT,
+    p_url_video TEXT,
+    p_url_material TEXT,
+    INOUT p_actualizado BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_semestre_valido BOOLEAN;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM clase_grabada WHERE id = p_clase_id) THEN
+        RAISE EXCEPTION 'CLASE_NO_ENCONTRADA: la clase no existe';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM curso_catalogo WHERE id = p_curso_id) THEN
+        RAISE EXCEPTION 'CURSO_NO_ENCONTRADO: el curso no existe en el catálogo';
+    END IF;
+
+    IF p_duracion IS NULL OR p_duracion < 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: duracion no puede ser negativa';
+    END IF;
+
+    SELECT fn_validar_semestre(p_semestre) INTO v_semestre_valido;
+    IF NOT v_semestre_valido THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: semestre inválido (formato AAAA-1 o AAAA-2)';
+    END IF;
+
+    IF p_url_video IS NULL OR length(trim(p_url_video)) = 0 THEN
+        p_url_video := '';
+    END IF;
+
+    -- Mantiene actualizado el registro admin de semestres.
+    PERFORM fn_registrar_semestre(p_semestre, p_año);
+
+    UPDATE clase_grabada SET
+        curso_id         = p_curso_id,
+        unidad           = p_unidad,
+        tema             = p_tema,
+        fecha_imparticion = p_fecha_imparticion,
+        semestre         = p_semestre,
+        año              = p_año,
+        duracion         = p_duracion,
+        url_video        = p_url_video,
+        url_material     = p_url_material
+    WHERE id = p_clase_id;
+    p_actualizado := TRUE;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_eliminar_clase(
+    p_clase_id UUID,
+    INOUT p_eliminado BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM clase_grabada WHERE id = p_clase_id) THEN
+        RAISE EXCEPTION 'CLASE_NO_ENCONTRADA: la clase no existe';
+    END IF;
+
+    DELETE FROM clase_grabada WHERE id = p_clase_id;
+    p_eliminado := TRUE;
+END;
+$$;
+
 -- Vistas para el panel admin (con conteo de uso)
 CREATE OR REPLACE VIEW vw_escuelas AS
 SELECT e.id, e.nombre, COUNT(cc.id) AS cursos

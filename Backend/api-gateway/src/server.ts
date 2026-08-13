@@ -628,6 +628,57 @@ export function createGateway(): Express {
     }
   });
 
+  // Edición completa de una clase (CRUD: UPDATE). Admin, docente y auxiliar
+  // pueden modificar los datos de la clase y reasignar etiquetas/participantes.
+  app.patch('/catalog/classes/:claseId', authenticate, requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const body = req.body as Record<string, unknown>;
+      if (typeof body.cursoId !== 'string' || typeof body.semestre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'cursoId y semestre son obligatorios', 400);
+      }
+      const participantes = Array.isArray(body.participantes)
+        ? (body.participantes as Array<{ nombre?: unknown; rol?: unknown }>)
+            .filter((p) => typeof p.nombre === 'string' && typeof p.rol === 'string')
+            .map((p) => ({ nombre: p.nombre as string, rol: p.rol as string }))
+        : [];
+      const result = await catalogGrpc.editarClase({
+        claseId: req.params.claseId,
+        cursoId: body.cursoId,
+        unidad: typeof body.unidad === 'string' ? body.unidad : '',
+        tema: typeof body.tema === 'string' ? body.tema : '',
+        fechaImparticion: typeof body.fechaImparticion === 'string' ? body.fechaImparticion : '',
+        semestre: body.semestre,
+        anio: Number(body.anio ?? 0),
+        urlVideo: typeof body.urlVideo === 'string' ? body.urlVideo : '',
+        urlMaterial: typeof body.urlMaterial === 'string' ? body.urlMaterial : '',
+        duracion: Number(body.duracion ?? 0),
+        etiquetas: Array.isArray(body.etiquetas)
+          ? (body.etiquetas as unknown[]).filter((e): e is string => typeof e === 'string')
+          : [],
+        participantes,
+      });
+      res.json({ message: 'Clase actualizada', clase: result.clase });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Eliminación de una clase (CRUD: DELETE). Admin, docente y auxiliar pueden
+  // borrar la clase; además se intenta limpiar sus archivos multimedia.
+  app.delete('/catalog/classes/:claseId', authenticate, requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    const claseId = req.params.claseId;
+    try {
+      await catalogGrpc.eliminarClase(claseId);
+      await fs.promises.rm(path.join(config.MEDIA_DIR, 'clases', `${claseId}.mp4`), { force: true }).catch(() => {});
+      for (const ext of Object.values(MATERIAL_EXTENSIONS)) {
+        await fs.promises.rm(path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`), { force: true }).catch(() => {});
+      }
+      res.json({ message: 'Clase eliminada' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.get('/catalog/semestres', authenticate, async (req, res, next) => {
     try {
       const semestre = (req.query.semestre as string | undefined) ?? '';
