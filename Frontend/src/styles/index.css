@@ -387,6 +387,15 @@ body {
   background: var(--color-primary-light);
 }
 
+.btn--danger {
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
+.btn--danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
 .btn--oauth {
   background: var(--color-surface);
   color: var(--color-text);
@@ -1421,6 +1430,19 @@ body {
 .clase__ficha-lista dd {
   margin: 0;
   font-weight: 600;
+}
+
+.clase__ficha-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.clase__ficha-acciones .alert {
+  flex-basis: 100%;
 }
 
 .clase__material-link {

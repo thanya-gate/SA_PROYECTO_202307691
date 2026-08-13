@@ -214,6 +214,40 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
+    EditarClase: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const clase = await container.catalogService.actualizarClase({
+          claseId: call.request.claseId,
+          cursoId: call.request.cursoId,
+          unidad: call.request.unidad || undefined,
+          tema: call.request.tema || undefined,
+          fechaImparticion: call.request.fechaImparticion || undefined,
+          semestre: call.request.semestre,
+          anio: call.request.anio,
+          urlVideo: call.request.urlVideo,
+          urlMaterial: call.request.urlMaterial || undefined,
+          duracion: call.request.duracion,
+          etiquetas: call.request.etiquetas ?? [],
+          participantes: (call.request.participantes ?? []).map((p: any) => ({
+            nombre: p.nombre,
+            rol: p.rol,
+          })),
+        });
+        callback(null, { clase: claseDetalleToProto(clase) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarClase: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.catalogService.eliminarClase(call.request.claseId);
+        callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
     RegistrarCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
         const curso = await container.catalogService.registrarCurso({

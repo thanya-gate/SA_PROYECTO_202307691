@@ -15,6 +15,7 @@ import GestionContenidoPage from './pages/GestionContenidoPage';
 import GestionUsuariosPage from './pages/GestionUsuariosPage';
 import MisCursosPage from './pages/MisCursosPage';
 import SubirClasePage from './pages/SubirClasePage';
+import EditarClasePage from './pages/EditarClasePage';
 import ProfilePage from './pages/ProfilePage';
 import AutorizacionPendientePage from './pages/AutorizacionPendientePage';
 
@@ -89,6 +90,14 @@ export default function App() {
               <RequireAuth>
                 <ClasePage />
               </RequireAuth>
+            }
+          />
+          <Route
+            path="/catalogo/clase/:claseId/editar"
+            element={
+              <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
+                <EditarClasePage />
+              </RequireRole>
             }
           />
           <Route

@@ -63,6 +63,10 @@ export interface PublicarClaseInput {
   participantes: Participante[];
 }
 
+export interface ActualizarClaseInput extends PublicarClaseInput {
+  claseId: string;
+}
+
 export interface RegistrarCursoInput {
   codigo: string;
   nombre: string;
@@ -107,6 +111,8 @@ export interface CatalogRepository {
   actualizarUrlVideo(claseId: string, urlVideo: string): Promise<ClaseDetalle | null>;
   actualizarUrlMaterial(claseId: string, urlMaterial: string): Promise<ClaseDetalle | null>;
   actualizarDuracion(claseId: string, duracion: number): Promise<ClaseDetalle | null>;
+  actualizarClase(input: ActualizarClaseInput): Promise<ClaseDetalle | null>;
+  eliminarClase(claseId: string): Promise<void>;
   registrarCurso(input: RegistrarCursoInput): Promise<CursoCatalogo>;
   cargarClasesCSV(clases: ClaseCSVInput[]): Promise<CargarClasesCSVResult>;
 

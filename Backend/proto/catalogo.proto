@@ -137,6 +137,34 @@ message ActualizarDuracionResponse {
   ClaseDetalle clase = 1;
 }
 
+// Edición completa de una clase (CRUD: UPDATE). Reemplaza los datos básicos
+// de la clase y vuelve a asociar etiquetas y participantes.
+message EditarClaseRequest {
+  string clase_id = 1;
+  string curso_id = 2;
+  string unidad = 3;
+  string tema = 4;
+  string fecha_imparticion = 5;
+  string semestre = 6;
+  int32 anio = 7;
+  int32 duracion = 8;
+  string url_video = 9;
+  string url_material = 10;
+  repeated string etiquetas = 11;
+  repeated Participante participantes = 12;
+}
+
+message EditarClaseResponse {
+  ClaseDetalle clase = 1;
+}
+
+// Eliminación de una clase (CRUD: DELETE).
+message EliminarClaseRequest {
+  string clase_id = 1;
+}
+
+message EliminarClaseResponse {}
+
 
 message RegistrarCursoRequest {
   string codigo = 1;
@@ -286,6 +314,8 @@ service CatalogoService {
   rpc ActualizarUrlVideo(ActualizarUrlVideoRequest) returns (ActualizarUrlVideoResponse);
   rpc ActualizarUrlMaterial(ActualizarUrlMaterialRequest) returns (ActualizarUrlMaterialResponse);
   rpc ActualizarDuracion(ActualizarDuracionRequest) returns (ActualizarDuracionResponse);
+  rpc EditarClase(EditarClaseRequest) returns (EditarClaseResponse);
+  rpc EliminarClase(EliminarClaseRequest) returns (EliminarClaseResponse);
   rpc RegistrarCurso(RegistrarCursoRequest) returns (RegistrarCursoResponse);
   rpc ObtenerCursoPorCodigo(ObtenerCursoPorCodigoRequest) returns (ObtenerCursoPorCodigoResponse);
 

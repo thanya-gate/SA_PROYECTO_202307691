@@ -4,6 +4,7 @@ import {
   BuscarResult,
   CargarClasesCSVResult,
   CatalogRepository,
+  ActualizarClaseInput,
   ClaseCSVInput,
   PublicarClaseInput,
   RegistrarCursoInput,
@@ -25,6 +26,7 @@ import {
 import {
   claseCSVSchema,
   publicarClaseSchema,
+  actualizarClaseSchema,
   registrarCursoSchema,
   searchSchema,
   registrarSemestreSchema,
@@ -85,6 +87,25 @@ export class CatalogService {
   async publicarClase(raw: PublicarClaseInput): Promise<{ claseId: string; fechaPublicacion: string }> {
     const input = parse(publicarClaseSchema, raw);
     return this.repository.publicarClase({ ...input, urlVideo: input.urlVideo ?? '' });
+  }
+
+  async actualizarClase(raw: ActualizarClaseInput): Promise<ClaseDetalle> {
+    const input = parse(actualizarClaseSchema, raw);
+    const clase = await this.repository.actualizarClase({
+      ...input,
+      urlVideo: input.urlVideo ?? '',
+    });
+    if (!clase) {
+      throw new DomainError('CLASE_NO_ENCONTRADA', 'Clase no encontrada', 404);
+    }
+    return clase;
+  }
+
+  async eliminarClase(claseId: string): Promise<void> {
+    if (!claseId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'claseId es obligatorio', 400);
+    }
+    return this.repository.eliminarClase(claseId);
   }
 
   async actualizarUrlMaterial(claseId: string, urlMaterial: string): Promise<ClaseDetalle> {

@@ -5,6 +5,10 @@ dotenv.config();
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  SEED_DEMO: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
   GRPC_PORT: z.coerce.number().default(50055),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL es obligatoria (Database per Microservice)'),

@@ -7,7 +7,7 @@ async function bootstrap(): Promise<void> {
   await pingDb();
   console.log('[inscripcion-service] Conectado a PostgreSQL (Database per Microservice)');
 
-  if (config.NODE_ENV === 'development') {
+  if (config.SEED_DEMO) {
     await seedInscripcionData();
     console.log('[inscripcion-service] Datos de inscripción sembrados');
   }

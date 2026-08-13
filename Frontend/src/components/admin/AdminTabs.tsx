@@ -1458,11 +1458,6 @@ export function CsvTab({ token }: { token: string }) {
     }
   }
 
-  const ejemplo = [
-    'codigo_curso,titulo_clase,unidad,tema,semestre,año,escuela,fecha,documento,url_video,duracion_minutos,etiquetas',
-    'CC308,Grabación 1,1,Sistemas Operativos,2026-1,2026,Escuela de Ciencias y Sistemas,2026-03-01,https://m.f/1,https://v/1,120,sistemas;clase',
-  ].join('\n');
-
   return (
     <>
       <TituloSeccion
@@ -1506,15 +1501,6 @@ export function CsvTab({ token }: { token: string }) {
           </p>
         </div>
       )}
-
-      <details className="admin-ayuda">
-        <summary>Formato esperado del CSV</summary>
-        <pre className="admin-ayuda__pre">{ejemplo}</pre>
-        <p className="catalogo__estado">
-          Columnas: codigo_curso, titulo_clase, unidad, tema, semestre, año, escuela, fecha, documento, url_video,
-          duracion_minutos, etiquetas. La primera fila debe ser el encabezado.
-        </p>
-      </details>
     </>
   );
 }
