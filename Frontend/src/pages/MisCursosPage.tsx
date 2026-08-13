@@ -34,8 +34,7 @@ export default function MisCursosPage() {
   const navigate = useNavigate();
   const tokenActual = token ?? '';
   const esEstudiante = user?.roles.includes('ROLE_ESTUDIANTE') ?? false;
-  const esDocente =
-    (user?.roles.includes('ROLE_CATEDRATICO') ?? false) || (user?.roles.includes('ROLE_AUXILIAR') ?? false);
+  const esDocente = user?.roles.includes('ROLE_CATEDRATICO') ?? false;
 
   const [panel, setPanel] = useState<PanelEstudianteItem[]>([]);
   const [cursosDocente, setCursosDocente] = useState<CursoCatedraticoItem[]>([]);

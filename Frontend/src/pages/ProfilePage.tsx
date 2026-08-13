@@ -62,15 +62,13 @@ export default function ProfilePage() {
 
   const [vistaAdmin, setVistaAdmin] = useState<'estudiante' | 'catedratico'>('estudiante');
   const [userIdAdmin, setUserIdAdmin] = useState('');
-  const vista: 'estudiante' | 'catedratico' | 'auxiliar' = esAdmin
+  const vista: 'estudiante' | 'catedratico' = esAdmin
     ? vistaAdmin
-    : esEstudiante
+    : esEstudiante || esAuxiliar
       ? 'estudiante'
       : esCatedratico
         ? 'catedratico'
-        : esAuxiliar
-          ? 'auxiliar'
-          : 'estudiante';
+        : 'estudiante';
 
   const [panel, setPanel] = useState<PanelEstudianteItem[]>([]);
   const [cursos, setCursos] = useState<CursoCatedraticoItem[]>([]);
@@ -421,15 +419,7 @@ export default function ProfilePage() {
                   </Alert>
                 )}
 
-                {vista === 'auxiliar' ? (
-                  <div className="asig__vacio">
-                    <p className="asig__vacio-titulo">Asignaciones de auxiliar</p>
-                    <p className="asig__vacio-texto">
-                      Como auxiliar, tus asignaciones se gestionan desde los cursos del catedrático al
-                      que apoyas. Explora el catálogo para consultar las clases disponibles.
-                    </p>
-                  </div>
-                ) : cargandoCursos ? (
+                {cargandoCursos ? (
                   <p className="catalogo__estado" role="status">
                     Cargando tus cursos…
                   </p>

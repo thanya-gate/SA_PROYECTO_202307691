@@ -155,7 +155,11 @@ export default function GestionContenidoPage() {
             </p>
           </div>
           <span className="admin__badge">
-            {user?.roles.includes('ROLE_ADMIN') ? 'Administrador' : 'Docente'}
+            {user?.roles.includes('ROLE_ADMIN')
+              ? 'Administrador'
+              : user?.roles.includes('ROLE_AUXILIAR')
+                ? 'Auxiliar'
+                : 'Docente'}
           </span>
         </header>
 
