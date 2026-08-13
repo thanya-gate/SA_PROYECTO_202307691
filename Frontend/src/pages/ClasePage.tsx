@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { catalogApi, type ClaseDetalle, type ClaseResumen } from '../api/catalog';
 import { reproduccionApi, type Checkpoint, type HistorialItem } from '../api/reproduccion';
 import { mediaApi } from '../api/media';
@@ -16,6 +16,7 @@ const CHECKPOINT_INTERVAL_SECONDS = 15;
 export default function ClasePage() {
   const { claseId = '' } = useParams();
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const [clase, setClase] = useState<ClaseDetalle | null>(null);
   const [relacionadas, setRelacionadas] = useState<ClaseResumen[]>([]);
   const [historial, setHistorial] = useState<HistorialItem[]>([]);
@@ -40,6 +41,10 @@ export default function ClasePage() {
   const [videoSubido, setVideoSubido] = useState<string | null>(null);
   const [urlVideoInput, setUrlVideoInput] = useState('');
   const [guardandoUrl, setGuardandoUrl] = useState(false);
+
+  // Edición / eliminación de la clase (CRUD)
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
 
   const ultimoSegundoRef = useRef(0);
   const ultimoGuardadoRef = useRef(0);
@@ -195,6 +200,24 @@ export default function ClasePage() {
     }
   }
 
+  async function eliminarClase() {
+    if (!clase || !tokenActual) return;
+    const confirmacion = window.confirm(
+      `¿Eliminar la clase "${clase.tema || clase.curso}"? Esta acción no se puede deshacer.`,
+    );
+    if (!confirmacion) return;
+    setEliminando(true);
+    setErrorEliminar(null);
+    try {
+      await catalogApi.eliminarClase(clase.claseId, tokenActual);
+      navigate('/catalogo');
+    } catch (err) {
+      setErrorEliminar(err instanceof Error ? err.message : 'No se pudo eliminar la clase');
+    } finally {
+      setEliminando(false);
+    }
+  }
+
   if (cargando) {
     return (
       <AppLayout>
@@ -236,6 +259,18 @@ export default function ClasePage() {
             Reanudando desde <strong>{formatSegundos(checkpoint?.segundoActual ?? 0)}</strong> — tu último checkpoint
             guardado.
           </Alert>
+        )}
+
+        {puedeSubirVideo && (
+          <div className="clase__admin-acciones">
+            <Button variant="secondary" onClick={() => navigate(`/catalogo/clase/${clase.claseId}/editar`)}>
+              Editar clase
+            </Button>
+            <Button variant="danger" onClick={() => void eliminarClase()} disabled={eliminando} loading={eliminando}>
+              {eliminando ? 'Eliminando…' : 'Eliminar clase'}
+            </Button>
+            {errorEliminar && <Alert tone="error">{errorEliminar}</Alert>}
+          </div>
         )}
 
         <div className="clase__grid">

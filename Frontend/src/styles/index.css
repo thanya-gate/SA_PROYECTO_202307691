@@ -387,6 +387,15 @@ body {
   background: var(--color-primary-light);
 }
 
+.btn--danger {
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
+.btn--danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
 .btn--oauth {
   background: var(--color-surface);
   color: var(--color-text);
@@ -1293,6 +1302,22 @@ body {
   color: var(--color-text-muted);
   padding: 3rem 1rem;
   text-align: center;
+}
+
+.clase__admin-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.clase__admin-acciones .alert {
+  flex-basis: 100%;
 }
 
 .clase__subida {

@@ -85,6 +85,20 @@ export interface PublicarClaseInput {
   participantes: ParticipanteInput[];
 }
 
+export interface EditarClaseInput {
+  cursoId: string;
+  unidad: string;
+  tema: string;
+  fechaImparticion: string;
+  semestre: string;
+  anio: number;
+  urlVideo: string;
+  urlMaterial: string;
+  duracion: number;
+  etiquetas: string[];
+  participantes: ParticipanteInput[];
+}
+
 interface GetClaseResponse {
   clase: ClaseDetalle;
 }
@@ -132,6 +146,19 @@ export const catalogApi = {
     apiFetch<PublicarClaseResponse>('/catalog/classes', {
       method: 'POST',
       body: input,
+      token,
+    }),
+
+  editarClase: (claseId: string, input: EditarClaseInput, token: string): Promise<{ message: string; clase: ClaseDetalle }> =>
+    apiFetch<{ message: string; clase: ClaseDetalle }>(`/catalog/classes/${claseId}`, {
+      method: 'PATCH',
+      body: input,
+      token,
+    }),
+
+  eliminarClase: (claseId: string, token: string): Promise<{ message: string }> =>
+    apiFetch<{ message: string }>(`/catalog/classes/${claseId}`, {
+      method: 'DELETE',
       token,
     }),
 };
