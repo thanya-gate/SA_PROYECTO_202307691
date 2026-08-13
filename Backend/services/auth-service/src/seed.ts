@@ -27,7 +27,7 @@ const SEED_USERS: Array<{
     userId: '00000000-0000-0000-0000-000000000301',
     email: 'auxiliar@ing.usac.edu.gt',
     password: 'Auxiliar2026!',
-    roles: [Role.AUXILIAR],
+    roles: [Role.ESTUDIANTE, Role.AUXILIAR],
   },
   {
     userId: '00000000-0000-0000-0000-000000000101',

@@ -53,6 +53,8 @@ export const catalogGrpc = {
     curso?: string;
     catedratico?: string;
     tema?: string;
+    page?: number;
+    pageSize?: number;
   }) => unary('Search', req),
   getClase: (claseId: string) => unary('GetClase', { claseId }),
   listarPorSemestre: (semestre?: string) => unary('ListarPorSemestre', { semestre }),
@@ -76,7 +78,40 @@ export const catalogGrpc = {
     unary('ActualizarUrlMaterial', { claseId, urlMaterial }),
   actualizarDuracion: (claseId: string, duracion: number) =>
     unary('ActualizarDuracion', { claseId, duracion }),
+  editarClase: (req: {
+    claseId: string;
+    cursoId: string;
+    unidad?: string;
+    tema?: string;
+    fechaImparticion?: string;
+    semestre: string;
+    anio: number;
+    urlVideo: string;
+    urlMaterial?: string;
+    duracion: number;
+    etiquetas?: string[];
+    participantes?: Array<{ nombre: string; rol: string }>;
+  }) => unary('EditarClase', req),
+  eliminarClase: (claseId: string) => unary('EliminarClase', { claseId }),
   registrarCurso: (req: { codigo: string; nombre: string; escuela: string }) =>
     unary('RegistrarCurso', req),
   obtenerCursoPorCodigo: (codigo: string) => unary('ObtenerCursoPorCodigo', { codigo }),
+  cargarClasesCSV: (clases: unknown[]) => unary('CargarClasesCSV', { clases }),
+
+  listarSemestres: () => unary('ListarSemestres', {}),
+  registrarSemestre: (req: { nombre: string; anio: number }) => unary('RegistrarSemestre', req),
+  actualizarSemestre: (req: { semestreId: string; nombre: string; anio: number }) =>
+    unary('ActualizarSemestre', req),
+  eliminarSemestre: (semestreId: string) => unary('EliminarSemestre', { semestreId }),
+
+  listarEscuelas: () => unary('ListarEscuelas', {}),
+  registrarEscuela: (req: { nombre: string }) => unary('RegistrarEscuela', req),
+  actualizarEscuela: (req: { escuelaId: string; nombre: string }) =>
+    unary('ActualizarEscuela', req),
+  eliminarEscuela: (escuelaId: string) => unary('EliminarEscuela', { escuelaId }),
+
+  listarCursos: () => unary('ListarCursos', {}),
+  actualizarCurso: (req: { cursoId: string; codigo: string; nombre: string; escuela: string }) =>
+    unary('ActualizarCurso', req),
+  eliminarCurso: (cursoId: string) => unary('EliminarCurso', { cursoId }),
 };

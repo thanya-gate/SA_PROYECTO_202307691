@@ -225,7 +225,7 @@ services:
     ports:
       - "8080:8080" 
     volumes:
-      - media-data:/app/media
+      - ./Backend/media:/app/media
     environment:
       NODE_ENV: development
       PORT: 8080
@@ -268,7 +268,7 @@ services:
     ports:
       - "8081:80" 
     volumes:
-      - media-data:/usr/share/nginx/html/media
+      - ./Backend/media:/usr/share/nginx/html/media
     depends_on:
       api-gateway:
         condition: service_healthy
@@ -285,4 +285,3 @@ volumes:
   reproduccion-db-data:
   analitica-db-data:
   inscripcion-db-data:
-  media-data:

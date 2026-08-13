@@ -80,6 +80,21 @@ CREATE INDEX idx_sesion_usuario ON sesion (usuario_id);
 CREATE INDEX idx_token_verificacion_token ON token_verificacion (token);
 CREATE INDEX idx_permiso_rbac_rol ON permiso_rbac (rol_id);
 
+-- Solicitudes de rol: un usuario solicita convertirse en catedrático o auxiliar
+-- y el administrador aprueba o rechaza la solicitud.
+CREATE TABLE solicitud_rol (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id       UUID NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+    rol_solicitado   VARCHAR(20) NOT NULL,
+    estado           VARCHAR(15) NOT NULL DEFAULT 'PENDIENTE',
+    fecha_solicitud  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    fecha_resolucion TIMESTAMPTZ,
+    resuelto_por     UUID REFERENCES usuario(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_solicitud_rol_usuario ON solicitud_rol (usuario_id);
+CREATE INDEX idx_solicitud_rol_estado ON solicitud_rol (estado);
+
 --procedimientos 
 CREATE OR REPLACE FUNCTION fn_validar_dominio_correo(correo TEXT)
 RETURNS BOOLEAN
@@ -266,6 +281,94 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE PROCEDURE sp_crear_solicitud_rol(
+    p_usuario_id UUID,
+    p_rol_solicitado TEXT,
+    INOUT p_solicitud_id UUID
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_rol VARCHAR(20);
+BEGIN
+    v_rol := upper(p_rol_solicitado);
+
+    IF v_rol NOT IN ('CATEDRATICO', 'AUXILIAR') THEN
+        RAISE EXCEPTION 'ROL_INVALIDO: Solo se puede solicitar el rol CATEDRATICO o AUXILIAR';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM usuario WHERE id = p_usuario_id) THEN
+        RAISE EXCEPTION 'USUARIO_NO_ENCONTRADO: Usuario no encontrado';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM usuario_rol ur JOIN rol r ON r.id = ur.rol_id
+        WHERE ur.usuario_id = p_usuario_id AND r.nombre = v_rol
+    ) THEN
+        RAISE EXCEPTION 'ROL_YA_ASIGNADO: El usuario ya posee ese rol';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM solicitud_rol
+        WHERE usuario_id = p_usuario_id AND rol_solicitado = v_rol AND estado = 'PENDIENTE'
+    ) THEN
+        RAISE EXCEPTION 'SOLICITUD_DUPLICADA: Ya existe una solicitud pendiente para ese rol';
+    END IF;
+
+    INSERT INTO solicitud_rol (usuario_id, rol_solicitado)
+    VALUES (p_usuario_id, v_rol)
+    RETURNING id INTO p_solicitud_id;
+END;
+$$;
+
+-- Aprueba o rechaza una solicitud de rol. Si se aprueba, otorga el rol
+-- mediante sp_asignar_rol dentro de la misma transacción (atómico).
+CREATE OR REPLACE PROCEDURE sp_resolver_solicitud_rol(
+    p_solicitud_id UUID,
+    p_aprobado BOOLEAN,
+    p_resuelto_por UUID,
+    INOUT p_usuario_id UUID,
+    INOUT p_rol_solicitado TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_estado VARCHAR(15);
+BEGIN
+    SELECT estado, usuario_id, rol_solicitado
+    INTO v_estado, p_usuario_id, p_rol_solicitado
+    FROM solicitud_rol
+    WHERE id = p_solicitud_id;
+
+    IF p_usuario_id IS NULL THEN
+        RAISE EXCEPTION 'SOLICITUD_NO_ENCONTRADA: La solicitud no existe';
+    END IF;
+
+    IF v_estado <> 'PENDIENTE' THEN
+        RAISE EXCEPTION 'SOLICITUD_RESUELTA: La solicitud ya fue resuelta';
+    END IF;
+
+    UPDATE solicitud_rol
+    SET estado = CASE WHEN p_aprobado THEN 'ACEPTADA' ELSE 'RECHAZADA' END,
+        fecha_resolucion = NOW(),
+        resuelto_por = p_resuelto_por
+    WHERE id = p_solicitud_id;
+
+    IF p_aprobado THEN
+        CALL sp_asignar_rol(p_usuario_id, p_rol_solicitado);
+        -- Un catedrático aprobado deja de ser estudiante: se le retira el rol
+        -- ESTUDIANTE para que quede únicamente con CATEDRATICO.
+        IF upper(p_rol_solicitado) = 'CATEDRATICO' THEN
+            DELETE FROM usuario_rol ur
+            USING rol r
+            WHERE ur.rol_id = r.id
+              AND ur.usuario_id = p_usuario_id
+              AND r.nombre = 'ESTUDIANTE';
+        END IF;
+    END IF;
+END;
+$$;
+
 --vistas
 CREATE OR REPLACE VIEW vw_usuarios_activos_roles AS
 SELECT
@@ -285,6 +388,22 @@ LEFT JOIN usuario_rol ur ON ur.usuario_id = u.id
 LEFT JOIN rol r ON r.id = ur.rol_id
 WHERE u.activo = TRUE
 GROUP BY u.id;
+
+CREATE OR REPLACE VIEW vw_solicitudes_rol AS
+SELECT
+    sr.id,
+    sr.usuario_id,
+    u.correo_institucional,
+    u.nombres,
+    u.apellidos,
+    u.carnet,
+    sr.rol_solicitado,
+    sr.estado,
+    sr.fecha_solicitud,
+    sr.fecha_resolucion,
+    sr.resuelto_por
+FROM solicitud_rol sr
+JOIN usuario u ON u.id = sr.usuario_id;
 
 CREATE OR REPLACE VIEW vw_sesiones_activas AS
 SELECT

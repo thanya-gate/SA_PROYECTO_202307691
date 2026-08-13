@@ -11,6 +11,8 @@ import {
   AsignarAuxiliarCatedraticoInput,
 } from '../../../application/ports/inscripcion-repository';
 import {
+  AsignacionDocenteItem,
+  AuxiliarInscripcion,
   CursoCatedraticoItem,
   CursoInscripcion,
   DocenteInscripcion,
@@ -52,6 +54,19 @@ interface CatedraticoRow {
 
 interface EstadoRow {
   fn_estado_matricula: string;
+}
+
+interface AsignacionRow {
+  asignacion_id: string;
+  docente_id: string;
+  docente_usuario_id: string;
+  curso_id: string;
+  codigo: string;
+  curso: string;
+  semestre: string;
+  año: number;
+  auxiliar_id: string | null;
+  auxiliar_usuario_id: string | null;
 }
 
 export class PostgresInscripcionRepository implements InscripcionRepository {
@@ -224,6 +239,57 @@ export class PostgresInscripcionRepository implements InscripcionRepository {
       'SELECT id, usuario_id FROM docente ORDER BY usuario_id ASC',
     );
     return res.rows.map((r) => ({ docenteId: r.id, usuarioId: r.usuario_id }));
+  }
+
+  async listarAuxiliares(): Promise<AuxiliarInscripcion[]> {
+    const res = await query<{ id: string; usuario_id: string }>(
+      'SELECT id, usuario_id FROM auxiliar ORDER BY usuario_id ASC',
+    );
+    return res.rows.map((r) => ({ auxiliarId: r.id, usuarioId: r.usuario_id }));
+  }
+
+  async listarAsignaciones(): Promise<AsignacionDocenteItem[]> {
+    const res = await query<AsignacionRow>(`
+      SELECT
+        ad.id AS asignacion_id,
+        ad.docente_id,
+        d.usuario_id AS docente_usuario_id,
+        c.id AS curso_id,
+        c.codigo,
+        c.nombre AS curso,
+        ad.semestre,
+        c.año,
+        aa.auxiliar_id,
+        a.usuario_id AS auxiliar_usuario_id
+      FROM asignacion_docente ad
+      JOIN docente d ON d.id = ad.docente_id
+      JOIN curso c ON c.id = ad.curso_id
+      LEFT JOIN asignacion_auxiliar aa ON aa.asignacion_docente_id = ad.id
+      LEFT JOIN auxiliar a ON a.id = aa.auxiliar_id
+      ORDER BY ad.semestre DESC, c.codigo ASC
+    `);
+    return res.rows.map((r) => ({
+      asignacionId: r.asignacion_id,
+      docenteId: r.docente_id,
+      docenteUsuarioId: r.docente_usuario_id,
+      cursoId: r.curso_id,
+      codigo: r.codigo,
+      curso: r.curso,
+      semestre: r.semestre,
+      anio: r.año,
+      auxiliarId: r.auxiliar_id ?? null,
+      auxiliarUsuarioId: r.auxiliar_usuario_id ?? null,
+    }));
+  }
+
+  async eliminarDocente(docenteId: string): Promise<void> {
+    const res = await query<{ p_eliminado: boolean }>(
+      'CALL sp_eliminar_docente($1, NULL)',
+      [docenteId],
+    );
+    if (!res.rows[0]?.p_eliminado) {
+      throw new DomainError('DOCENTE_NO_ENCONTRADO', 'El docente no existe', 404);
+    }
   }
 
   private async getCursoByCodigo(client: PoolClient, codigo: string): Promise<CursoInscripcion> {

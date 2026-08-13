@@ -29,6 +29,13 @@ enum SessionStatus {
   SESSION_STATUS_REVOCADA = 3;
 }
 
+enum SolicitudEstado {
+  SOLICITUD_ESTADO_UNSPECIFIED = 0;
+  SOLICITUD_ESTADO_PENDIENTE = 1;
+  SOLICITUD_ESTADO_ACEPTADA = 2;
+  SOLICITUD_ESTADO_RECHAZADA = 3;
+}
+
 // Mensajes de dominio
 
 message User {
@@ -45,6 +52,7 @@ message User {
   string apellidos = 11;
   string telefono_celular = 12;
   string carrera = 13;
+  bool activo = 14;
 }
 
 message SessionInfo {
@@ -117,10 +125,27 @@ message CheckPermissionResponse {
 
 message ListUsersByRoleRequest {
   repeated Role roles = 1;
+  bool incluir_inactivos = 2;
 }
 
 message ListUsersByRoleResponse {
   repeated User users = 1;
+}
+
+message DesactivarUsuarioRequest {
+  string user_id = 1;
+}
+
+message DesactivarUsuarioResponse {
+  User user = 1;
+}
+
+message ReactivarUsuarioRequest {
+  string user_id = 1;
+}
+
+message ReactivarUsuarioResponse {
+  User user = 1;
 }
 
 // ---- Autenticación (registro / login / logout) ----
@@ -135,6 +160,9 @@ message RegisterRequest {
   string dpi = 7;
   string fecha_nacimiento = 8;
   string rol = 9;
+  // true: el usuario se crea como ESTUDIANTE y se genera una solicitud de rol
+  // pendiente que el administrador debe autorizar (p. ej. registro público de docentes).
+  bool requiere_autorizacion = 10;
 }
 
 message RegisterResponse {
@@ -278,6 +306,50 @@ message SwitchProfileResponse {
   string pending_role = 2;
 }
 
+// ---- Solicitudes de rol (catedrático / auxiliar) ----
+
+message SolicitudRol {
+  string solicitud_id = 1;
+  string usuario_id = 2;
+  string correo = 3;
+  string nombres = 4;
+  string apellidos = 5;
+  string carnet = 6;
+  Role rol_solicitado = 7;
+  SolicitudEstado estado = 8;
+  string fecha_solicitud = 9;
+  string fecha_resolucion = 10;
+  string resuelto_por = 11;
+}
+
+message CrearSolicitudRolRequest {
+  string usuario_id = 1;
+  Role rol_solicitado = 2;
+}
+
+message CrearSolicitudRolResponse {
+  SolicitudRol solicitud = 1;
+}
+
+message ListarSolicitudesRolRequest {
+  SolicitudEstado estado = 1;
+  string usuario_id = 2; // filtra solicitudes de un usuario concreto (para el aviso de "docente pendiente")
+}
+
+message ListarSolicitudesRolResponse {
+  repeated SolicitudRol solicitudes = 1;
+}
+
+message ResolverSolicitudRolRequest {
+  string solicitud_id = 1;
+  bool aprobado = 2;
+  string resuelto_por = 3;
+}
+
+message ResolverSolicitudRolResponse {
+  SolicitudRol solicitud = 1;
+}
+
 // ---- OAuth 2.0 institucional (mock) ----
 
 message OAuthAuthorizeRequest {
@@ -317,6 +389,8 @@ service AuthService {
   rpc GetProfiles(GetProfilesRequest) returns (GetProfilesResponse);
   rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
   rpc ListUsersByRole(ListUsersByRoleRequest) returns (ListUsersByRoleResponse);
+  rpc DesactivarUsuario(DesactivarUsuarioRequest) returns (DesactivarUsuarioResponse);
+  rpc ReactivarUsuario(ReactivarUsuarioRequest) returns (ReactivarUsuarioResponse);
 
   // --- Autenticación ---
   rpc Register(RegisterRequest) returns (RegisterResponse);
@@ -337,6 +411,11 @@ service AuthService {
   rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
   rpc RemoveRole(RemoveRoleRequest) returns (RemoveRoleResponse);
   rpc SwitchProfile(SwitchProfileRequest) returns (SwitchProfileResponse);
+
+  // --- Solicitudes de rol ---
+  rpc CrearSolicitudRol(CrearSolicitudRolRequest) returns (CrearSolicitudRolResponse);
+  rpc ListarSolicitudesRol(ListarSolicitudesRolRequest) returns (ListarSolicitudesRolResponse);
+  rpc ResolverSolicitudRol(ResolverSolicitudRolRequest) returns (ResolverSolicitudRolResponse);
 
   // --- OAuth 2.0 ---
   rpc OAuthAuthorize(OAuthAuthorizeRequest) returns (OAuthAuthorizeResponse);

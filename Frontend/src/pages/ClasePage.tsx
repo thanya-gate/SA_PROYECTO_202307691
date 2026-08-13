@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { catalogApi, type ClaseDetalle, type ClaseResumen } from '../api/catalog';
 import { reproduccionApi, type Checkpoint, type HistorialItem } from '../api/reproduccion';
 import { mediaApi } from '../api/media';
@@ -16,6 +16,7 @@ const CHECKPOINT_INTERVAL_SECONDS = 15;
 export default function ClasePage() {
   const { claseId = '' } = useParams();
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const [clase, setClase] = useState<ClaseDetalle | null>(null);
   const [relacionadas, setRelacionadas] = useState<ClaseResumen[]>([]);
   const [historial, setHistorial] = useState<HistorialItem[]>([]);
@@ -41,13 +42,17 @@ export default function ClasePage() {
   const [urlVideoInput, setUrlVideoInput] = useState('');
   const [guardandoUrl, setGuardandoUrl] = useState(false);
 
+  // Edición / eliminación de la clase (CRUD)
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
+
   const ultimoSegundoRef = useRef(0);
   const ultimoGuardadoRef = useRef(0);
 
   const tokenActual = token ?? '';
   const videoId = clase ? youtubeVideoId(clase.urlVideo) : null;
   const videoLocal = clase ? esVideoLocal(clase.urlVideo) : false;
-  const puedeSubirVideo = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN');
+  const puedeSubirVideo = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN' || rol === 'ROLE_AUXILIAR');
 
   const guardarCheckpoint = useCallback(
     async (segundos: number) => {
@@ -192,6 +197,24 @@ export default function ClasePage() {
       setErrorSubida(err instanceof Error ? err.message : 'No se pudo guardar la URL del video');
     } finally {
       setGuardandoUrl(false);
+    }
+  }
+
+  async function eliminarClase() {
+    if (!clase || !tokenActual) return;
+    const confirmacion = window.confirm(
+      `¿Eliminar la clase "${clase.tema || clase.curso}"? Esta acción no se puede deshacer.`,
+    );
+    if (!confirmacion) return;
+    setEliminando(true);
+    setErrorEliminar(null);
+    try {
+      await catalogApi.eliminarClase(clase.claseId, tokenActual);
+      navigate('/catalogo');
+    } catch (err) {
+      setErrorEliminar(err instanceof Error ? err.message : 'No se pudo eliminar la clase');
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -379,6 +402,18 @@ export default function ClasePage() {
                   <dd>{formatFecha(clase.fechaPublicacion)}</dd>
                 </div>
               </dl>
+
+              {puedeSubirVideo && (
+                <div className="clase__ficha-acciones">
+                  <Button variant="secondary" onClick={() => navigate(`/catalogo/clase/${clase.claseId}/editar`)}>
+                    Editar clase
+                  </Button>
+                  <Button variant="danger" onClick={() => void eliminarClase()} disabled={eliminando} loading={eliminando}>
+                    {eliminando ? 'Eliminando…' : 'Eliminar clase'}
+                  </Button>
+                  {errorEliminar && <Alert tone="error">{errorEliminar}</Alert>}
+                </div>
+              )}
             </div>
 
             {clase.urlMaterial && (

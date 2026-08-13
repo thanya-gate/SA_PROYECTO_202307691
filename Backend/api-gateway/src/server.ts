@@ -13,6 +13,7 @@ import { inscripcionGrpc } from './grpc/inscripcion-client';
 import { GrpcError } from './grpc/auth-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
+import { parseClasesCsv, CsvParseError } from './utils/csv';
 import { authenticate } from './middleware/authenticate';
 import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
@@ -66,6 +67,7 @@ function publicUser(u: {
   apellidos?: string | null;
   telefonoCelular?: string | null;
   carrera?: string | null;
+  activo?: boolean;
 }) {
   return {
     userId: u.userId,
@@ -79,6 +81,7 @@ function publicUser(u: {
     apellidos: u.apellidos ?? null,
     telefonoCelular: u.telefonoCelular ?? null,
     carrera: u.carrera ?? null,
+    activo: u.activo ?? true,
   };
 }
 
@@ -88,9 +91,34 @@ function toOptionalString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+/**
+ * Indica si el usuario tiene una solicitud de CATEDRATICO pendiente de
+ * autorización (registro público de docentes). El gateway lo expone como
+ * `docentePendiente` para que la UI muestre el aviso al docente.
+ */
+async function tieneDocentePendiente(userId: string): Promise<boolean> {
+  try {
+    const res = await authGrpc.listarSolicitudesRol('SOLICITUD_ESTADO_PENDIENTE', userId);
+    return (res.solicitudes ?? []).some(
+      (s: { usuarioId: string; rolSolicitado: string }) =>
+        s.usuarioId === userId && s.rolSolicitado === 'ROLE_CATEDRATICO',
+    );
+  } catch {
+    return false;
+  }
+}
+
 function toProtoRole(role: string): string {
   const normalized = role.trim().toUpperCase();
   return normalized.startsWith('ROLE_') ? normalized : `ROLE_${normalized}`;
+}
+
+function toPositiveInt(value: unknown, defaultValue: number): number {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const n = Number(value);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  return defaultValue;
 }
 
 export function createGateway(): Express {
@@ -159,6 +187,8 @@ export function createGateway(): Express {
         throw new DomainError('ENTRADA_INVALIDA', 'Contraseña inválida o no coincide', 400);
       }
       const normalizedRol = rol === 'CATEDRATICO' ? 'CATEDRATICO' : 'ESTUDIANTE';
+      // El registro público como docente queda pendiente de autorización del admin.
+      const requiereAutorizacion = normalizedRol === 'CATEDRATICO';
       const result = await authGrpc.register({
         email: String(email),
         password,
@@ -167,13 +197,16 @@ export function createGateway(): Express {
         dpi: String(dpi ?? ''),
         fechaNacimiento: String(fechaNacimiento ?? ''),
         rol: normalizedRol,
+        requiereAutorizacion,
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
       setSessionCookie(res, result.accessToken, cookieMaxAge);
       res.status(201).json({
-        message: 'Cuenta creada. Revisa tu correo para confirmar el registro.',
-        user: publicUser(result.user),
+        message: requiereAutorizacion
+          ? 'Cuenta creada. Un administrador debe autorizar tu cuenta como docente antes de que puedas publicar clases.'
+          : 'Cuenta creada. Revisa tu correo para confirmar el registro.',
+        user: { ...publicUser(result.user), docentePendiente: requiereAutorizacion },
         accessToken: result.accessToken,
         expiresAt: result.expiresAt,
       });
@@ -195,9 +228,10 @@ export function createGateway(): Express {
         userAgent: req.headers['user-agent'],
       });
       setSessionCookie(res, result.accessToken, cookieMaxAge);
+      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId) };
       res.json({
         message: 'Sesión iniciada',
-        user: publicUser(result.user),
+        user,
         accessToken: result.accessToken,
         expiresAt: result.expiresAt,
       });
@@ -219,7 +253,8 @@ export function createGateway(): Express {
   app.get('/auth/me', authenticate, async (req, res, next) => {
     try {
       const result = await authGrpc.getCurrentUser(req.context!.sessionId);
-      res.json({ user: publicUser(result.user), sessionId: result.sessionId });
+      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId) };
+      res.json({ user, sessionId: result.sessionId });
     } catch (err) {
       next(err);
     }
@@ -254,8 +289,140 @@ export function createGateway(): Express {
       if (roles.length === 0) {
         throw new DomainError('ENTRADA_INVALIDA', 'Indica al menos un rol (?rol=ROLE_CATEDRATICO)', 400);
       }
-      const result = await authGrpc.listUsersByRole(roles);
+      const incluirInactivos = req.query.incluirInactivos === 'true';
+      const result = await authGrpc.listUsersByRole(roles, incluirInactivos);
       res.json({ usuarios: result.users });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Admin crea un usuario (sin iniciar sesión). El rol debe ser uno de los
+  // permitidos por el contrato de registro (ESTUDIANTE/CATEDRATICO) o se
+  // asigna después vía PATCH de roles.
+  app.post('/auth/usuarios', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { email, password, confirmPassword, carnet, dpi, fechaNacimiento, rol } = req.body as Record<string, unknown>;
+      if (typeof password !== 'string' || password.length < 8 || password !== confirmPassword) {
+        throw new DomainError('ENTRADA_INVALIDA', 'Contraseña inválida o no coincide', 400);
+      }
+      const normalizedRol = rol === 'CATEDRATICO' ? 'CATEDRATICO' : 'ESTUDIANTE';
+      const result = await authGrpc.register({
+        email: String(email),
+        password,
+        confirmPassword: String(confirmPassword),
+        carnet: String(carnet ?? ''),
+        dpi: String(dpi ?? ''),
+        fechaNacimiento: String(fechaNacimiento ?? ''),
+        rol: normalizedRol,
+        // El admin crea el usuario directamente: no requiere autorización posterior.
+        requiereAutorizacion: false,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      res.status(201).json({ message: 'Usuario creado', user: publicUser(result.user) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Admin edita el perfil de cualquier usuario (reutiliza UpdateProfile).
+  app.patch('/auth/usuarios/:userId', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { nombres, apellidos, carnet, dpi, fechaNacimiento, telefonoCelular, carrera } =
+        req.body as Record<string, unknown>;
+      const result = await authGrpc.updateProfile({
+        userId: req.params.userId,
+        nombres: toOptionalString(nombres),
+        apellidos: toOptionalString(apellidos),
+        carnet: toOptionalString(carnet),
+        dpi: toOptionalString(dpi),
+        fechaNacimiento: toOptionalString(fechaNacimiento),
+        telefonoCelular: toOptionalString(telefonoCelular),
+        carrera: toOptionalString(carrera),
+      });
+      res.json({ user: publicUser(result.user) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Admin desactiva (borrado lógico) una cuenta.
+  app.delete('/auth/usuarios/:userId', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      await authGrpc.desactivarUsuario(req.params.userId);
+      res.json({ message: 'Usuario desactivado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Admin reactiva una cuenta desactivada.
+  app.post('/auth/usuarios/:userId/reactivar', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      await authGrpc.reactivarUsuario(req.params.userId);
+      res.json({ message: 'Usuario reactivado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ===== Solicitudes de rol =====
+  app.post('/auth/solicitudes', authenticate, async (req, res, next) => {
+    try {
+      const { rolSolicitado } = req.body as Record<string, unknown>;
+      const role = toProtoRole(String(rolSolicitado ?? ''));
+      if (role !== 'ROLE_CATEDRATICO' && role !== 'ROLE_AUXILIAR') {
+        throw new DomainError(
+          'ENTRADA_INVALIDA',
+          'Solo se puede solicitar el rol CATEDRATICO o AUXILIAR',
+          400,
+        );
+      }
+      const result = await authGrpc.crearSolicitudRol(req.context!.userId, role);
+      res.status(201).json({ message: 'Solicitud enviada', solicitud: result.solicitud });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/auth/solicitudes', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const raw = req.query.estado;
+      const estado =
+        typeof raw === 'string' && raw.trim().length > 0
+          ? `SOLICITUD_ESTADO_${raw.trim().toUpperCase()}`
+          : undefined;
+      const result = await authGrpc.listarSolicitudesRol(estado);
+      res.json({ solicitudes: result.solicitudes });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/auth/solicitudes/:solicitudId/resolver', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { aprobado } = req.body as Record<string, unknown>;
+      if (typeof aprobado !== 'boolean') {
+        throw new DomainError('ENTRADA_INVALIDA', 'aprobado (booleano) es obligatorio', 400);
+      }
+      const result = await authGrpc.resolverSolicitudRol(
+        req.params.solicitudId,
+        aprobado,
+        req.context!.userId,
+      );
+      const solicitud = result.solicitud;
+      if (aprobado) {
+        if (solicitud.rolSolicitado === 'ROLE_CATEDRATICO') {
+          await inscripcionGrpc.registrarDocente(solicitud.usuarioId);
+        } else if (solicitud.rolSolicitado === 'ROLE_AUXILIAR') {
+          await inscripcionGrpc.registrarAuxiliar(solicitud.usuarioId);
+        }
+      }
+      res.json({
+        message: aprobado ? 'Solicitud aprobada' : 'Solicitud rechazada',
+        solicitud,
+      });
     } catch (err) {
       next(err);
     }
@@ -427,14 +594,26 @@ export function createGateway(): Express {
         string,
         string | undefined
       >;
+      const pageSize = Math.min(
+        toPositiveInt(req.query.pageSize ?? req.query.page_size, 10),
+        10,
+      );
       const result = await catalogGrpc.search({
         semestre: semestre ?? '',
         escuela: escuela ?? '',
         curso: curso ?? '',
         catedratico: catedratico ?? '',
         tema: tema ?? '',
+        page: toPositiveInt(req.query.page, 1),
+        pageSize,
       });
-      res.json({ resultados: result.resultados });
+      res.json({
+        resultados: result.resultados,
+        total: result.total,
+        page: result.page,
+        pageSize: result.pageSize,
+        totalPages: result.totalPages,
+      });
     } catch (err) {
       next(err);
     }
@@ -444,6 +623,57 @@ export function createGateway(): Express {
     try {
       const result = await catalogGrpc.getClase(req.params.claseId);
       res.json({ clase: result.clase });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Edición completa de una clase (CRUD: UPDATE). Admin, docente y auxiliar
+  // pueden modificar los datos de la clase y reasignar etiquetas/participantes.
+  app.patch('/catalog/classes/:claseId', authenticate, requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const body = req.body as Record<string, unknown>;
+      if (typeof body.cursoId !== 'string' || typeof body.semestre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'cursoId y semestre son obligatorios', 400);
+      }
+      const participantes = Array.isArray(body.participantes)
+        ? (body.participantes as Array<{ nombre?: unknown; rol?: unknown }>)
+            .filter((p) => typeof p.nombre === 'string' && typeof p.rol === 'string')
+            .map((p) => ({ nombre: p.nombre as string, rol: p.rol as string }))
+        : [];
+      const result = await catalogGrpc.editarClase({
+        claseId: req.params.claseId,
+        cursoId: body.cursoId,
+        unidad: typeof body.unidad === 'string' ? body.unidad : '',
+        tema: typeof body.tema === 'string' ? body.tema : '',
+        fechaImparticion: typeof body.fechaImparticion === 'string' ? body.fechaImparticion : '',
+        semestre: body.semestre,
+        anio: Number(body.anio ?? 0),
+        urlVideo: typeof body.urlVideo === 'string' ? body.urlVideo : '',
+        urlMaterial: typeof body.urlMaterial === 'string' ? body.urlMaterial : '',
+        duracion: Number(body.duracion ?? 0),
+        etiquetas: Array.isArray(body.etiquetas)
+          ? (body.etiquetas as unknown[]).filter((e): e is string => typeof e === 'string')
+          : [],
+        participantes,
+      });
+      res.json({ message: 'Clase actualizada', clase: result.clase });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Eliminación de una clase (CRUD: DELETE). Admin, docente y auxiliar pueden
+  // borrar la clase; además se intenta limpiar sus archivos multimedia.
+  app.delete('/catalog/classes/:claseId', authenticate, requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    const claseId = req.params.claseId;
+    try {
+      await catalogGrpc.eliminarClase(claseId);
+      await fs.promises.rm(path.join(config.MEDIA_DIR, 'clases', `${claseId}.mp4`), { force: true }).catch(() => {});
+      for (const ext of Object.values(MATERIAL_EXTENSIONS)) {
+        await fs.promises.rm(path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`), { force: true }).catch(() => {});
+      }
+      res.json({ message: 'Clase eliminada' });
     } catch (err) {
       next(err);
     }
@@ -459,7 +689,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/catalog/classes', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/catalog/classes', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const body = req.body as Record<string, unknown>;
       if (typeof body.cursoId !== 'string' || typeof body.semestre !== 'string') {
@@ -517,7 +747,216 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/catalog/classes/:claseId/video', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  // Ingesta masiva de catálogo vía CSV (Práctica 3). Solo roles admin/docentes.
+  // El cuerpo puede ser el archivo .csv en crudo (text/csv) o JSON { csv: "..." }.
+  app.post(
+    '/admin/catalogo/csv',
+    authenticate,
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    express.text({ type: ['text/csv', 'application/csv', 'text/plain'], limit: '2mb' }),
+    async (req, res, next) => {
+      try {
+        const csvText =
+          typeof req.body === 'string' ? req.body : (req.body as { csv?: unknown })?.csv;
+        if (typeof csvText !== 'string' || csvText.trim().length === 0) {
+          throw new DomainError(
+            'ENTRADA_INVALIDA',
+            'El archivo CSV está vacío o no se recibió ningún archivo',
+            400,
+          );
+        }
+        const filas = parseClasesCsv(csvText);
+        if (filas.length === 0) {
+          throw new DomainError('ENTRADA_INVALIDA', 'El archivo CSV no contiene filas de clases', 400);
+        }
+        const result = await catalogGrpc.cargarClasesCSV(filas);
+        res.status(201).json({
+          message: 'Carga masiva procesada mediante sp_cargar_clases_csv',
+          registradas: result.registradas,
+          omitidas: result.omitidas,
+          totalProcesadas: filas.length,
+        });
+      } catch (err) {
+        if (err instanceof CsvParseError) {
+          return next(new DomainError('ENTRADA_INVALIDA', err.message, 400));
+        }
+        next(err);
+      }
+    },
+  );
+
+  // =====================================================================
+  // Panel Web Admin (Práctica 3): CRUD de Semestres, Escuelas/Áreas,
+  // Cursos y Docentes. Protegido por RBAC para Admin/Catedrático/Auxiliar.
+  // Todos los cambios en el catálogo se ejecutan vía SPs en la BD.
+  // =====================================================================
+  const adminRoles = ['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'] as const;
+  const adminGuard = requireAnyRole(...adminRoles);
+
+  app.get('/admin/semestres', authenticate, adminGuard, async (_req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarSemestres();
+      res.json({ semestres: result.semestres });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/admin/semestres', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { nombre, anio } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string' || typeof anio !== 'number') {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre y anio son obligatorios', 400);
+      }
+      const result = await catalogGrpc.registrarSemestre({ nombre, anio });
+      res.status(201).json({ message: 'Semestre registrado', semestreId: result.semestreId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/admin/semestres/:semestreId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { nombre, anio } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string' || typeof anio !== 'number') {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre y anio son obligatorios', 400);
+      }
+      await catalogGrpc.actualizarSemestre({ semestreId: req.params.semestreId, nombre, anio });
+      res.json({ message: 'Semestre actualizado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/admin/semestres/:semestreId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      await catalogGrpc.eliminarSemestre(req.params.semestreId);
+      res.json({ message: 'Semestre eliminado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/admin/escuelas', authenticate, adminGuard, async (_req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarEscuelas();
+      res.json({ escuelas: result.escuelas });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/admin/escuelas', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { nombre } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre es obligatorio', 400);
+      }
+      const result = await catalogGrpc.registrarEscuela({ nombre });
+      res.status(201).json({ message: 'Escuela registrada', escuelaId: result.escuelaId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/admin/escuelas/:escuelaId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { nombre } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre es obligatorio', 400);
+      }
+      await catalogGrpc.actualizarEscuela({ escuelaId: req.params.escuelaId, nombre });
+      res.json({ message: 'Escuela actualizada' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/admin/escuelas/:escuelaId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      await catalogGrpc.eliminarEscuela(req.params.escuelaId);
+      res.json({ message: 'Escuela eliminada' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/admin/cursos', authenticate, adminGuard, async (_req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarCursos();
+      res.json({ cursos: result.cursos });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/admin/cursos', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { codigo, nombre, escuela } = req.body as Record<string, unknown>;
+      if (typeof codigo !== 'string' || typeof nombre !== 'string' || typeof escuela !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'codigo, nombre y escuela son obligatorios', 400);
+      }
+      const result = await catalogGrpc.registrarCurso({ codigo, nombre, escuela });
+      res.status(201).json({ message: 'Curso registrado en el catálogo', curso: result.curso });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/admin/cursos/:cursoId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { codigo, nombre, escuela } = req.body as Record<string, unknown>;
+      if (typeof codigo !== 'string' || typeof nombre !== 'string' || typeof escuela !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'codigo, nombre y escuela son obligatorios', 400);
+      }
+      await catalogGrpc.actualizarCurso({ cursoId: req.params.cursoId, codigo, nombre, escuela });
+      res.json({ message: 'Curso actualizado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/admin/cursos/:cursoId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      await catalogGrpc.eliminarCurso(req.params.cursoId);
+      res.json({ message: 'Curso eliminado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/admin/docentes', authenticate, adminGuard, async (_req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.listarDocentes();
+      res.json({ docentes: result.docentes });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/admin/docentes', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      const { usuarioId } = req.body as Record<string, unknown>;
+      if (typeof usuarioId !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'usuarioId es obligatorio', 400);
+      }
+      const result = await inscripcionGrpc.registrarDocente(usuarioId);
+      res.status(201).json({ message: 'Docente registrado', docenteId: result.docenteId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/admin/docentes/:docenteId', authenticate, adminGuard, async (req, res, next) => {
+    try {
+      await inscripcionGrpc.eliminarDocente(req.params.docenteId);
+      res.json({ message: 'Docente eliminado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/catalog/classes/:claseId/video', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     const claseId = req.params.claseId;
     const targetPath = path.join(config.MEDIA_DIR, 'clases', `${claseId}.mp4`);
     const contentLength = Number(req.headers['content-length'] ?? 0);
@@ -569,7 +1008,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/catalog/classes/:claseId/video-url', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/catalog/classes/:claseId/video-url', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { urlVideo } = req.body as Record<string, unknown>;
       if (typeof urlVideo !== 'string' || !/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(urlVideo)) {
@@ -582,7 +1021,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/catalog/classes/:claseId/material', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/catalog/classes/:claseId/material', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     const claseId = req.params.claseId;
     const contentLength = Number(req.headers['content-length'] ?? 0);
     if (!contentLength || contentLength > MAX_MATERIAL_BYTES) {
@@ -623,7 +1062,7 @@ export function createGateway(): Express {
   });
 
 //reproduccion
-  app.post('/reproduccion/checkpoint', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/reproduccion/checkpoint', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { claseId, segundoActual, duracion } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof segundoActual !== 'number' || typeof duracion !== 'number') {
@@ -645,7 +1084,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.get('/reproduccion/checkpoint/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/reproduccion/checkpoint/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const result = await reproductionGrpc.obtenerCheckpoint({
         estudianteId: req.context!.userId,
@@ -657,7 +1096,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.get('/reproduccion/historial', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/reproduccion/historial', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const result = await reproductionGrpc.historialReciente({ estudianteId: req.context!.userId });
       const items = await Promise.all(
@@ -686,7 +1125,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/reproduccion/calificaciones', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/reproduccion/calificaciones', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { historialId, puntuacion, comentario } = req.body as Record<string, unknown>;
       if (typeof historialId !== 'string' || typeof puntuacion !== 'number') {
@@ -742,7 +1181,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.get('/analitica/recomendaciones/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/analitica/recomendaciones/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const limite = Number(req.query.limite ?? 0);
       const result = await analiticaGrpc.recomendacionesEstudiante({
@@ -755,7 +1194,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/analitica/sincronizar/vista', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/analitica/sincronizar/vista', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { claseId, duracionVista } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof duracionVista !== 'number') {
@@ -772,7 +1211,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.post('/analitica/sincronizar/calificacion', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.post('/analitica/sincronizar/calificacion', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const { claseId, puntuacion } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof puntuacion !== 'number' || puntuacion < 1 || puntuacion > 5) {
@@ -821,7 +1260,7 @@ export function createGateway(): Express {
   });
 
 //inscripcion
-  app.get('/inscripcion/panel/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/inscripcion/panel/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const estudianteId = req.context!.roles?.includes('ROLE_ADMIN')
         ? (req.query.estudianteId as string | undefined) ?? req.context!.userId
@@ -833,7 +1272,7 @@ export function createGateway(): Express {
     }
   });
 
-  app.get('/inscripcion/cursos-catedratico', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN'), async (req, res, next) => {
+  app.get('/inscripcion/cursos-catedratico', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const catedraticoId = req.context!.roles?.includes('ROLE_ADMIN')
         ? (req.query.catedraticoId as string | undefined) ?? req.context!.userId
@@ -909,6 +1348,24 @@ export function createGateway(): Express {
     try {
       const result = await inscripcionGrpc.listarDocentes();
       res.json({ docentes: result.docentes });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/inscripcion/auxiliares', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.listarAuxiliares();
+      res.json({ auxiliares: result.auxiliares });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/inscripcion/asignaciones', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await inscripcionGrpc.listarAsignaciones();
+      res.json({ asignaciones: result.asignaciones });
     } catch (err) {
       next(err);
     }

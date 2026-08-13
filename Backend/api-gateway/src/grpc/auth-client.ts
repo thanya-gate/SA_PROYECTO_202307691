@@ -66,6 +66,7 @@ export const authGrpc = {
     dpi: string;
     fechaNacimiento: string;
     rol: string;
+    requiereAutorizacion?: boolean;
     ip?: string;
     userAgent?: string;
   }) => unary('Register', req),
@@ -86,13 +87,26 @@ export const authGrpc = {
     unary('ValidateCredentials', { email, password }),
 
   getProfiles: (userId: string) => unary('GetProfiles', { userId }),
-  listUsersByRole: (roles: string[]) => unary('ListUsersByRole', { roles }),
+  listUsersByRole: (roles: string[], incluirInactivos?: boolean) =>
+    unary('ListUsersByRole', { roles, incluirInactivos: incluirInactivos === true }),
+  desactivarUsuario: (userId: string) => unary('DesactivarUsuario', { userId }),
+  reactivarUsuario: (userId: string) => unary('ReactivarUsuario', { userId }),
   switchProfile: (userId: string, role: string, sessionId: string) =>
     unary('SwitchProfile', { userId, role, sessionId }),
   checkPermission: (userId: string, resource: string, action: string) =>
     unary('CheckPermission', { userId, resource, action }),
   assignRole: (userId: string, role: string) => unary('AssignRole', { userId, role }),
   removeRole: (userId: string, role: string) => unary('RemoveRole', { userId, role }),
+
+  crearSolicitudRol: (usuarioId: string, rolSolicitado: string) =>
+    unary('CrearSolicitudRol', { usuarioId, rolSolicitado }),
+  listarSolicitudesRol: (estado?: string, usuarioId?: string) =>
+    unary('ListarSolicitudesRol', {
+      estado: estado ?? 'SOLICITUD_ESTADO_UNSPECIFIED',
+      usuarioId: usuarioId ?? '',
+    }),
+  resolverSolicitudRol: (solicitudId: string, aprobado: boolean, resueltoPor: string) =>
+    unary('ResolverSolicitudRol', { solicitudId, aprobado, resueltoPor }),
 
   requestEmailVerification: (email: string) => unary('RequestEmailVerification', { email }),
   confirmEmailVerification: (token: string) => unary('ConfirmEmailVerification', { token }),

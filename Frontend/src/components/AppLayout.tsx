@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { Logo } from './Logo';
+import { ThemeToggle } from './ThemeToggle';
 
 const COLLAPSED_KEY = 'yousac_sidebar_collapsed';
 const MOBILE_BREAKPOINT = '(max-width: 767px)';
@@ -83,6 +84,13 @@ const ContentIcon = () => (
     <line x1="12" y1="2" x2="12" y2="4" />
   </Icon>
 );
+const UploadIcon = () => (
+  <Icon>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </Icon>
+);
 const BellIcon = () => (
   <Icon>
     <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -130,7 +138,19 @@ const NAV_ITEMS: NavItem[] = [
 
 const DOCENTE_NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
-  { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
+  { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
+  {
+    to: '/admin/cursos',
+    label: 'Gestión Académica',
+    icon: <DashboardIcon />,
+    description: 'Cursos, semestres, escuelas y asignación de catedráticos',
+  },
+  {
+    to: '/admin/contenido',
+    label: 'Gestión de Contenido',
+    icon: <UploadIcon />,
+    description: 'Subir videos y material por curso y carga masiva CSV',
+  },
   {
     to: '',
     label: 'Notificaciones',
@@ -142,20 +162,54 @@ const DOCENTE_NAV_ITEMS: NavItem[] = [
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
 
-const ADMIN_NAV_ITEMS: NavItem[] = [
-  { to: '/admin', label: 'Dashboard', end: true, icon: <DashboardIcon /> },
+const AUXILIAR_NAV_ITEMS: NavItem[] = [
+  { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
+  { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
+  { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
+  {
+    to: '/admin/contenido',
+    label: 'Gestión de Contenido',
+    icon: <UploadIcon />,
+    description: 'Subir videos y material por curso y carga masiva CSV',
+  },
   {
     to: '',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    disabled: true,
+    description: 'Revisar las notificaciones del sistema',
+  },
+  { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
+  { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
+  { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
+];
+
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  {
+    to: '/admin',
+    label: 'Dashboard',
+    end: true,
+    icon: <DashboardIcon />,
+    description: 'Resumen general de la plataforma',
+  },
+  { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
+  {
+    to: '/admin/usuarios',
     label: 'Gestión de Usuarios',
     icon: <UsersIcon />,
-    disabled: true,
     description: 'Administrar cuentas, roles y permisos',
   },
   {
     to: '/admin/cursos',
-    label: 'Gestión de Cursos',
+    label: 'Gestión Académica',
     icon: <ContentIcon />,
-    description: 'Crear cursos y asignar catedráticos',
+    description: 'Administrar cursos del catálogo, semestres, escuelas y asignación de catedráticos',
+  },
+  {
+    to: '/admin/contenido',
+    label: 'Gestión de Contenido',
+    icon: <UploadIcon />,
+    description: 'Subir videos y material por curso y carga masiva CSV',
   },
   {
     to: '',
@@ -186,9 +240,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const isAdmin = user?.roles.includes('ROLE_ADMIN') ?? false;
-  const isDocente =
-    (user?.roles.includes('ROLE_CATEDRATICO') ?? false) || (user?.roles.includes('ROLE_AUXILIAR') ?? false);
-  const navItems = isAdmin ? ADMIN_NAV_ITEMS : isDocente ? DOCENTE_NAV_ITEMS : NAV_ITEMS;
+  const isCatedratico = user?.roles.includes('ROLE_CATEDRATICO') ?? false;
+  const isAuxiliar = user?.roles.includes('ROLE_AUXILIAR') ?? false;
+  const navItems = isAdmin
+    ? ADMIN_NAV_ITEMS
+    : isCatedratico
+      ? DOCENTE_NAV_ITEMS
+      : isAuxiliar
+        ? AUXILIAR_NAV_ITEMS
+        : NAV_ITEMS;
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {
@@ -253,6 +313,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <NavLink to="/" className="app-layout__brand" aria-label="YoUSAC" onClick={handleNavClick}>
             <Logo size="small" />
           </NavLink>
+          <ThemeToggle />
           <button
             className="app-layout__toggle"
             onClick={handleToggle}
@@ -325,7 +386,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
       {mobile && mobileOpen && <div className="app-layout__backdrop" onClick={() => setMobileOpen(false)} />}
-      <main className="app-layout__main">{children}</main>
+      <main className="app-layout__main">
+        {children}
+      </main>
     </div>
   );
 }

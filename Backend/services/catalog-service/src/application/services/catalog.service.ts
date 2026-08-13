@@ -1,18 +1,40 @@
 import { z, ZodError } from 'zod';
 import { DomainError } from '../../domain/errors/domain-error';
 import {
+  BuscarResult,
+  CargarClasesCSVResult,
   CatalogRepository,
+  ActualizarClaseInput,
+  ClaseCSVInput,
   PublicarClaseInput,
   RegistrarCursoInput,
+  RegistrarSemestreInput,
+  ActualizarSemestreInput,
+  RegistrarEscuelaInput,
+  ActualizarEscuelaInput,
+  ActualizarCursoInput,
   SearchCriteria,
 } from '../ports/catalog-repository';
 import {
   ClaseDetalle,
-  ClaseResumen,
+  CursoAdmin,
   CursoCatalogo,
+  EscuelaAdmin,
+  SemestreAdmin,
   SemestreResumen,
 } from '../../domain/entities/clase';
-import { publicarClaseSchema, registrarCursoSchema, searchSchema } from '../dto/catalog-schemas';
+import {
+  claseCSVSchema,
+  publicarClaseSchema,
+  actualizarClaseSchema,
+  registrarCursoSchema,
+  searchSchema,
+  registrarSemestreSchema,
+  actualizarSemestreSchema,
+  registrarEscuelaSchema,
+  actualizarEscuelaSchema,
+  actualizarCursoSchema,
+} from '../dto/catalog-schemas';
 
 function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
   try {
@@ -29,9 +51,17 @@ function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
 export class CatalogService {
   constructor(private readonly repository: CatalogRepository) {}
 
-  async search(raw: SearchCriteria): Promise<ClaseResumen[]> {
+  async search(raw: SearchCriteria): Promise<BuscarResult> {
     const input = parse(searchSchema, raw);
     return this.repository.buscar(input);
+  }
+
+  async cargarClasesCSV(raw: ClaseCSVInput[]): Promise<CargarClasesCSVResult> {
+    if (!Array.isArray(raw) || raw.length === 0) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se recibieron filas CSV que procesar', 400);
+    }
+    const clases = raw.map((r) => parse(claseCSVSchema, r));
+    return this.repository.cargarClasesCSV(clases);
   }
 
   async getClase(claseId: string): Promise<ClaseDetalle> {
@@ -57,6 +87,25 @@ export class CatalogService {
   async publicarClase(raw: PublicarClaseInput): Promise<{ claseId: string; fechaPublicacion: string }> {
     const input = parse(publicarClaseSchema, raw);
     return this.repository.publicarClase({ ...input, urlVideo: input.urlVideo ?? '' });
+  }
+
+  async actualizarClase(raw: ActualizarClaseInput): Promise<ClaseDetalle> {
+    const input = parse(actualizarClaseSchema, raw);
+    const clase = await this.repository.actualizarClase({
+      ...input,
+      urlVideo: input.urlVideo ?? '',
+    });
+    if (!clase) {
+      throw new DomainError('CLASE_NO_ENCONTRADA', 'Clase no encontrada', 404);
+    }
+    return clase;
+  }
+
+  async eliminarClase(claseId: string): Promise<void> {
+    if (!claseId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'claseId es obligatorio', 400);
+    }
+    return this.repository.eliminarClase(claseId);
   }
 
   async actualizarUrlMaterial(claseId: string, urlMaterial: string): Promise<ClaseDetalle> {
@@ -95,5 +144,63 @@ export class CatalogService {
       throw new DomainError('CLASE_NO_ENCONTRADA', 'Clase no encontrada', 404);
     }
     return clase;
+  }
+
+  async listarSemestres(): Promise<SemestreAdmin[]> {
+    return this.repository.listarSemestres();
+  }
+
+  async registrarSemestre(raw: RegistrarSemestreInput): Promise<{ semestreId: string }> {
+    const input = parse(registrarSemestreSchema, raw);
+    return this.repository.registrarSemestre(input);
+  }
+
+  async actualizarSemestre(raw: ActualizarSemestreInput): Promise<void> {
+    const input = parse(actualizarSemestreSchema, raw);
+    return this.repository.actualizarSemestre(input);
+  }
+
+  async eliminarSemestre(semestreId: string): Promise<void> {
+    if (!semestreId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'semestreId es obligatorio', 400);
+    }
+    return this.repository.eliminarSemestre(semestreId);
+  }
+
+  async listarEscuelas(): Promise<EscuelaAdmin[]> {
+    return this.repository.listarEscuelas();
+  }
+
+  async registrarEscuela(raw: RegistrarEscuelaInput): Promise<{ escuelaId: string }> {
+    const input = parse(registrarEscuelaSchema, raw);
+    return this.repository.registrarEscuela(input);
+  }
+
+  async actualizarEscuela(raw: ActualizarEscuelaInput): Promise<void> {
+    const input = parse(actualizarEscuelaSchema, raw);
+    return this.repository.actualizarEscuela(input);
+  }
+
+  async eliminarEscuela(escuelaId: string): Promise<void> {
+    if (!escuelaId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'escuelaId es obligatorio', 400);
+    }
+    return this.repository.eliminarEscuela(escuelaId);
+  }
+
+  async listarCursos(): Promise<CursoAdmin[]> {
+    return this.repository.listarCursos();
+  }
+
+  async actualizarCurso(raw: ActualizarCursoInput): Promise<void> {
+    const input = parse(actualizarCursoSchema, raw);
+    return this.repository.actualizarCurso(input);
+  }
+
+  async eliminarCurso(cursoId: string): Promise<void> {
+    if (!cursoId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'cursoId es obligatorio', 400);
+    }
+    return this.repository.eliminarCurso(cursoId);
   }
 }

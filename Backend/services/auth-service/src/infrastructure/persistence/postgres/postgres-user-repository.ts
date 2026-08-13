@@ -2,6 +2,7 @@ import { User } from '../../../domain/entities/user';
 import { Role } from '../../../domain/enums/role';
 import { DomainError } from '../../../domain/errors/domain-error';
 import { UpdateProfileData, UserRepository } from '../../../application/ports/user-repository';
+import { SolicitudEstado, SolicitudRol } from '../../../domain/entities/solicitud-rol';
 import { query } from './db';
 
 interface UserRow {
@@ -57,6 +58,7 @@ function rowToUser(row: UserRow): User {
     emailVerified: row.email_verified,
     roles: (row.roles ?? []).map((r) => r as Role),
     oauthProviders: row.proveedor_oauth ? [row.proveedor_oauth] : [],
+    activo: row.activo,
     nombres: row.nombres ?? null,
     apellidos: row.apellidos ?? null,
     carnet: row.carnet ?? null,
@@ -71,6 +73,52 @@ function rowToUser(row: UserRow): User {
   };
 }
 
+interface SolicitudRow {
+  id: string;
+  usuario_id: string;
+  correo: string;
+  nombres: string | null;
+  apellidos: string | null;
+  carnet: string | null;
+  rol_solicitado: string;
+  estado: string;
+  fecha_solicitud: Date;
+  fecha_resolucion: Date | null;
+  resuelto_por: string | null;
+}
+
+const SOLICITUD_SELECT = `
+  SELECT
+    sr.id,
+    sr.usuario_id,
+    sr.correo_institucional AS correo,
+    sr.nombres,
+    sr.apellidos,
+    sr.carnet,
+    sr.rol_solicitado,
+    sr.estado,
+    sr.fecha_solicitud,
+    sr.fecha_resolucion,
+    sr.resuelto_por
+  FROM vw_solicitudes_rol sr
+`;
+
+function rowToSolicitud(row: SolicitudRow): SolicitudRol {
+  return {
+    solicitudId: row.id,
+    usuarioId: row.usuario_id,
+    correo: row.correo,
+    nombres: row.nombres ?? null,
+    apellidos: row.apellidos ?? null,
+    carnet: row.carnet ?? null,
+    rolSolicitado: row.rol_solicitado as Role,
+    estado: row.estado as SolicitudEstado,
+    fechaSolicitud: new Date(row.fecha_solicitud),
+    fechaResolucion: row.fecha_resolucion ? new Date(row.fecha_resolucion) : null,
+    resueltoPor: row.resuelto_por ?? null,
+  };
+}
+
 /**
  * Repositorio de usuarios sobre PostgreSQL (patrón Database per Microservice).
  *
@@ -79,6 +127,7 @@ function rowToUser(row: UserRow): User {
  *  - sp_asignar_rol        -> addRole()
  *  - sp_cambiar_password   -> updatePassword()
  *  - sp_vincular_cuenta_oauth -> linkOAuthProvider()
+ *  - sp_crear_solicitud_rol / sp_resolver_solicitud_rol -> solicitudes de rol
  *  - vw_usuarios_activos_roles -> lectura de perfiles
  *  - trg_auditoria_*       -> auditoría automática de cambios de credenciales/roles
  */
@@ -170,11 +219,12 @@ export class PostgresUserRepository implements UserRepository {
     return result.rows[0] ? rowToUser(result.rows[0]) : null;
   }
 
-  async findByRoles(roles: Role[]): Promise<User[]> {
+  async findByRoles(roles: Role[], incluirInactivos?: boolean): Promise<User[]> {
     if (roles.length === 0) return [];
+    const filtroActivo = incluirInactivos ? 'TRUE' : 'u.activo = TRUE';
     const result = await query<UserRow>(
       `${USER_SELECT}
-       WHERE u.activo = TRUE
+       WHERE ${filtroActivo}
          AND u.id IN (
            SELECT ur.usuario_id
            FROM usuario_rol ur
@@ -241,6 +291,20 @@ export class PostgresUserRepository implements UserRepository {
     return this.requireUser(userId);
   }
 
+  async desactivarUsuario(userId: string): Promise<User> {
+    await query(`UPDATE usuario SET activo = FALSE, fecha_actualizacion = NOW() WHERE id = $1`, [
+      userId,
+    ]);
+    return this.requireUser(userId);
+  }
+
+  async reactivarUsuario(userId: string): Promise<User> {
+    await query(`UPDATE usuario SET activo = TRUE, fecha_actualizacion = NOW() WHERE id = $1`, [
+      userId,
+    ]);
+    return this.requireUser(userId);
+  }
+
   async markEmailVerified(userId: string): Promise<User> {
     await query(
       `UPDATE usuario SET email_verificado = TRUE, fecha_actualizacion = NOW() WHERE id = $1`,
@@ -260,6 +324,68 @@ export class PostgresUserRepository implements UserRepository {
     const user = await this.findByEmail(email);
     if (user && user.oauthProviders.includes(provider)) return user;
     return null;
+  }
+
+  /** sp_crear_solicitud_rol: registra la solicitud de rol pendiente. */
+  async crearSolicitudRol(usuarioId: string, rolSolicitado: Role): Promise<SolicitudRol> {
+    await query('CALL sp_crear_solicitud_rol($1, $2, NULL)', [usuarioId, rolSolicitado]);
+    // El procedimiento devuelve el id por parámetro INOUT (p_solicitud_id);
+    // se recupera la solicitud pendiente recién creada de forma robusta.
+    const pendiente = await query<SolicitudRow>(
+      `${SOLICITUD_SELECT}
+        WHERE sr.usuario_id = $1 AND sr.rol_solicitado = $2 AND sr.estado = 'PENDIENTE'
+        ORDER BY sr.fecha_solicitud DESC LIMIT 1`,
+      [usuarioId, rolSolicitado],
+    );
+    if (pendiente.rows.length === 0) {
+      throw new DomainError('ERROR_INTERNO', 'No se pudo crear la solicitud de rol', 500);
+    }
+    return rowToSolicitud(pendiente.rows[0]);
+  }
+
+  /** Lista las solicitudes de rol (opcionalmente filtradas por estado y/o usuario). */
+  async listarSolicitudesRol(estado?: SolicitudEstado, usuarioId?: string): Promise<SolicitudRol[]> {
+    const condiciones: string[] = [];
+    const params: unknown[] = [];
+    if (estado) {
+      params.push(estado);
+      condiciones.push(`sr.estado = $${params.length}`);
+    }
+    if (usuarioId) {
+      params.push(usuarioId);
+      condiciones.push(`sr.usuario_id = $${params.length}`);
+    }
+    const where = condiciones.length > 0 ? ` WHERE ${condiciones.join(' AND ')}` : '';
+    const res = await query<SolicitudRow>(
+      `${SOLICITUD_SELECT}${where} ORDER BY sr.fecha_solicitud DESC`,
+      params,
+    );
+    return res.rows.map(rowToSolicitud);
+  }
+
+  /**
+   * sp_resolver_solicitud_rol: aprueba o rechaza la solicitud.
+   * Si se aprueba, el procedimiento otorga el rol de forma atómica.
+   */
+  async resolverSolicitudRol(
+    solicitudId: string,
+    aprobado: boolean,
+    resueltoPor: string,
+  ): Promise<SolicitudRol> {
+    await query('CALL sp_resolver_solicitud_rol($1, $2, $3, NULL, NULL)', [
+      solicitudId,
+      aprobado,
+      resueltoPor,
+    ]);
+    return this.requireSolicitud(solicitudId);
+  }
+
+  private async requireSolicitud(solicitudId: string): Promise<SolicitudRol> {
+    const res = await query<SolicitudRow>(`${SOLICITUD_SELECT} WHERE sr.id = $1`, [solicitudId]);
+    if (res.rows.length === 0) {
+      throw new DomainError('SOLICITUD_NO_ENCONTRADA', 'Solicitud de rol no encontrada', 404);
+    }
+    return rowToSolicitud(res.rows[0]);
   }
 
   private async syncRoles(userId: string, roles: Role[]): Promise<void> {

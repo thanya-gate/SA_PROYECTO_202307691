@@ -27,6 +27,7 @@ export default function SubirClasePage() {
   const { token } = useAuth();
   const tokenActual = token ?? '';
   const modo = searchParams.get('modo') === 'material' ? 'material' : 'clase';
+  const returnTo = searchParams.get('returnTo') || '/mis-cursos';
 
   const [curso, setCurso] = useState<CursoCatedraticoItem | null>(null);
   const [catalogCursoId, setCatalogCursoId] = useState<string | null>(null);
@@ -62,7 +63,25 @@ export default function SubirClasePage() {
     (async () => {
       try {
         const res = await inscripcionApi.cursosCatedratico(tokenActual);
-        const encontrado = res.items.find((c) => c.cursoId === cursoId) ?? null;
+        let encontrado = res.items.find((c) => c.cursoId === cursoId) ?? null;
+        if (!encontrado) {
+          try {
+            const todos = await inscripcionApi.listarCursos(tokenActual);
+            const registrado = todos.cursos.find((c) => c.cursoId === cursoId) ?? null;
+            if (registrado) {
+              encontrado = {
+                cursoId: registrado.cursoId,
+                codigo: registrado.codigo,
+                curso: registrado.nombre,
+                semestre: registrado.semestre,
+                anio: registrado.anio,
+                auxiliares: [],
+              };
+            }
+          } catch {
+            encontrado = null;
+          }
+        }
         if (activo) {
           setCurso(encontrado);
           if (encontrado) {
@@ -230,8 +249,8 @@ export default function SubirClasePage() {
                 : 'Cargando curso…'}
             </p>
           </div>
-          <Button variant="secondary" onClick={() => navigate('/mis-cursos')}>
-            Volver a Mis cursos
+          <Button variant="secondary" onClick={() => navigate(returnTo)}>
+            {returnTo === '/mis-cursos' ? 'Volver a Mis cursos' : 'Volver'}
           </Button>
         </div>
 
@@ -263,8 +282,8 @@ export default function SubirClasePage() {
                 Ver la clase publicada
               </button>
             ) : (
-              <button type="button" className="subirclase__enlace" onClick={() => navigate('/mis-cursos')}>
-                Volver a Mis cursos
+              <button type="button" className="subirclase__enlace" onClick={() => navigate(returnTo)}>
+                {returnTo === '/mis-cursos' ? 'Volver a Mis cursos' : 'Volver'}
               </button>
             )}
           </Alert>
@@ -530,7 +549,7 @@ export default function SubirClasePage() {
                   <Button onClick={publicarClase} loading={subiendo}>
                     Publicar clase
                   </Button>
-                  <Button variant="secondary" onClick={() => navigate('/mis-cursos')}>
+                  <Button variant="secondary" onClick={() => navigate(returnTo)}>
                     Cancelar
                   </Button>
                 </div>

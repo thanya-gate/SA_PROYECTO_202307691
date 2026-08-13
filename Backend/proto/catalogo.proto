@@ -61,10 +61,16 @@ message SearchRequest {
   string curso = 3;        
   string catedratico = 4;  
   string tema = 5;         
+  int32 page = 6;          // 1-based, por defecto 1
+  int32 page_size = 7;     // máx 10 (Práctica 3: paginación desde servidor)
 }
 
 message SearchResponse {
   repeated ClaseResumen resultados = 1;
+  int32 total = 2;         // total de clases que cumplen los filtros
+  int32 page = 3;
+  int32 page_size = 4;
+  int32 total_pages = 5;
 }
 
 
@@ -131,6 +137,34 @@ message ActualizarDuracionResponse {
   ClaseDetalle clase = 1;
 }
 
+// Edición completa de una clase (CRUD: UPDATE). Reemplaza los datos básicos
+// de la clase y vuelve a asociar etiquetas y participantes.
+message EditarClaseRequest {
+  string clase_id = 1;
+  string curso_id = 2;
+  string unidad = 3;
+  string tema = 4;
+  string fecha_imparticion = 5;
+  string semestre = 6;
+  int32 anio = 7;
+  int32 duracion = 8;
+  string url_video = 9;
+  string url_material = 10;
+  repeated string etiquetas = 11;
+  repeated Participante participantes = 12;
+}
+
+message EditarClaseResponse {
+  ClaseDetalle clase = 1;
+}
+
+// Eliminación de una clase (CRUD: DELETE).
+message EliminarClaseRequest {
+  string clase_id = 1;
+}
+
+message EliminarClaseResponse {}
+
 
 message RegistrarCursoRequest {
   string codigo = 1;
@@ -149,6 +183,117 @@ message ObtenerCursoPorCodigoRequest {
 message ObtenerCursoPorCodigoResponse {
   CursoCatalogo curso = 1;
 }
+
+// Ingesta masiva de catálogo vía CSV (Práctica 3). Cada ClaseCSV es una
+// fila del archivo .csv; la inserción se ejecuta en el catálogo vía el
+// procedimiento almacenado sp_cargar_clases_csv.
+message ClaseCSV {
+  string codigo_curso = 1;
+  string nombre_curso = 2;
+  string escuela = 3;
+  string unidad = 4;
+  string tema = 5;
+  string fecha_imparticion = 6;
+  string semestre = 7;
+  int32 anio = 8;
+  string url_video = 9;
+  string url_material = 10;
+  int32 duracion = 11;
+  repeated string etiquetas = 12;
+  repeated string docentes = 13;
+  repeated string auxiliares = 14;
+}
+
+message CargarClasesCSVRequest {
+  repeated ClaseCSV clases = 1;
+}
+
+message CargarClasesCSVResponse {
+  int32 registradas = 1;
+  int32 omitidas = 2;
+}
+
+// =====================================================================
+// CRUD para el Panel Web Admin (Práctica 3). Semestres, Escuelas/Áreas y
+// Cursos se administran desde el catálogo a través de los SPs de la BD.
+// =====================================================================
+message SemestreAdmin {
+  string semestre_id = 1;
+  string nombre = 2;
+  int32 anio = 3;
+  int32 clases = 4;
+}
+
+message EscuelaAdmin {
+  string escuela_id = 1;
+  string nombre = 2;
+  int32 cursos = 3;
+}
+
+message CursoAdmin {
+  string curso_id = 1;
+  string codigo = 2;
+  string nombre = 3;
+  string escuela = 4;
+}
+
+message ListarSemestresRequest {}
+message ListarSemestresResponse {
+  repeated SemestreAdmin semestres = 1;
+}
+message RegistrarSemestreRequest {
+  string nombre = 1;
+  int32 anio = 2;
+}
+message RegistrarSemestreResponse {
+  string semestre_id = 1;
+}
+message ActualizarSemestreRequest {
+  string semestre_id = 1;
+  string nombre = 2;
+  int32 anio = 3;
+}
+message ActualizarSemestreResponse {}
+message EliminarSemestreRequest {
+  string semestre_id = 1;
+}
+message EliminarSemestreResponse {}
+
+message ListarEscuelasRequest {}
+message ListarEscuelasResponse {
+  repeated EscuelaAdmin escuelas = 1;
+}
+message RegistrarEscuelaRequest {
+  string nombre = 1;
+}
+message RegistrarEscuelaResponse {
+  string escuela_id = 1;
+}
+message ActualizarEscuelaRequest {
+  string escuela_id = 1;
+  string nombre = 2;
+}
+message ActualizarEscuelaResponse {}
+message EliminarEscuelaRequest {
+  string escuela_id = 1;
+}
+message EliminarEscuelaResponse {}
+
+message ListarCursosRequest {}
+message ListarCursosResponse {
+  repeated CursoAdmin cursos = 1;
+}
+message ActualizarCursoRequest {
+  string curso_id = 1;
+  string codigo = 2;
+  string nombre = 3;
+  string escuela = 4;
+}
+message ActualizarCursoResponse {}
+message EliminarCursoRequest {
+  string curso_id = 1;
+}
+message EliminarCursoResponse {}
 
 message HealthRequest {}
 
@@ -169,8 +314,26 @@ service CatalogoService {
   rpc ActualizarUrlVideo(ActualizarUrlVideoRequest) returns (ActualizarUrlVideoResponse);
   rpc ActualizarUrlMaterial(ActualizarUrlMaterialRequest) returns (ActualizarUrlMaterialResponse);
   rpc ActualizarDuracion(ActualizarDuracionRequest) returns (ActualizarDuracionResponse);
+  rpc EditarClase(EditarClaseRequest) returns (EditarClaseResponse);
+  rpc EliminarClase(EliminarClaseRequest) returns (EliminarClaseResponse);
   rpc RegistrarCurso(RegistrarCursoRequest) returns (RegistrarCursoResponse);
   rpc ObtenerCursoPorCodigo(ObtenerCursoPorCodigoRequest) returns (ObtenerCursoPorCodigoResponse);
+
+  rpc CargarClasesCSV(CargarClasesCSVRequest) returns (CargarClasesCSVResponse);
+
+  rpc ListarSemestres(ListarSemestresRequest) returns (ListarSemestresResponse);
+  rpc RegistrarSemestre(RegistrarSemestreRequest) returns (RegistrarSemestreResponse);
+  rpc ActualizarSemestre(ActualizarSemestreRequest) returns (ActualizarSemestreResponse);
+  rpc EliminarSemestre(EliminarSemestreRequest) returns (EliminarSemestreResponse);
+
+  rpc ListarEscuelas(ListarEscuelasRequest) returns (ListarEscuelasResponse);
+  rpc RegistrarEscuela(RegistrarEscuelaRequest) returns (RegistrarEscuelaResponse);
+  rpc ActualizarEscuela(ActualizarEscuelaRequest) returns (ActualizarEscuelaResponse);
+  rpc EliminarEscuela(EliminarEscuelaRequest) returns (EliminarEscuelaResponse);
+
+  rpc ListarCursos(ListarCursosRequest) returns (ListarCursosResponse);
+  rpc ActualizarCurso(ActualizarCursoRequest) returns (ActualizarCursoResponse);
+  rpc EliminarCurso(EliminarCursoRequest) returns (EliminarCursoResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
 }
