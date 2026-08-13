@@ -261,18 +261,6 @@ export default function ClasePage() {
           </Alert>
         )}
 
-        {puedeSubirVideo && (
-          <div className="clase__admin-acciones">
-            <Button variant="secondary" onClick={() => navigate(`/catalogo/clase/${clase.claseId}/editar`)}>
-              Editar clase
-            </Button>
-            <Button variant="danger" onClick={() => void eliminarClase()} disabled={eliminando} loading={eliminando}>
-              {eliminando ? 'Eliminando…' : 'Eliminar clase'}
-            </Button>
-            {errorEliminar && <Alert tone="error">{errorEliminar}</Alert>}
-          </div>
-        )}
-
         <div className="clase__grid">
           <div className="clase__principal">
             <div className="clase__player">
@@ -414,6 +402,18 @@ export default function ClasePage() {
                   <dd>{formatFecha(clase.fechaPublicacion)}</dd>
                 </div>
               </dl>
+
+              {puedeSubirVideo && (
+                <div className="clase__ficha-acciones">
+                  <Button variant="secondary" onClick={() => navigate(`/catalogo/clase/${clase.claseId}/editar`)}>
+                    Editar clase
+                  </Button>
+                  <Button variant="danger" onClick={() => void eliminarClase()} disabled={eliminando} loading={eliminando}>
+                    {eliminando ? 'Eliminando…' : 'Eliminar clase'}
+                  </Button>
+                  {errorEliminar && <Alert tone="error">{errorEliminar}</Alert>}
+                </div>
+              )}
             </div>
 
             {clase.urlMaterial && (
