@@ -5,13 +5,27 @@ dotenv.config();
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  GRPC_PORT: z.coerce.number().default(50052),
+  GRPC_PORT: z.coerce.number().default(50056),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL es obligatoria (Database per Microservice)'),
   DB_POOL_MAX: z.coerce.number().default(10),
   DB_CONNECTION_TIMEOUT_MS: z.coerce.number().default(10000),
 
-  NOTIFICACIONES_GRPC_ADDR: z.string().default('localhost:50056'),
+  AUTH_GRPC_ADDR: z.string().default('localhost:50051'),
+  INSCRIPCION_GRPC_ADDR: z.string().default('localhost:50055'),
+
+  SMTP_HOST: z.string().default(''),
+  SMTP_PORT: z.coerce.number().default(1025),
+  SMTP_USER: z.string().default(''),
+  SMTP_PASS: z.string().default(''),
+  SMTP_FROM: z.string().default('no-responder@yousac.edu.gt'),
+  MAIL_DEBUG: z
+    .string()
+    .default('true')
+    .transform((v) => v === 'true'),
+
+  WORKER_INTERVAL_MS: z.coerce.number().default(15_000),
+  MAX_INTENTOS: z.coerce.number().default(5),
 });
 
 const parsed = envSchema.safeParse(process.env);

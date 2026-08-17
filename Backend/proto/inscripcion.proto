@@ -170,6 +170,15 @@ message EliminarDocenteRequest {
 
 message EliminarDocenteResponse {}
 
+message ListarEstudiantesDeCursoRequest {
+  string curso_id = 1;
+  string semestre = 2;
+}
+
+message ListarEstudiantesDeCursoResponse {
+  repeated string estudiante_ids = 1;
+}
+
 message HealthRequest {}
 
 message HealthResponse {
@@ -196,6 +205,7 @@ service InscripcionService {
   rpc ListarAuxiliares(ListarAuxiliaresRequest) returns (ListarAuxiliaresResponse);
   rpc ListarAsignaciones(ListarAsignacionesRequest) returns (ListarAsignacionesResponse);
   rpc EliminarDocente(EliminarDocenteRequest) returns (EliminarDocenteResponse);
+  rpc ListarEstudiantesDeCurso(ListarEstudiantesDeCursoRequest) returns (ListarEstudiantesDeCursoResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
 }

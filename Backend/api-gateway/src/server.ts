@@ -10,6 +10,7 @@ import { catalogGrpc } from './grpc/catalog-client';
 import { reproductionGrpc } from './grpc/reproduction-client';
 import { analiticaGrpc } from './grpc/analitica-client';
 import { inscripcionGrpc } from './grpc/inscripcion-client';
+import { notificacionesGrpc } from './grpc/notificaciones-client';
 import { GrpcError } from './grpc/auth-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
@@ -1485,6 +1486,57 @@ export function createGateway(): Express {
     }
   });
 
+  // ===== Notificaciones por correo (módulo 6) =====
+
+  // CDU0006.3 - Aviso general del sistema: el administrador envía un correo a
+  // todos los estudiantes (o a una lista concreta de destinatarios).
+  app.post('/notificaciones/avisos', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { mensaje, destinatarioIds } = req.body as { mensaje?: unknown; destinatarioIds?: unknown };
+      if (typeof mensaje !== 'string' || mensaje.trim().length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'mensaje es obligatorio', 400);
+      }
+      const ids = Array.isArray(destinatarioIds) ? destinatarioIds.filter((d): d is string => typeof d === 'string') : [];
+      const result = await notificacionesGrpc.registrarAvisoGeneral({ mensaje, destinatarioIds: ids });
+      res.status(201).json({
+        message: 'Aviso encolado para envío por correo',
+        destinatarioIds: result.destinatarioIds,
+        notificacionesEncoladas: result.notificacionesEncoladas,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Bandeja de notificaciones del usuario autenticado.
+  app.get('/notificaciones/me', authenticate, async (req, res, next) => {
+    try {
+      const result = await notificacionesGrpc.listarNotificaciones(req.context!.userId);
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/notificaciones/plantillas', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await notificacionesGrpc.listarPlantillas();
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Estado de la cola de envío (operaciones / diagnóstico).
+  app.get('/notificaciones/cola', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await notificacionesGrpc.consultarCola();
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use((req, res) => {
     res.status(404).json({ error: { code: 'RUTA_NO_ENCONTRADA', message: `${req.method} ${req.path}` } });
   });
@@ -1502,5 +1554,6 @@ export function listenGateway(app: Express): ReturnType<typeof app.listen> {
     console.log(`[api-gateway] gRPC -> reproduccion-service en ${config.REPRODUCTION_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> analitica-service en ${config.ANALITICA_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> inscripcion-service en ${config.INSCRIPCION_GRPC_ADDR}`);
+    console.log(`[api-gateway] gRPC -> notificaciones-service en ${config.NOTIFICACIONES_GRPC_ADDR}`);
   });
 }

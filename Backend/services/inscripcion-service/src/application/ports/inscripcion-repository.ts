@@ -60,5 +60,6 @@ export interface InscripcionRepository {
   listarDocentes(): Promise<DocenteInscripcion[]>;
   listarAuxiliares(): Promise<AuxiliarInscripcion[]>;
   listarAsignaciones(): Promise<AsignacionDocenteItem[]>;
+  listarEstudiantesDeCurso(cursoId: string, semestre: string): Promise<string[]>;
   eliminarDocente(docenteId: string): Promise<void>;
 }

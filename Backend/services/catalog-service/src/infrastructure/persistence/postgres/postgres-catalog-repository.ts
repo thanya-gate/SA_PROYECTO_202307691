@@ -201,6 +201,16 @@ export class PostgresCatalogRepository implements CatalogRepository {
     return { cursoId: row.id, codigo: row.codigo, nombre: row.nombre, escuela: row.escuela };
   }
 
+  async buscarCursoPorId(cursoId: string): Promise<CursoCatalogo | null> {
+    const res = await query<CursoRow>(
+      'SELECT id, codigo, nombre, escuela FROM curso_catalogo WHERE id = $1',
+      [cursoId],
+    );
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    return { cursoId: row.id, codigo: row.codigo, nombre: row.nombre, escuela: row.escuela };
+  }
+
   async publicarClase(
     input: PublicarClaseInput,
   ): Promise<{ claseId: string; fechaPublicacion: string }> {

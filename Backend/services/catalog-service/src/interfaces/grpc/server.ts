@@ -169,6 +169,16 @@ export function createGrpcServer(): grpc.Server {
             rol: p.rol,
           })),
         });
+
+        // CDU0006.2 - Alerta de nueva clase por correo (asíncrono; el envío
+        // ocurre en la cola del notificaciones-service).
+        void container.notificacionesClient.notificarNuevaClase({
+          cursoId: call.request.cursoId,
+          semestre: call.request.semestre,
+          anio: call.request.anio,
+          tema: call.request.tema || undefined,
+        });
+
         callback(null, {
           claseId: result.claseId,
           fechaPublicacion: result.fechaPublicacion,

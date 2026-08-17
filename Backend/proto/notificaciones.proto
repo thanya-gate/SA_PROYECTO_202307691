@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package yousac.notificaciones.v1;
+
+option java_multiple_files = true;
+option go_package = "yousac/notificaciones/v1;notificacionesv1";
+
+message RegistrarNotificacionRequest {
+  string usuario_id = 1;
+  string correo_destino = 2;
+  string plantilla = 3;
+  string tipo = 4;
+  map<string, string> datos_contexto = 5;
+}
+
+message RegistrarNotificacionResponse {
+  string notificacion_id = 1;
+}
+
+message NotificarNuevaClaseRequest {
+  string curso_id = 1;
+  string codigo = 2;
+  string curso = 3;
+  string semestre = 4;
+  int32 anio = 5;
+  string tema = 6;
+}
+
+message NotificarNuevaClaseResponse {
+  repeated string destinatario_ids = 1;
+  int32 notificaciones_encoladas = 2;
+}
+
+message RegistrarAvisoGeneralRequest {
+  string mensaje = 1;
+  repeated string destinatario_ids = 2;
+}
+
+message RegistrarAvisoGeneralResponse {
+  repeated string destinatario_ids = 1;
+  int32 notificaciones_encoladas = 2;
+}
+
+message NotificacionItem {
+  string id = 1;
+  string tipo = 2;
+  string asunto = 3;
+  string cuerpo = 4;
+  string estado = 5;
+  string fecha_creacion = 6;
+  string fecha_envio = 7;
+}
+
+message ListarNotificacionesRequest {
+  string usuario_id = 1;
+  int32 limite = 2;
+}
+
+message ListarNotificacionesResponse {
+  repeated NotificacionItem items = 1;
+}
+
+message PlantillaItem {
+  string id = 1;
+  string nombre = 2;
+  string asunto = 3;
+  string cuerpo = 4;
+  string tipo = 5;
+}
+
+message ListarPlantillasRequest {}
+
+message ListarPlantillasResponse {
+  repeated PlantillaItem items = 1;
+}
+
+message ColaItem {
+  int32 cola_id = 1;
+  string notificacion_id = 2;
+  string correo_destino = 3;
+  int32 intentos = 4;
+  string estado = 5;
+  string ultimo_error = 6;
+  string fecha_proximo_intento = 7;
+  string contenido = 8;
+}
+
+message ConsultarColaRequest {
+  int32 limite = 1;
+}
+
+message ConsultarColaResponse {
+  repeated ColaItem items = 1;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+}
+
+service NotificacionesService {
+  rpc RegistrarNotificacion(RegistrarNotificacionRequest) returns (RegistrarNotificacionResponse);
+  rpc NotificarNuevaClase(NotificarNuevaClaseRequest) returns (NotificarNuevaClaseResponse);
+  rpc RegistrarAvisoGeneral(RegistrarAvisoGeneralRequest) returns (RegistrarAvisoGeneralResponse);
+  rpc ListarNotificaciones(ListarNotificacionesRequest) returns (ListarNotificacionesResponse);
+  rpc ListarPlantillas(ListarPlantillasRequest) returns (ListarPlantillasResponse);
+  rpc ConsultarCola(ConsultarColaRequest) returns (ConsultarColaResponse);
+
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
