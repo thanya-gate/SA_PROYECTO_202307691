@@ -12,6 +12,7 @@ const envSchema = z.object({
   REPRODUCTION_GRPC_ADDR: z.string().default('localhost:50053'),
   ANALITICA_GRPC_ADDR: z.string().default('localhost:50054'),
   INSCRIPCION_GRPC_ADDR: z.string().default('localhost:50055'),
+  NOTIFICACIONES_GRPC_ADDR: z.string().default('localhost:50056'),
 
   MEDIA_DIR: z.string().default('/app/media'),
 
