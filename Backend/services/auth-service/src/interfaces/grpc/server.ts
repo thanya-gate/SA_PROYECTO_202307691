@@ -250,6 +250,11 @@ export function createGrpcServer(): grpc.Server {
           ip: call.request.ip,
           userAgent: call.request.userAgent,
         });
+
+        // CDU0006.1 - Confirmación de registro por correo (asíncrono; el envío
+        // ocurre en la cola del notificaciones-service).
+        void container.notificacionesClient.notificarConfirmacionRegistro(result.user);
+
         callback(null, {
           user: userToProto(result.user),
           accessToken: result.accessToken,

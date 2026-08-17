@@ -18,6 +18,7 @@ import { AuthService } from './application/services/auth.service';
 import { ProfileService } from './application/services/profile.service';
 import { AccountService } from './application/services/account.service';
 import { SolicitudService } from './application/services/solicitud.service';
+import { NotificacionesGrpcClient } from './infrastructure/grpc/notificaciones-client';
 
 
 export class Container {
@@ -28,6 +29,7 @@ export class Container {
   readonly passwordService: PasswordService;
   readonly domainValidator: EmailDomainValidator;
   readonly oauthProvider: MockOAuthProvider;
+  readonly notificacionesClient: NotificacionesGrpcClient;
 
   readonly sessionService: SessionService;
   readonly authService: AuthService;
@@ -76,6 +78,7 @@ export class Container {
       this.domainValidator,
     );
     this.solicitudService = new SolicitudService(this.userRepository);
+    this.notificacionesClient = new NotificacionesGrpcClient();
   }
 }
 
