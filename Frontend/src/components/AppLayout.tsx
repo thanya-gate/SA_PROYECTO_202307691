@@ -125,10 +125,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
   { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
   {
-    to: '',
+    to: '/notificaciones',
     label: 'Notificaciones',
     icon: <BellIcon />,
-    disabled: true,
     description: 'Revisar las notificaciones del sistema',
   },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
@@ -152,10 +151,9 @@ const DOCENTE_NAV_ITEMS: NavItem[] = [
     description: 'Subir videos y material por curso y carga masiva CSV',
   },
   {
-    to: '',
+    to: '/notificaciones',
     label: 'Notificaciones',
     icon: <BellIcon />,
-    disabled: true,
     description: 'Revisar las notificaciones del sistema',
   },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
@@ -173,10 +171,9 @@ const AUXILIAR_NAV_ITEMS: NavItem[] = [
     description: 'Subir videos y material por curso y carga masiva CSV',
   },
   {
-    to: '',
+    to: '/notificaciones',
     label: 'Notificaciones',
     icon: <BellIcon />,
-    disabled: true,
     description: 'Revisar las notificaciones del sistema',
   },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
@@ -212,10 +209,9 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     description: 'Subir videos y material por curso y carga masiva CSV',
   },
   {
-    to: '',
+    to: '/notificaciones',
     label: 'Notificaciones',
     icon: <BellIcon />,
-    disabled: true,
     description: 'Revisar y enviar notificaciones del sistema',
   },
   {

@@ -18,6 +18,7 @@ import SubirClasePage from './pages/SubirClasePage';
 import EditarClasePage from './pages/EditarClasePage';
 import ProfilePage from './pages/ProfilePage';
 import AutorizacionPendientePage from './pages/AutorizacionPendientePage';
+import NotificacionesPage from './pages/NotificacionesPage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();
@@ -105,6 +106,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <HistorialPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/notificaciones"
+            element={
+              <RequireAuth>
+                <NotificacionesPage />
               </RequireAuth>
             }
           />
