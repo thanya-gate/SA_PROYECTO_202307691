@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ClasePage from './pages/ClasePage';
 import HistorialPage from './pages/HistorialPage';
+import NotificacionesPage from './pages/NotificacionesPage';
 import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
 import GestionCursosPage from './pages/GestionCursosPage';
@@ -105,6 +106,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <HistorialPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/notificaciones"
+            element={
+              <RequireAuth>
+                <NotificacionesPage />
               </RequireAuth>
             }
           />
