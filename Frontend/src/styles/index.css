@@ -3103,3 +3103,196 @@ body {
   }
 }
 
+/* ===== HomePage sections ===== */
+.home__section {
+  margin-bottom: 2rem;
+}
+
+.home__section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.home__section-title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--color-primary-dark);
+}
+
+.home__section-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.home__section-link:hover {
+  text-decoration: underline;
+}
+
+.home__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.home__vacio {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--color-text-muted);
+}
+
+.home__catalogo-link {
+  display: inline-block;
+  margin-top: 0.8rem;
+  padding: 0.6rem 1.4rem;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.home__catalogo-link:hover {
+  background: var(--color-primary-hover);
+}
+
+/* ===== Home card (shared) ===== */
+.home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.95rem 1.1rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.home-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-primary-light);
+}
+
+.home-card__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.home-card__titulo {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.home-card__badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.home-card__badge--avance {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.home-card__badge--recomendacion {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.home-card__badge--tendencia {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.home-card__meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-card__progreso {
+  height: 5px;
+  background: var(--color-primary-light);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.home-card__progreso-llenado {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.home-card__progreso-llenado--recomendacion {
+  background: var(--color-success);
+}
+
+.home-card__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.home-card__reanudar {
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.home-card__recomendacion-label {
+  color: var(--color-success);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.home-card__fecha {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.home-card__vistas {
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-card__estrellas {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .home__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
