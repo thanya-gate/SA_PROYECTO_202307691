@@ -214,24 +214,10 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     icon: <BellIcon />,
     description: 'Revisar y enviar notificaciones del sistema',
   },
-  {
-    to: '',
-    label: 'Reportes',
-    icon: <ChartIcon />,
-    disabled: true,
-    description: 'Métricas y reportes de uso de la plataforma',
-  },
-  {
-    to: '',
-    label: 'Configuraciones',
-    icon: <SettingsIcon />,
-    disabled: true,
-    description: 'Configuración general de la plataforma',
-  },
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
 
-export function AppLayout({ children }: { children: ReactNode }) {
+export function AppLayout({ children, wide }: { children: ReactNode; wide?: boolean }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -382,7 +368,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
       {mobile && mobileOpen && <div className="app-layout__backdrop" onClick={() => setMobileOpen(false)} />}
-      <main className="app-layout__main">
+      <main className={`app-layout__main${wide ? ' app-layout__main--wide' : ''}`}>
         {children}
       </main>
     </div>

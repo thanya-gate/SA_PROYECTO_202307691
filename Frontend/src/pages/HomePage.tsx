@@ -140,7 +140,7 @@ export default function HomePage() {
   }, [tokenActual, puedeRecomendaciones]);
 
   return (
-    <AppLayout>
+    <AppLayout wide>
       <div className="home__main">
         <h1 className="home__welcome">Hola, {user?.email}</h1>
         <p className="home__subtitle">
