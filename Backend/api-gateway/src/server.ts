@@ -168,6 +168,13 @@ export function createGateway(): Express {
     } catch {
       inscripcionStatus = 'unavailable';
     }
+    let notificacionesStatus = 'unknown';
+    try {
+      const health = await notificacionesGrpc.health();
+      notificacionesStatus = health.status;
+    } catch {
+      notificacionesStatus = 'unavailable';
+    }
     res.json({
       status: 'ok',
       service: 'api-gateway',
@@ -177,6 +184,7 @@ export function createGateway(): Express {
       reproductionService: reproductionStatus,
       analiticaService: analiticaStatus,
       inscripcionService: inscripcionStatus,
+      notificacionesService: notificacionesStatus,
     });
   });
 
