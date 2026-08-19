@@ -124,7 +124,12 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Principal', end: true, icon: <HomeIcon /> },
   { to: '/catalogo', label: 'Catálogo', icon: <GridIcon /> },
   { to: '/mis-cursos', label: 'Mis cursos', icon: <ContentIcon /> },
-  { to: '/notificaciones', label: 'Notificaciones', icon: <BellIcon /> },
+  {
+    to: '/notificaciones',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    description: 'Revisar las notificaciones del sistema',
+  },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
@@ -145,7 +150,12 @@ const DOCENTE_NAV_ITEMS: NavItem[] = [
     icon: <UploadIcon />,
     description: 'Subir videos y material por curso y carga masiva CSV',
   },
-  { to: '/notificaciones', label: 'Notificaciones', icon: <BellIcon /> },
+  {
+    to: '/notificaciones',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    description: 'Revisar las notificaciones del sistema',
+  },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
@@ -160,7 +170,12 @@ const AUXILIAR_NAV_ITEMS: NavItem[] = [
     icon: <UploadIcon />,
     description: 'Subir videos y material por curso y carga masiva CSV',
   },
-  { to: '/notificaciones', label: 'Notificaciones', icon: <BellIcon /> },
+  {
+    to: '/notificaciones',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    description: 'Revisar las notificaciones del sistema',
+  },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
@@ -193,25 +208,16 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     icon: <UploadIcon />,
     description: 'Subir videos y material por curso y carga masiva CSV',
   },
-  { to: '/notificaciones', label: 'Notificaciones', icon: <BellIcon /> },
   {
-    to: '',
-    label: 'Reportes',
-    icon: <ChartIcon />,
-    disabled: true,
-    description: 'Métricas y reportes de uso de la plataforma',
-  },
-  {
-    to: '',
-    label: 'Configuraciones',
-    icon: <SettingsIcon />,
-    disabled: true,
-    description: 'Configuración general de la plataforma',
+    to: '/notificaciones',
+    label: 'Notificaciones',
+    icon: <BellIcon />,
+    description: 'Revisar y enviar notificaciones del sistema',
   },
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
 
-export function AppLayout({ children }: { children: ReactNode }) {
+export function AppLayout({ children, wide }: { children: ReactNode; wide?: boolean }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -362,7 +368,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
       {mobile && mobileOpen && <div className="app-layout__backdrop" onClick={() => setMobileOpen(false)} />}
-      <main className="app-layout__main">
+      <main className={`app-layout__main${wide ? ' app-layout__main--wide' : ''}`}>
         {children}
       </main>
     </div>

@@ -1083,6 +1083,11 @@ export function createGateway(): Express {
         segundoActual,
         duracion,
       });
+      analiticaGrpc.sincronizarVista({
+        claseId,
+        estudianteId: req.context!.userId,
+        duracionVista: segundoActual,
+      }).catch(() => {});
       res.json({
         message: 'Checkpoint guardado',
         historialId: result.historialId,
@@ -1136,7 +1141,7 @@ export function createGateway(): Express {
 
   app.post('/reproduccion/calificaciones', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
-      const { historialId, puntuacion, comentario } = req.body as Record<string, unknown>;
+      const { historialId, puntuacion, comentario, claseId } = req.body as Record<string, unknown>;
       if (typeof historialId !== 'string' || typeof puntuacion !== 'number') {
         throw new DomainError('ENTRADA_INVALIDA', 'historialId y puntuacion son obligatorios', 400);
       }
@@ -1145,6 +1150,13 @@ export function createGateway(): Express {
         puntuacion,
         comentario: typeof comentario === 'string' ? comentario : '',
       });
+      if (typeof claseId === 'string') {
+        analiticaGrpc.sincronizarCalificacion({
+          claseId,
+          estudianteId: req.context!.userId,
+          puntuacion,
+        }).catch(() => {});
+      }
       res.status(201).json({ message: 'Calificación registrada', registrada: result.registrada });
     } catch (err) {
       next(err);
@@ -1193,11 +1205,48 @@ export function createGateway(): Express {
   app.get('/analitica/recomendaciones/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const limite = Number(req.query.limite ?? 0);
+      const userId = req.context!.userId;
       const result = await analiticaGrpc.recomendacionesEstudiante({
-        estudianteId: req.context!.userId,
+        estudianteId: userId,
         limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
       });
-      res.json({ items: result.items });
+
+      const items = result.items ?? [];
+      if (items.length === 0) { res.json({ items: [] }); return; }
+
+      const etiquetasPreferidas = await _obtenerEtiquetasPreferidas(userId);
+      if (etiquetasPreferidas.size === 0) {
+        res.json({ items }); return;
+      }
+
+      const etiquetasPorClase = await _obtenerEtiquetasClases(items.map((i: any) => String(i.claseId)));
+
+      const boostMax = 30;
+      const itemsEnriquecidos = items.map((item: any) => {
+        const claseId = String(item.claseId);
+        const etiquetas = etiquetasPorClase[claseId] ?? [];
+        let overlap = 0;
+        for (const et of etiquetas) {
+          if (etiquetasPreferidas.has(et)) overlap++;
+        }
+        const affinity = etiquetas.length > 0 ? overlap / etiquetas.length : 0;
+        const porcentajeOriginal = Number(item.porcentajeRecomendacion) || 0;
+        const porcentajeEnriquecido = Math.min(100, Math.round(porcentajeOriginal + affinity * boostMax));
+        return {
+          claseId,
+          porcentajeRecomendacion: porcentajeEnriquecido,
+          porcentajeOriginal,
+          etiquetas,
+          etiquetasPreferidas: etiquetas.filter((e: string) => etiquetasPreferidas.has(e)),
+          totalVistas: item.totalVistas,
+          promedioCalificacion: item.promedioCalificacion,
+          fechaCalculo: item.fechaCalculo,
+        };
+      });
+
+      itemsEnriquecidos.sort((a: any, b: any) => b.porcentajeRecomendacion - a.porcentajeRecomendacion);
+
+      res.json({ items: itemsEnriquecidos });
     } catch (err) {
       next(err);
     }
@@ -1552,6 +1601,38 @@ export function createGateway(): Express {
   app.use(errorHandler);
 
   return app;
+}
+
+async function _obtenerEtiquetasPreferidas(userId: string): Promise<Set<string>> {
+  const preferidas = new Set<string>();
+  try {
+    const historial = await reproductionGrpc.historialReciente({ estudianteId: userId });
+    const items = historial.items ?? [];
+    const clasesIds = [...new Set<string>(items.map((i: any) => String(i.claseId)))];
+    const consultas = clasesIds.map(async (claseId: string) => {
+      try {
+        const clase = await catalogGrpc.getClase(claseId);
+        const etiquetas: string[] = clase.clase?.etiquetas ?? [];
+        for (const e of etiquetas) preferidas.add(e.toLowerCase());
+      } catch {}
+    });
+    await Promise.all(consultas);
+  } catch {}
+  return preferidas;
+}
+
+async function _obtenerEtiquetasClases(claseIds: string[]): Promise<Record<string, string[]>> {
+  const resultado: Record<string, string[]> = {};
+  const consultas = claseIds.map(async (claseId) => {
+    try {
+      const clase = await catalogGrpc.getClase(claseId);
+      resultado[claseId] = (clase.clase?.etiquetas ?? []).map((e: string) => e.toLowerCase());
+    } catch {
+      resultado[claseId] = [];
+    }
+  });
+  await Promise.all(consultas);
+  return resultado;
 }
 
 export function listenGateway(app: Express): ReturnType<typeof app.listen> {

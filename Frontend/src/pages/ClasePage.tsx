@@ -156,7 +156,7 @@ export default function ClasePage() {
     setCalificando(true);
     setErrorCalificacion(null);
     try {
-      await reproduccionApi.registrarCalificacion(historialId, puntuacion, comentario.trim(), tokenActual);
+      await reproduccionApi.registrarCalificacion(historialId, puntuacion, comentario.trim(), tokenActual, claseId);
       setCalificacionEnviada(true);
     } catch (err) {
       setErrorCalificacion(err instanceof Error ? err.message : 'No se pudo registrar la valoración');

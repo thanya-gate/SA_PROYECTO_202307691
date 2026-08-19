@@ -59,10 +59,10 @@ export const reproduccionApi = {
   historial: (token: string): Promise<HistorialResponse> =>
     apiFetch<HistorialResponse>('/reproduccion/historial', { token }),
 
-  registrarCalificacion: (historialId: string, puntuacion: number, comentario: string, token: string): Promise<RegistrarCalificacionResponse> =>
+  registrarCalificacion: (historialId: string, puntuacion: number, comentario: string, token: string, claseId?: string): Promise<RegistrarCalificacionResponse> =>
     apiFetch<RegistrarCalificacionResponse>('/reproduccion/calificaciones', {
       method: 'POST',
-      body: { historialId, puntuacion, comentario },
+      body: { historialId, puntuacion, comentario, ...(claseId ? { claseId } : {}) },
       token,
     }),
 };

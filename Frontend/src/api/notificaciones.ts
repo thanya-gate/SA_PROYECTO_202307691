@@ -1,16 +1,16 @@
 import { apiFetch } from './http';
 
-export interface Notificacion {
+export interface NotificacionItem {
   id: string;
   tipo: string;
   asunto: string;
   cuerpo: string;
   estado: string;
-  fecha_creacion: string;
-  fecha_envio: string | null;
+  fechaCreacion: string;
+  fechaEnvio: string;
 }
 
-export interface Plantilla {
+export interface PlantillaItem {
   id: string;
   nombre: string;
   asunto: string;
@@ -19,36 +19,52 @@ export interface Plantilla {
 }
 
 export interface ColaItem {
-  cola_id: number;
-  notificacion_id: string;
-  correo_destino: string;
+  colaId: number;
+  notificacionId: string;
+  correoDestino: string;
   intentos: number;
   estado: string;
-  ultimo_error: string | null;
-  fecha_proximo_intento: string;
+  ultimoError: string;
+  fechaProximoIntento: string;
   contenido: string;
 }
 
-export async function listarNotificaciones(token: string | null, limite = 50): Promise<Notificacion[]> {
-  return apiFetch<Notificacion[]>(`/notificaciones/me?limite=${limite}`, { token });
+interface ListarNotificacionesResponse {
+  items: NotificacionItem[];
 }
 
-export async function listarPlantillas(token: string | null): Promise<Plantilla[]> {
-  return apiFetch<Plantilla[]>('/notificaciones/plantillas', { token });
+interface EnviarAvisoResponse {
+  message: string;
+  destinatarioIds: string[];
+  notificacionesEncoladas: number;
 }
 
-export async function consultarCola(token: string | null, limite = 100): Promise<ColaItem[]> {
-  return apiFetch<ColaItem[]>(`/notificaciones/cola?limite=${limite}`, { token });
+interface ListarPlantillasResponse {
+  items: PlantillaItem[];
 }
 
-export async function enviarAvisoGeneral(
-  token: string | null,
-  mensaje: string,
-  destinatarioIds?: string[],
-): Promise<{ notificacionesEncoladas: number }> {
-  return apiFetch<{ notificacionesEncoladas: number }>('/notificaciones/avisos', {
-    method: 'POST',
-    token,
-    body: { mensaje, destinatarioIds },
-  });
+interface ConsultarColaResponse {
+  items: ColaItem[];
 }
+
+export const notificacionesApi = {
+  listarNotificaciones: (token: string): Promise<ListarNotificacionesResponse> =>
+    apiFetch<ListarNotificacionesResponse>('/notificaciones/me', { token }),
+
+  enviarAvisoGeneral: (
+    token: string,
+    mensaje: string,
+    destinatarioIds?: string[],
+  ): Promise<EnviarAvisoResponse> =>
+    apiFetch<EnviarAvisoResponse>('/notificaciones/avisos', {
+      method: 'POST',
+      body: { mensaje, destinatarioIds: destinatarioIds ?? [] },
+      token,
+    }),
+
+  listarPlantillas: (token: string): Promise<ListarPlantillasResponse> =>
+    apiFetch<ListarPlantillasResponse>('/notificaciones/plantillas', { token }),
+
+  consultarCola: (token: string): Promise<ConsultarColaResponse> =>
+    apiFetch<ConsultarColaResponse>('/notificaciones/cola', { token }),
+};
