@@ -36,6 +36,9 @@ const envSchema = z.object({
   OAUTH_ISSUER_PUBLIC: z.string().default('http://localhost:8080/mock-oauth'),
   OAUTH_REDIRECT_URI: z.string().default('http://localhost:8081/oauth/callback'),
   OAUTH_CLIENT_ID: z.string().default('yousac-web'),
+  // Google OAuth 2.0 (PKCE) — cuando OAUTH_PROVIDER=google se usa Google como IdP real
+  OAUTH_PROVIDER: z.enum(['google', 'mock']).default('mock'),
+  GOOGLE_CLIENT_ID: z.string().default(''),
 
   PUBLIC_PATHS: z.string().default('/health'),
 });

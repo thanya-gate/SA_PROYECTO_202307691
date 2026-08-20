@@ -36,7 +36,12 @@ export type DomainErrorCode =
   | 'SOLICITUD_DUPLICADA'
   | 'ENTRADA_INVALIDA'
   | 'CONFLICTO_ALMACENAMIENTO'
-  | 'ERROR_INTERNO';
+  | 'ERROR_INTERNO'
+  | 'PKCE_REQUERIDO'
+  | 'OAUTH_EXCHANGE_FAILED'
+  | 'OAUTH_NO_ID_TOKEN'
+  | 'OAUTH_TOKEN_VERIFICATION_FAILED'
+  | 'OAUTH_NO_EMAIL';
 
 export const isDomainError = (err: unknown): err is DomainError =>
   err instanceof DomainError;

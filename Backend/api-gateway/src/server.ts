@@ -562,15 +562,36 @@ export function createGateway(): Express {
 
   app.post('/auth/oauth/authorize', domainGuard, async (req, res, next) => {
     try {
-      const { email, state } = req.body as { email?: string; state?: string };
-      if (!email) {
-        throw new DomainError('ENTRADA_INVALIDA', 'Correo requerido', 400);
+      const { email, state, codeChallenge } = req.body as { email?: string; state?: string; codeChallenge?: string };
+
+      if (config.OAUTH_PROVIDER === 'google') {
+        // Google OAuth 2.0 + PKCE: construir la URL de autorización de Google
+        if (!config.GOOGLE_CLIENT_ID) {
+          throw new DomainError('CONFIG_INVALIDA', 'GOOGLE_CLIENT_ID no está configurado', 500);
+        }
+        if (!state || !codeChallenge) {
+          throw new DomainError('ENTRADA_INVALIDA', 'state y codeChallenge son requeridos', 400);
+        }
+        const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+        googleAuthUrl.searchParams.set('client_id', config.GOOGLE_CLIENT_ID);
+        googleAuthUrl.searchParams.set('redirect_uri', config.OAUTH_REDIRECT_URI);
+        googleAuthUrl.searchParams.set('response_type', 'code');
+        googleAuthUrl.searchParams.set('scope', 'openid email profile');
+        googleAuthUrl.searchParams.set('state', state);
+        googleAuthUrl.searchParams.set('code_challenge', codeChallenge);
+        googleAuthUrl.searchParams.set('code_challenge_method', 'S256');
+        res.json({ login_uri: googleAuthUrl.toString() });
+      } else {
+        // Mock IdP: flujo original con email
+        if (!email) {
+          throw new DomainError('ENTRADA_INVALIDA', 'Correo requerido', 400);
+        }
+        const loginUri = buildIdpLoginUri({
+          email: String(email).trim().toLowerCase(),
+          state: typeof state === 'string' ? state : '',
+        });
+        res.json({ login_uri: loginUri });
       }
-      const loginUri = buildIdpLoginUri({
-        email: String(email).trim().toLowerCase(),
-        state: typeof state === 'string' ? state : '',
-      });
-      res.json({ login_uri: loginUri });
     } catch (err) {
       next(err);
     }
@@ -578,11 +599,16 @@ export function createGateway(): Express {
 
   app.post('/auth/oauth/callback', async (req, res, next) => {
     try {
-      const { code } = req.body as Record<string, unknown>;
+      const { code, codeVerifier } = req.body as Record<string, unknown>;
       if (typeof code !== 'string') {
         throw new DomainError('ENTRADA_INVALIDA', 'Código OAuth requerido', 400);
       }
-      const result = await authGrpc.oauthCallback(code, req.ip, req.headers['user-agent']);
+      const result = await authGrpc.oauthCallback(
+        code,
+        req.ip,
+        req.headers['user-agent'],
+        typeof codeVerifier === 'string' ? codeVerifier : undefined,
+      );
       setSessionCookie(res, result.accessToken, cookieMaxAge);
       res.json({
         message: 'Sesión iniciada con identidad institucional',
@@ -779,11 +805,34 @@ export function createGateway(): Express {
           throw new DomainError('ENTRADA_INVALIDA', 'El archivo CSV no contiene filas de clases', 400);
         }
         const result = await catalogGrpc.cargarClasesCSV(filas);
+
+        const cursosUnicos = new Map<string, { codigo: string; nombre: string; escuela: string; semestre: string; anio: number }>();
+        for (const f of filas) {
+          if (f.codigoCurso && f.nombreCurso && f.escuela && f.semestre && f.anio) {
+            const key = `${f.codigoCurso}|${f.semestre}|${f.anio}`;
+            if (!cursosUnicos.has(key)) {
+              cursosUnicos.set(key, {
+                codigo: f.codigoCurso,
+                nombre: f.nombreCurso,
+                escuela: f.escuela,
+                semestre: f.semestre,
+                anio: f.anio,
+              });
+            }
+          }
+        }
+        for (const curso of cursosUnicos.values()) {
+          try {
+            await inscripcionGrpc.registrarCurso(curso);
+          } catch { /* curso ya existente o error no crítico */ }
+        }
+
         res.status(201).json({
           message: 'Carga masiva procesada mediante sp_cargar_clases_csv',
           registradas: result.registradas,
           omitidas: result.omitidas,
           totalProcesadas: filas.length,
+          cursosSincronizados: cursosUnicos.size,
         });
       } catch (err) {
         if (err instanceof CsvParseError) {

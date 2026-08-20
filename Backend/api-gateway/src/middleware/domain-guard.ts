@@ -5,6 +5,9 @@ import { DomainError } from '../domain/domain-error';
 
 export function domainGuard(req: Request, _res: Response, next: NextFunction): void {
   const email = (req.body?.email ?? '').trim().toLowerCase();
+  if (!email) {
+    return next();
+  }
   const domain = email.split('@')[1] ?? '';
   if (!config.ALLOWED_EMAIL_DOMAINS.includes(domain)) {
     return next(

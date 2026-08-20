@@ -45,6 +45,7 @@ const HEADER_ALIASES: Record<string, string> = {
   fecha: 'fechaImparticion',
   semestre: 'semestre',
   año: 'anio',
+  ano: 'anio',
   anio: 'anio',
   url_video: 'urlVideo',
   url: 'urlVideo',
