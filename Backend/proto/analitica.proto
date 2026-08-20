@@ -33,10 +33,13 @@ message ClasesMasVistasResponse {
 }
 
 message TendenciasExamenesRequest {
-  int32 limite = 1; 
+  int32 limite = 1;
+  string desde = 2; // YYYY-MM-DD inicio del rango (opcional, default: ultimas 3 semanas)
+  string hasta = 3; // YYYY-MM-DD fin del rango (opcional)
 }
 
 message TendenciasExamenesResponse {
+  string semana = 2; // YYYY-MM-DD del lunes del rango consultado
   repeated RankingItem items = 1;
 }
 

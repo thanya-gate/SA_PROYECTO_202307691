@@ -32,26 +32,53 @@ class PostgresAnaliticaRepository(AnaliticaRepository):
         finally:
             self._db.putconn(conn)
 
-    def tendencias_examenes(self, limite: int) -> list[RankingItem]:
+    def tendencias_examenes(self, limite: int, desde: Optional[str] = None, hasta: Optional[str] = None) -> tuple[str, list[RankingItem]]:
         conn = self._db.connection()
         try:
             with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT
-                        v.clase_id,
-                        v.total_vistas,
-                        COALESCE(ca.promedio_calificacion, 0) AS promedio_calificacion,
-                        COALESCE(ca.total_calificaciones, 0) AS total_calificaciones,
-                        v.ranking_posicion AS posicion
-                    FROM vw_tendencias_examenes v
-                    LEFT JOIN calificacion_agregada ca ON ca.clase_id = v.clase_id
-                    ORDER BY v.total_vistas DESC
-                    LIMIT %s::int
-                    """,
-                    (limite,),
-                )
-                return [self._row_a_ranking(fila) for fila in cur.fetchall()]
+                if desde:
+                    desde_fecha = desde
+                    hasta_fecha = hasta or desde
+                    cur.execute("SELECT fn_inicio_semana(%s::date)", (desde,))
+                    semana_row = cur.fetchone()
+                    semana = str(semana_row[0]) if semana_row else desde
+                    cur.execute(
+                        """
+                        SELECT
+                            ev.clase_id,
+                            count(*) AS total_vistas,
+                            COALESCE(ca.promedio_calificacion, 0) AS promedio_calificacion,
+                            COALESCE(ca.total_calificaciones, 0) AS total_calificaciones,
+                            row_number() OVER (ORDER BY count(*) DESC)::integer AS posicion
+                        FROM evento_vista ev
+                        LEFT JOIN calificacion_agregada ca ON ca.clase_id = ev.clase_id
+                        WHERE ev.fecha_evento::date >= %s::date
+                          AND ev.fecha_evento::date <= %s::date
+                        GROUP BY ev.clase_id, ca.promedio_calificacion, ca.total_calificaciones
+                        ORDER BY total_vistas DESC
+                        LIMIT %s::int
+                        """,
+                        (desde, hasta_fecha, limite),
+                    )
+                else:
+                    semana = ''
+                    cur.execute(
+                        """
+                        SELECT
+                            v.clase_id,
+                            v.total_vistas,
+                            COALESCE(ca.promedio_calificacion, 0) AS promedio_calificacion,
+                            COALESCE(ca.total_calificaciones, 0) AS total_calificaciones,
+                            v.ranking_posicion AS posicion
+                        FROM vw_tendencias_examenes v
+                        LEFT JOIN calificacion_agregada ca ON ca.clase_id = v.clase_id
+                        ORDER BY v.total_vistas DESC
+                        LIMIT %s::int
+                        """,
+                        (limite,),
+                    )
+                items = [self._row_a_ranking(fila) for fila in cur.fetchall()]
+            return semana, items
         finally:
             self._db.putconn(conn)
 

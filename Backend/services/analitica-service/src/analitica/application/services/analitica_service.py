@@ -85,17 +85,18 @@ class AnaliticaService:
         )
         return semana_real, items
 
-    def tendencias_examenes(self, limite: int) -> list[RankingItem]:
+    def tendencias_examenes(self, limite: int, desde: Optional[str] = None, hasta: Optional[str] = None) -> tuple[str, list[RankingItem]]:
         limite_efectivo = _limitar(limite, LIMITE_DEFECTO_TENDENCIAS)
-        clave = f"{PREFIJO_TENDENCIAS}{limite_efectivo}"
+        clave = f"{PREFIJO_TENDENCIAS}{limite_efectivo}:{desde or 'auto'}:{hasta or 'auto'}"
 
         cacheado = self._cache.get(clave)
         if cacheado is not None:
-            return [RankingItem(**item) for item in json.loads(cacheado)]
+            data = json.loads(cacheado)
+            return data.get('semana', ''), [RankingItem(**item) for item in data.get('items', [])]
 
-        items = self._repo.tendencias_examenes(limite_efectivo)
-        self._cache.set(clave, json.dumps([item.__dict__ for item in items]), self._ttl.tendencias)
-        return items
+        semana, items = self._repo.tendencias_examenes(limite_efectivo, desde, hasta)
+        self._cache.set(clave, json.dumps({"semana": semana, "items": [item.__dict__ for item in items]}), self._ttl.tendencias)
+        return semana, items
 
     def ranking_mejor_valoradas(self, limite: int) -> list[RankingItem]:
         limite_efectivo = _limitar(limite, LIMITE_DEFECTO_RANKING)

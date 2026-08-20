@@ -1256,10 +1256,14 @@ export function createGateway(): Express {
   app.get('/analitica/tendencias-examenes', authenticate, async (req, res, next) => {
     try {
       const limite = Number(req.query.limite ?? 0);
+      const desde = req.query.desde ? String(req.query.desde) : undefined;
+      const hasta = req.query.hasta ? String(req.query.hasta) : undefined;
       const result = await analiticaGrpc.tendenciasExamenes({
         limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
+        desde,
+        hasta,
       });
-      res.json({ items: result.items });
+      res.json({ semana: result.semana || '', items: result.items });
     } catch (err) {
       next(err);
     }
