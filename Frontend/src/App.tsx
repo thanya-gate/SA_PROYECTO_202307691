@@ -19,7 +19,6 @@ import SubirClasePage from './pages/SubirClasePage';
 import EditarClasePage from './pages/EditarClasePage';
 import ProfilePage from './pages/ProfilePage';
 import AutorizacionPendientePage from './pages/AutorizacionPendientePage';
-import NotificacionesPage from './pages/NotificacionesPage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();

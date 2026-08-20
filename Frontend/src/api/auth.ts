@@ -170,12 +170,12 @@ export const authApi = {
 
   logout: (token: string): Promise<void> => apiFetch<void>('/auth/logout', { method: 'POST', token }),
 
-  oauthAuthorize: (email: string, state: string): Promise<OAuthAuthorizeResponse> =>
+  oauthAuthorize: (state: string, codeChallenge: string, email?: string): Promise<OAuthAuthorizeResponse> =>
     apiFetch<OAuthAuthorizeResponse>('/auth/oauth/authorize', {
       method: 'POST',
-      body: { email, state },
+      body: { state, codeChallenge, email },
     }),
 
-  oauthCallback: (code: string): Promise<AuthResponse> =>
-    apiFetch<AuthResponse>('/auth/oauth/callback', { method: 'POST', body: { code } }),
+  oauthCallback: (code: string, codeVerifier?: string): Promise<AuthResponse> =>
+    apiFetch<AuthResponse>('/auth/oauth/callback', { method: 'POST', body: { code, codeVerifier } }),
 };
