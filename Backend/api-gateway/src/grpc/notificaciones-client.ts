@@ -49,6 +49,8 @@ export const notificacionesGrpc = {
 
   registrarAvisoGeneral: (req: { mensaje: string; destinatarioIds?: string[] }) =>
     unary('RegistrarAvisoGeneral', req),
+  notificarVideoSubido: (req: { cursoId: string; codigo: string; curso: string; semestre: string; anio: number; tema: string }) =>
+    unary('NotificarVideoSubido', req),
   listarNotificaciones: (usuarioId: string, limite?: number) =>
     unary('ListarNotificaciones', { usuarioId, limite: limite ?? 50 }),
   listarPlantillas: () => unary('ListarPlantillas', {}),

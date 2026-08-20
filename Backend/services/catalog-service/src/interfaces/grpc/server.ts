@@ -53,6 +53,7 @@ function claseDetalleToProto(c: ClaseDetalle) {
     fechaPublicacion: c.fechaPublicacion,
     participantes: c.participantes.map((p) => ({ nombre: p.nombre, rol: p.rol })),
     etiquetas: c.etiquetas,
+    cursoId: c.cursoId,
   };
 }
 

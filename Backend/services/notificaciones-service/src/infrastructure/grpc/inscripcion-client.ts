@@ -21,4 +21,9 @@ export class InscripcionGrpcClientImpl implements InscripcionGrpcClient {
     });
     return res.estudianteIds ?? [];
   }
+
+  async listarCursos(): Promise<Array<{ cursoId: string; codigo: string }>> {
+    const res = await unary(this.client, 'ListarCursos', {});
+    return (res.cursos ?? []).map((c: any) => ({ cursoId: c.cursoId, codigo: c.codigo }));
+  }
 }

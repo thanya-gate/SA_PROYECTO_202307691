@@ -31,6 +31,20 @@ message NotificarNuevaClaseResponse {
   int32 notificaciones_encoladas = 2;
 }
 
+message NotificarVideoSubidoRequest {
+  string curso_id = 1;
+  string codigo = 2;
+  string curso = 3;
+  string semestre = 4;
+  int32 anio = 5;
+  string tema = 6;
+}
+
+message NotificarVideoSubidoResponse {
+  repeated string destinatario_ids = 1;
+  int32 notificaciones_encoladas = 2;
+}
+
 message RegistrarAvisoGeneralRequest {
   string mensaje = 1;
   repeated string destinatario_ids = 2;
@@ -104,6 +118,7 @@ message HealthResponse {
 service NotificacionesService {
   rpc RegistrarNotificacion(RegistrarNotificacionRequest) returns (RegistrarNotificacionResponse);
   rpc NotificarNuevaClase(NotificarNuevaClaseRequest) returns (NotificarNuevaClaseResponse);
+  rpc NotificarVideoSubido(NotificarVideoSubidoRequest) returns (NotificarVideoSubidoResponse);
   rpc RegistrarAvisoGeneral(RegistrarAvisoGeneralRequest) returns (RegistrarAvisoGeneralResponse);
   rpc ListarNotificaciones(ListarNotificacionesRequest) returns (ListarNotificacionesResponse);
   rpc ListarPlantillas(ListarPlantillasRequest) returns (ListarPlantillasResponse);

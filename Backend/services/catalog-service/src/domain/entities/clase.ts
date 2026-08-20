@@ -23,6 +23,7 @@ export interface Participante {
 
 export interface ClaseDetalle {
   claseId: string;
+  cursoId: string;
   codigo: string;
   curso: string;
   escuela: string;

@@ -58,8 +58,30 @@ export class NotificacionService {
   }): Promise<NotificarNuevaClaseResult> {
     const input = parse(notificarNuevaClaseSchema, raw);
 
+    const cursoIdInscripcion = await this.resolverCursoIdInscripcion(input.codigo, input.cursoId);
     const estudianteIds = await this.inscripcionClient.listarEstudiantesDeCurso(
-      input.cursoId,
+      cursoIdInscripcion,
+      input.semestre,
+    );
+    const destinatarios = await this.obtenerUsuarios(estudianteIds);
+    const destinatarioIds = destinatarios.map((u) => u.usuarioId);
+
+    return { destinatarioIds, notificacionesEncoladas: 0 };
+  }
+
+  async notificarVideoSubido(raw: {
+    cursoId: string;
+    codigo: string;
+    curso: string;
+    semestre: string;
+    anio: number;
+    tema: string;
+  }): Promise<NotificarNuevaClaseResult> {
+    const input = parse(notificarNuevaClaseSchema, raw);
+
+    const cursoIdInscripcion = await this.resolverCursoIdInscripcion(input.codigo, input.cursoId);
+    const estudianteIds = await this.inscripcionClient.listarEstudiantesDeCurso(
+      cursoIdInscripcion,
       input.semestre,
     );
     const destinatarios = await this.obtenerUsuarios(estudianteIds);
@@ -70,8 +92,8 @@ export class NotificacionService {
       await this.repository.registrarNotificacion({
         usuarioId: usuario.usuarioId,
         correoDestino: usuario.email,
-        plantilla: 'nueva_clase',
-        tipo: 'NUEVA_CLASE',
+        plantilla: 'video_subido',
+        tipo: 'VIDEO_SUBIDO',
         datosContexto: {
           codigo: input.codigo,
           curso: input.curso,
@@ -104,7 +126,10 @@ export class NotificacionService {
         correoDestino: usuario.email,
         plantilla: 'aviso_general',
         tipo: 'AVISO',
-        datosContexto: { mensaje: input.mensaje },
+        datosContexto: {
+          nombre: `${usuario.nombres} ${usuario.apellidos}`.trim(),
+          mensaje: input.mensaje,
+        },
       });
       encoladas += 1;
     }
@@ -155,5 +180,16 @@ export class NotificacionService {
       }),
     );
     return resultados.filter((u): u is UsuarioInfo => u !== null);
+  }
+
+  private async resolverCursoIdInscripcion(codigo: string, cursoIdCatalogo: string): Promise<string> {
+    try {
+      const cursos = await this.inscripcionClient.listarCursos();
+      const encontrado = cursos.find((c) => c.codigo === codigo);
+      if (encontrado) return encontrado.cursoId;
+    } catch {
+      // fallback to original id
+    }
+    return cursoIdCatalogo;
   }
 }

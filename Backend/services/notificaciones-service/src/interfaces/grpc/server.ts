@@ -88,6 +88,25 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
+    NotificarVideoSubido: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const result = await container.notificacionService.notificarVideoSubido({
+          cursoId: call.request.cursoId,
+          codigo: call.request.codigo,
+          curso: call.request.curso,
+          semestre: call.request.semestre,
+          anio: call.request.anio,
+          tema: call.request.tema,
+        });
+        callback(null, {
+          destinatarioIds: result.destinatarioIds,
+          notificacionesEncoladas: result.notificacionesEncoladas,
+        });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
     RegistrarAvisoGeneral: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
         const result = await container.notificacionService.registrarAvisoGeneral({

@@ -1053,11 +1053,22 @@ export function createGateway(): Express {
       const urlVideo = `/media/clases/${claseId}.mp4`;
       await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
       const result = await catalogGrpc.actualizarDuracion(claseId, duracion);
+      const clase = result.clase;
+      if (clase?.cursoId) {
+        notificacionesGrpc.notificarVideoSubido({
+          cursoId: clase.cursoId,
+          codigo: clase.codigo,
+          curso: clase.curso,
+          semestre: clase.semestre,
+          anio: clase.anio,
+          tema: clase.tema,
+        }).catch((err: any) => console.error('[api-gateway] notificarVideoSubido error:', err?.message ?? err));
+      }
       res.status(201).json({
         message: 'Video subido a la plataforma',
         urlVideo,
-        duracion: result.clase?.duracion ?? duracion,
-        clase: result.clase,
+        duracion: clase?.duracion ?? duracion,
+        clase,
       });
     } catch (err) {
       await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
@@ -1074,6 +1085,19 @@ export function createGateway(): Express {
       }
       const result = await catalogGrpc.actualizarUrlVideo(req.params.claseId, urlVideo);
       res.json({ message: 'URL de video actualizada', clase: result.clase });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/catalog/classes/:claseId/duracion', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const { duracion } = req.body as Record<string, unknown>;
+      if (typeof duracion !== 'number' || duracion < 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'duracion debe ser un número no negativo', 400);
+      }
+      const result = await catalogGrpc.actualizarDuracion(req.params.claseId, duracion);
+      res.json({ message: 'Duración actualizada', clase: result.clase });
     } catch (err) {
       next(err);
     }
@@ -1122,7 +1146,7 @@ export function createGateway(): Express {
 //reproduccion
   app.post('/reproduccion/checkpoint', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
-      const { claseId, segundoActual, duracion } = req.body as Record<string, unknown>;
+      const { claseId, segundoActual, duracion, evento } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof segundoActual !== 'number' || typeof duracion !== 'number') {
         throw new DomainError('ENTRADA_INVALIDA', 'claseId, segundoActual y duracion son obligatorios', 400);
       }
@@ -1132,11 +1156,13 @@ export function createGateway(): Express {
         segundoActual,
         duracion,
       });
-      analiticaGrpc.sincronizarVista({
-        claseId,
-        estudianteId: req.context!.userId,
-        duracionVista: segundoActual,
-      }).catch(() => {});
+      if (evento === 'inicio' || evento === 'fin') {
+        analiticaGrpc.sincronizarVista({
+          claseId,
+          estudianteId: req.context!.userId,
+          duracionVista: segundoActual,
+        }).catch(() => {});
+      }
       res.json({
         message: 'Checkpoint guardado',
         historialId: result.historialId,
