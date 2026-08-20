@@ -320,12 +320,6 @@ function ListaRecomendaciones({
               <div className="analitica__item-cuerpo">
                 <h3 className="analitica__item-titulo">{tituloDe(item)}</h3>
                 <p className="analitica__item-meta">{metaDe(item)}</p>
-                <div className="historial__item-progreso" aria-hidden="true">
-                  <div
-                    className="historial__item-progreso-llenado"
-                    style={{ width: `${porcentaje}%` }}
-                  />
-                </div>
               </div>
               <div className="analitica__item-metricas">
                 <span className="analitica__item-vistas">{porcentaje.toFixed(1)}%</span>
