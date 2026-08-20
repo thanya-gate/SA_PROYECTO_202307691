@@ -109,6 +109,8 @@ export default function ClasePage() {
       }
       if (state === YT_STATE.ENDED) {
         void guardarCheckpoint(ultimoSegundoRef.current, 'fin');
+        // Permitir que se registre otra vista si el usuario vuelve a reproducir
+        vistaRegistradaRef.current = false;
       }
       if (state === YT_STATE.PAUSED) {
         void guardarCheckpoint(ultimoSegundoRef.current);
