@@ -71,6 +71,8 @@ export default function AnaliticaPage() {
   const [semana, setSemana] = useState(isoHoy());
   const [semanaCalculada, setSemanaCalculada] = useState('');
   const [masVistas, setMasVistas] = useState<RankingConClase[]>([]);
+  const [desdeTendencias, setDesdeTendencias] = useState('');
+  const [hastaTendencias, setHastaTendencias] = useState('');
   const [tendencias, setTendencias] = useState<RankingConClase[]>([]);
   const [ranking, setRanking] = useState<RankingConClase[]>([]);
   const [recomendaciones, setRecomendaciones] = useState<RecomendacionConClase[]>([]);
@@ -128,10 +130,15 @@ export default function AnaliticaPage() {
           }
         }),
       analiticaApi
-        .tendenciasExamenes(LIMITE, tokenActual)
-        .then(async (res) => enriquecerRanking(res.items))
-        .then((items) => {
-          if (active) setTendencias(items);
+        .tendenciasExamenes(LIMITE, tokenActual, desdeTendencias, hastaTendencias)
+        .then(async (res) => ({
+          semana: res.semana,
+          items: await enriquecerRanking(res.items),
+        }))
+        .then((res) => {
+          if (active) {
+            setTendencias(res.items);
+          }
         }),
       analiticaApi
         .rankingMejorValoradas(LIMITE, tokenActual)
@@ -162,15 +169,10 @@ export default function AnaliticaPage() {
     return () => {
       active = false;
     };
-  }, [semana, tokenActual, puedeRecomendaciones]);
+  }, [semana, desdeTendencias, hastaTendencias, tokenActual, puedeRecomendaciones]);
 
   const tituloDe = (item: RankingConClase | RecomendacionConClase): string =>
     item.clase?.tema || item.clase?.curso || 'Clase sin título';
-
-  const metaDe = (item: RankingConClase | RecomendacionConClase): string =>
-    [item.clase?.codigo, item.clase?.curso, item.clase?.unidad, item.clase?.semestre]
-      .filter(Boolean)
-      .join(' · ');
 
   return (
     <AppLayout>
@@ -213,17 +215,41 @@ export default function AnaliticaPage() {
                   />
                 </label>
               </div>
-              <ListaRanking items={masVistas} tituloDe={tituloDe} metaDe={metaDe} />
+              <ListaRanking items={masVistas} tituloDe={tituloDe} />
             </section>
 
             <section className="analitica__seccion" aria-label="Tendencias en época de exámenes">
               <div className="analitica__cabecera">
                 <div>
                   <h2 className="analitica__titulo">Tendencias en época de exámenes</h2>
-                  <p className="analitica__subtitulo">Clases más consultadas en las últimas 3 semanas.</p>
+                  <p className="analitica__subtitulo">
+                    {desdeTendencias && hastaTendencias
+                      ? `Desde ${formatearFecha(desdeTendencias)} al ${formatearFecha(hastaTendencias)}`
+                      : 'Histórico global (últimas 3 semanas)'}
+                  </p>
                 </div>
+                <label className="analitica__semana">
+                  <span className="analitica__semana-label">Desde</span>
+                  <input
+                    type="date"
+                    className="analitica__semana-input"
+                    value={desdeTendencias}
+                    placeholder="aaaa-mm-dd"
+                    onChange={(e) => setDesdeTendencias(e.target.value)}
+                  />
+                </label>
+                <label className="analitica__semana">
+                  <span className="analitica__semana-label">Hasta</span>
+                  <input
+                    type="date"
+                    className="analitica__semana-input"
+                    value={hastaTendencias}
+                    placeholder="aaaa-mm-dd"
+                    onChange={(e) => setHastaTendencias(e.target.value)}
+                  />
+                </label>
               </div>
-              <ListaRanking items={tendencias} tituloDe={tituloDe} metaDe={metaDe} />
+              <ListaRanking items={tendencias} tituloDe={tituloDe} />
             </section>
 
             <section className="analitica__seccion" aria-label="Ranking mejor valorado">
@@ -233,7 +259,7 @@ export default function AnaliticaPage() {
                   <p className="analitica__subtitulo">Ranking por vistas y calificación promedio.</p>
                 </div>
               </div>
-              <ListaRanking items={ranking} tituloDe={tituloDe} metaDe={metaDe} />
+              <ListaRanking items={ranking} tituloDe={tituloDe} tipo="rating" />
             </section>
 
             {puedeRecomendaciones && (
@@ -246,7 +272,7 @@ export default function AnaliticaPage() {
                     </p>
                   </div>
                 </div>
-                <ListaRecomendaciones items={recomendaciones} tituloDe={tituloDe} metaDe={metaDe} />
+                <ListaRecomendaciones items={recomendaciones} tituloDe={tituloDe} />
               </section>
             )}
           </div>
@@ -263,11 +289,11 @@ function Vacio({ mensaje }: { mensaje: string }) {
 function ListaRanking({
   items,
   tituloDe,
-  metaDe,
+  tipo = 'vistas',
 }: {
   items: RankingConClase[];
   tituloDe: (item: RankingConClase) => string;
-  metaDe: (item: RankingConClase) => string;
+  tipo?: 'vistas' | 'rating';
 }) {
   if (items.length === 0) {
     return (
@@ -282,13 +308,11 @@ function ListaRanking({
             <span className="analitica__item-pos">{item.posicion}</span>
             <div className="analitica__item-cuerpo">
               <h3 className="analitica__item-titulo">{tituloDe(item)}</h3>
-              <p className="analitica__item-meta">{metaDe(item)}</p>
-            </div>
-            <div className="analitica__item-metricas">
-              <span className="analitica__item-vistas">{item.totalVistas} vistas</span>
-              <span className="analitica__item-estrellas">
-                ★ {item.promedioCalificacion.toFixed(1)}
-              </span>
+              <p className="analitica__item-meta">
+                {tipo === 'rating'
+                  ? `★ ${item.promedioCalificacion.toFixed(1)}`
+                  : `${item.totalVistas} vistas`}
+              </p>
             </div>
           </Link>
         </li>
@@ -300,11 +324,9 @@ function ListaRanking({
 function ListaRecomendaciones({
   items,
   tituloDe,
-  metaDe,
 }: {
   items: RecomendacionConClase[];
   tituloDe: (item: RecomendacionConClase) => string;
-  metaDe: (item: RecomendacionConClase) => string;
 }) {
   if (items.length === 0) {
     return <Vacio mensaje="Aún no hay recomendaciones para tu perfil." />;
@@ -319,13 +341,7 @@ function ListaRecomendaciones({
               <span className="analitica__item-pos">#</span>
               <div className="analitica__item-cuerpo">
                 <h3 className="analitica__item-titulo">{tituloDe(item)}</h3>
-                <p className="analitica__item-meta">{metaDe(item)}</p>
-              </div>
-              <div className="analitica__item-metricas">
-                <span className="analitica__item-vistas">{porcentaje.toFixed(1)}%</span>
-                <span className="analitica__item-estrellas">
-                  ★ {item.promedioCalificacion.toFixed(1)}
-                </span>
+                <p className="analitica__item-meta">{porcentaje.toFixed(1)}%</p>
               </div>
             </Link>
           </li>
