@@ -51,6 +51,9 @@ export default function ProfilePage() {
     apellidos: '',
     telefonoCelular: '',
     carrera: '',
+    carnet: '',
+    dpi: '',
+    fechaNacimiento: '',
   });
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -88,6 +91,9 @@ export default function ProfilePage() {
         apellidos: user.apellidos ?? '',
         telefonoCelular: user.telefonoCelular ?? '',
         carrera: user.carrera ?? '',
+        carnet: user.carnet ?? '',
+        dpi: user.dpi ?? '',
+        fechaNacimiento: user.fechaNacimiento ?? '',
       });
     }
   }, [user]);
@@ -226,6 +232,9 @@ export default function ProfilePage() {
         apellidos: form.apellidos.trim() || undefined,
         telefonoCelular: form.telefonoCelular.trim() || undefined,
         carrera: form.carrera.trim() || undefined,
+        carnet: form.carnet.trim() || undefined,
+        dpi: form.dpi.trim() || undefined,
+        fechaNacimiento: form.fechaNacimiento || undefined,
       });
       setMensaje('Tus datos fueron actualizados correctamente.');
     } catch (err: unknown) {
@@ -347,19 +356,30 @@ export default function ProfilePage() {
                   </label>
                   <label className="perfil__campo">
                     <span className="perfil__campo-label">Carnet</span>
-                    <input className="perfil__input" value={user?.carnet ?? ''} disabled readOnly />
+                    <input
+                      className="perfil__input"
+                      value={form.carnet}
+                      onChange={(e) => setForm((f) => ({ ...f, carnet: e.target.value }))}
+                      placeholder="Ej. 202307691"
+                    />
                   </label>
                   <label className="perfil__campo">
                     <span className="perfil__campo-label">DPI</span>
-                    <input className="perfil__input" value={user?.dpi ?? ''} disabled readOnly />
+                    <input
+                      className="perfil__input"
+                      value={form.dpi}
+                      onChange={(e) => setForm((f) => ({ ...f, dpi: e.target.value }))}
+                      placeholder="Ej. 1234567890123"
+                      inputMode="numeric"
+                    />
                   </label>
                   <label className="perfil__campo">
                     <span className="perfil__campo-label">Fecha de nacimiento</span>
                     <input
                       className="perfil__input"
-                      value={user?.fechaNacimiento ?? ''}
-                      disabled
-                      readOnly
+                      type="date"
+                      value={form.fechaNacimiento}
+                      onChange={(e) => setForm((f) => ({ ...f, fechaNacimiento: e.target.value }))}
                     />
                   </label>
                 </div>

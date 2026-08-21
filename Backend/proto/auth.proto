@@ -366,6 +366,7 @@ message OAuthCallbackRequest {
   string code = 1;
   string ip = 2;
   string user_agent = 3;
+  string code_verifier = 4; // PKCE: code_verifier generado por el SPA
 }
 
 message OAuthCallbackResponse {

@@ -29,14 +29,7 @@ export function RecommendationCard({ item }: { item: RecomendacionConClase }) {
         </span>
       </div>
       {meta && <p className="home-card__meta">{meta}</p>}
-      <div className="home-card__progreso" aria-hidden="true">
-        <div
-          className="home-card__progreso-llenado home-card__progreso-llenado--recomendacion"
-          style={{ width: `${porcentaje}%` }}
-        />
-      </div>
       <div className="home-card__pie">
-        <span className="home-card__recomendacion-label">Recomendado para ti</span>
         <span className="home-card__estrellas">
           ★ {item.promedioCalificacion.toFixed(1)}
         </span>

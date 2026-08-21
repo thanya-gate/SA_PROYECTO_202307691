@@ -10,11 +10,18 @@ Proyecto: YoUSAC · Práctica: 2 · Carné: 202307691 · Curso: Software Avanzad
 2. [Arquitectura implementada](#2-arquitectura-implementada)
    - 2.0 [Visión general de la arquitectura](#20-visión-general-de-la-arquitectura)
    - 2.1 [Malla poliglota y backend](#21-malla-poliglota-y-backend)
-   - 2.2 [API Gateway (punto de entrada único)](#22-api-gateway-punto-de-entrada-único)
-   - 2.3 [Frontend WEB](#23-frontend-web)
-   - 2.4 [Contratos gRPC (.proto)](#24-contratos-grpc-proto)
-   - 2.5 [Persistencia con objetos programables base](#25-persistencia-con-objetos-programables-base)
-   - 2.6 [Orquestación local (Docker Compose)](#26-orquestación-local-docker-compose)
+   - 2.2 [Microservicios del backend](#22-microservicios-del-backend)
+     - 2.2.1 [auth-service (TypeScript)](#221-auth-service-typescript)
+     - 2.2.2 [catalog-service (TypeScript)](#222-catalog-service-typescript)
+     - 2.2.3 [reproduccion-service (Go)](#223-reproduccion-service-go)
+     - 2.2.4 [analitica-service (Python)](#224-analitica-service-python)
+     - 2.2.5 [inscripcion-service (TypeScript)](#225-inscripcion-service-typescript)
+     - 2.2.6 [notificaciones-service (TypeScript)](#226-notificaciones-service-typescript)
+   - 2.3 [API Gateway (punto de entrada único)](#23-api-gateway-punto-de-entrada-único)
+   - 2.4 [Frontend WEB](#24-frontend-web)
+   - 2.5 [Contratos gRPC (.proto)](#25-contratos-grpc-proto)
+   - 2.6 [Persistencia con objetos programables base](#26-persistencia-con-objetos-programables-base)
+   - 2.7 [Orquestación local (Docker Compose)](#27-orquestación-local-docker-compose)
 3. [Evidencias de pruebas — Práctica 3](#3-evidencias-de-pruebas--práctica-3)
    - 3.1 [Panel Web Administrativo y Control RBAC](#31-panel-web-administrativo-y-control-rbac)
    - 3.2 [Ingesta masiva mediante CSV](#32-ingesta-masiva-mediante-csv)
@@ -44,7 +51,7 @@ Este documento detalla la arquitectura realmente implementada, el desarrollo de 
 
 ### 2.1 Malla poliglota y backend
 
-El backend se compone de cinco microservicios, cada uno con su propia base de datos PostgreSQL independiente, su propio `Dockerfile` y su propio puerto gRPC. Todos se comunican internamente únicamente mediante gRPC (prohibido REST interno):
+El backend se compone de seis microservicios, cada uno con su propia base de datos PostgreSQL independiente, su propio `Dockerfile` y su propio puerto gRPC. Todos se comunican internamente únicamente mediante gRPC (prohibido REST interno):
 
 | Microservicio | Lenguaje | Responsabilidad | BD propia |
 |---|---|---|---|
@@ -53,6 +60,7 @@ El backend se compone de cinco microservicios, cada uno con su propia base de da
 | `reproduccion-service` | Go (gRPC) | Reproducción, marcas de tiempo, checkpoints, calificaciones | `reproduccion-db` (5434) |
 | `analitica-service` | Python (gRPC) | Analítica base, tendencias, recomendaciones, CSV | `analitica-db` (5435) |
 | `inscripcion-service` | TypeScript (Node + gRPC) | Inscripción de estudiantes, registro de docentes/auxiliares y asignaciones catedrático/auxiliar | `inscripcion-db` (5436) |
+| `notificaciones-service` | TypeScript (Node + gRPC + Nodemailer) | Notificaciones por correo con plantillas y cola de envío con reintentos | `notificaciones-db` (5437) |
 
 Cada microservicio sigue una arquitectura hexagonal (puertos y adaptadores):
 
@@ -63,7 +71,116 @@ Cada microservicio sigue una arquitectura hexagonal (puertos y adaptadores):
 - `interfaces/` — adaptadores de entrada (servidor gRPC, rutas HTTP internas, middlewares).
 - `container.ts` / `main.go` / `container.py` — composition root que inyecta las dependencias.
 
-### 2.2 API Gateway (punto de entrada único)
+### 2.2 Microservicios del backend
+
+En esta sección se documenta cada microservicio de la malla: su stack, puerto gRPC, base de datos, responsabilidades y las operaciones RPC que expone en su contrato. Todos comparten la arquitectura hexagonal descrita en 2.1, exponen un RPC `Health` para el healthcheck de Docker Compose y delegan la lógica de negocio a objetos programables de su base de datos (SPs, funciones, vistas y triggers).
+
+#### 2.2.1 auth-service (TypeScript)
+
+Microservicio de identidades (gRPC `50051`, BD `auth-db` / `yousac_auth`). Administra el ciclo de vida completo del usuario: registro y login con correo institucional, sesiones con JWT, RBAC por perfiles, verificación de correo, recuperación de contraseña, solicitudes de cambio de rol y OAuth 2.0 institucional.
+
+- **Casos de uso** (`application/services/`): `AuthService` (registro, login, logout, OAuth), `SessionService` (ciclo de vida de sesiones), `ProfileService` (perfiles y permisos RBAC), `AccountService` (verificación de correo y reset de contraseña) y `SolicitudService` (solicitudes de rol aprobadas/rechazadas por un admin).
+- **Puertos** (`application/ports/`): `UserRepository`, `SessionRepository`, `VerificationTokenRepository`, `TokenService` (con `PasswordService` para bcrypt y firma JWT separados) y `OAuthProvider`.
+- **Adaptadores** (`infrastructure/`): persistencia Postgres o en memoria según exista `DATABASE_URL`, `BcryptPasswordService`, `JwtTokenService`, proveedores OAuth (`mock-oauth-provider.ts` para local y `google-oauth-provider.ts`) y cliente gRPC hacia `notificaciones-service` para el correo de confirmación de registro.
+- **Interfaces de entrada**: servidor gRPC (`interfaces/grpc/server.ts`, el usado por la malla) y un servidor HTTP interno de desarrollo/verificación con middlewares propios (`authenticate`, `authorize`, `error-handler`, `rate-limiter`, `request-id`).
+
+RPCs principales agrupados por caso de uso:
+
+| Grupo | RPCs |
+|---|---|
+| Sesiones | `ValidateSession`, `RevokeSession`, `Health` |
+| Perfiles y RBAC | `GetUser`, `GetProfiles`, `CheckPermission`, `ListUsersByRole`, `DesactivarUsuario`, `ReactivarUsuario` |
+| Autenticación | `Register`, `Login`, `Logout`, `GetCurrentUser`, `UpdateProfile`, `ValidateCredentials` |
+| Cuenta | `RequestEmailVerification`, `ConfirmEmailVerification`, `RequestPasswordReset`, `ConfirmPasswordReset`, `ChangePassword` |
+| Roles | `AssignRole`, `RemoveRole`, `SwitchProfile` |
+| Solicitudes de rol | `CrearSolicitudRol`, `ListarSolicitudesRol`, `ResolverSolicitudRol` |
+| OAuth | `OAuthAuthorize`, `OAuthCallback` |
+
+La validación del dominio institucional vive en una regla de dominio reutilizable (`domain/services/email-domain-validator.ts`) y la persistencia se apoya en los SPs de `auth.sql` (`sp_registrar_usuario`, `sp_asignar_rol`, `sp_cambiar_password`, `sp_crear_solicitud_rol`, etc.).
+
+#### 2.2.2 catalog-service (TypeScript)
+
+Microservicio del catálogo (gRPC `50052`, BD `catalog-db` / `yousac_catalogo`). Expone búsqueda con filtros y paginación desde el servidor (máximo 10 resultados por página), ficha técnica de clase, gestión de cursos/semestres/escuelas y la ingesta masiva mediante CSV.
+
+- **Caso de uso** único: `CatalogService` (`application/services/catalog.service.ts`), con su puerto `CatalogRepository` implementado por el adaptador Postgres.
+- **Ingesta masiva**: el RPC `CargarClasesCSV` delega en el SP `sp_cargar_clases_csv`, que inserta curso y clase grabada en una sola transacción atómica.
+- **Integración con notificaciones**: al publicar una clase o subir un video, el servidor gRPC dispara (sin bloquear la respuesta) una llamada al `notificaciones-service` vía `NotificacionesGrpcClient` (`NotificarNuevaClase` / `NotificarVideoSubido`).
+
+RPCs principales:
+
+| Grupo | RPCs |
+|---|---|
+| Consulta | `Search`, `GetClase`, `ListarPorSemestre`, `ObtenerCursoPorCodigo`, `ListarSemestres`, `ListarEscuelas`, `ListarCursos`, `Health` |
+| Publicación y edición | `PublicarClase`, `ActualizarUrlVideo`, `ActualizarUrlMaterial`, `ActualizarDuracion`, `EditarClase`, `EliminarClase` |
+| Catálogos base | `RegistrarCurso`, `ActualizarCurso`, `EliminarCurso`, `RegistrarSemestre`, `ActualizarSemestre`, `EliminarSemestre`, `RegistrarEscuela`, `ActualizarEscuela`, `EliminarEscuela` |
+| Ingesta masiva | `CargarClasesCSV` |
+
+#### 2.2.3 reproduccion-service (Go)
+
+Microservicio de reproducción (gRPC `50053`, BD `reproduccion-db` / `yousac_reproduccion`), escrito en Go. Guarda el checkpoint de video de cada estudiante (segundo exacto y porcentaje de avance calculado en BD), consulta el historial reciente y registra calificaciones con validación de rango.
+
+- **Estructura**: `cmd/server/main.go` (composition root y arranque del binario, incluye modo `-healthcheck`), `internal/domain/checkpoint.go` (entidades puras), `internal/application/ports/repository.go` (interfaz `ReproduccionRepository` definida por el consumidor), `internal/application/service/reproduccion.go` (caso de uso), `internal/infrastructure/persistence/postgres/repository.go` (adaptador con `pgx`) e `internal/interfaces/grpc/server.go` (traducción del contrato).
+- **Delegación en la BD**: el cálculo de progreso lo hace la función `fn_calcular_progreso`; la escritura usa `sp_guardar_checkpoint` y `sp_registrar_calificacion`; la lectura usa la vista `vw_historial_reciente`; los triggers `trg_actualizar_historial` y `trg_validar_rango_puntuacion` mantienen la consistencia.
+
+RPCs expuestos:
+
+| Grupo | RPCs |
+|---|---|
+| Checkpoints | `GuardarCheckpoint`, `ObtenerCheckpoint` |
+| Historial | `HistorialReciente` |
+| Calificaciones | `RegistrarCalificacion` |
+| Salud | `Health` |
+
+#### 2.2.4 analitica-service (Python)
+
+Microservicio de analítica (gRPC `50054`, BD `analitica-db` / `yousac_analitica` + Redis), escrito en Python. Calcula rankings de clases más vistas, tendencias de exámenes, ranking de mejor valoradas y recomendaciones personalizadas por estudiante, sincronizando eventos de vista y calificación que llegan desde reproducción/catálogo.
+
+- **Puertos** (ABC con `@abstractmethod`): `AnaliticaRepository` (persistencia en `analitica-db`) y `CacheRepository` (caché Redis con TTL e invalidación por prefijo).
+- **Adaptadores**: repositorio Postgres (`psycopg`), `RedisCache` y el servidor gRPC; `container.py` inyecta todo al arrancar (`main.py`).
+- **Caché e invalidación**: los rankings se sirven desde Redis; los triggers `trg_invalidar_cache_tendencias` y `trg_invalidar_cache_eventos` de `analitica.sql` borran las llaves afectadas cuando cambian los datos fuente, de modo que la siguiente lectura recalcula.
+- **Sincronización**: `SincronizarVista` y `SincronizarCalificacion` registran los eventos en la BD propia (database per service); `RecalcularTendencias` ejecuta el recálculo semanal con `sp_recalcular_tendencias`.
+
+RPCs expuestos:
+
+| Grupo | RPCs |
+|---|---|
+| Métricas | `ClasesMasVistas`, `TendenciasExamenes`, `RankingMejorValoradas`, `RecomendacionesEstudiante` |
+| Sincronización | `SincronizarVista`, `SincronizarCalificacion`, `RecalcularTendencias` |
+| Salud | `Health` |
+
+#### 2.2.5 inscripcion-service (TypeScript)
+
+Microservicio de inscripciones (gRPC `50055`, BD `inscripcion-db` / `yousac_inscripcion`). Gestiona la inscripción de estudiantes a cursos, el registro de docentes y auxiliares, y las asignaciones de catedrático/auxiliar a curso y de auxiliar a catedrático, además de los paneles de consulta por rol.
+
+- **Caso de uso** único: `InscripcionService` (`application/services/inscripcion.service.ts`), con puerto `InscripcionRepository` y adaptador Postgres.
+- **Reglas en BD**: `sp_inscribir_estudiante` valida cupo y duplicados, `sp_asignar_catedratico_curso` y `sp_asignar_auxiliar_catedratico` controlan las asignaciones (el trigger `trg_validar_auxiliar_unico_catedratico` impide asignar dos veces al mismo auxiliar a un catedrático), `sp_eliminar_docente` da de baja docentes y `fn_estado_matricula` reporta el estado de matrícula. Las consultas de panel usan las vistas `vw_panel_estudiante` y `vw_cursos_por_catedratico`, y `trg_auditoria_inscripcion` registra cada movimiento en `auditoria_inscripcion`.
+
+RPCs expuestos:
+
+| Grupo | RPCs |
+|---|---|
+| Registros | `RegistrarCurso`, `RegistrarDocente`, `RegistrarAuxiliar` |
+| Inscripción y asignaciones | `InscribirEstudiante`, `AsignarCatedraticoCurso`, `AsignarAuxiliarCatedratico`, `EliminarDocente` |
+| Consultas | `ConsultarPanelEstudiante`, `ConsultarCursosCatedratico`, `ConsultarEstadoMatricula`, `ListarCursos`, `ListarDocentes`, `ListarAuxiliares`, `ListarAsignaciones`, `ListarEstudiantesDeCurso` |
+| Salud | `Health` |
+
+#### 2.2.6 notificaciones-service (TypeScript)
+
+Microservicio de notificaciones (gRPC `50056`, BD `notificaciones-db` / `yousac_notificaciones`). Centraliza el envío de correos del sistema: confirmación de registro (desde auth-service), nueva clase publicada y video subido (desde catalog-service) y avisos generales. Implementa el patrón productor-consumidor con cola persistida en PostgreSQL.
+
+- **Flujo**: cada RPC registra la notificación aplicando una plantilla (`fn_renderizar_plantilla` renderiza asunto/cuerpo con variables); el trigger `trg_encolar_notificacion` encola automáticamente la fila en `cola_envio`. Un worker interno (`infrastructure/worker/email-worker.ts`) procesa periódicamente la vista `vw_notificaciones_pendientes`: envía el correo con Nodemailer (SMTP real o Mailpit en local), marca `ENVIADA` con `sp_marcar_enviada` o registra el intento fallido con `sp_registrar_intento_fallido`; el trigger `trg_reintento_fallido` re-encola con backoff y, al superar `MAX_INTENTOS`, `sp_marcar_fallida_definitiva` cierra la cola como `FALLIDA_DEFINITIVA`.
+- **Resolución de destinatarios**: consulta los directorios de otros servicios por gRPC — `auth-client.ts` (`ListUsersByRole` del auth-service) e `inscripcion-client.ts` (`ListarEstudiantesDeCurso` del inscripcion-service) — sin acceder a sus bases de datos.
+- **Entorno local**: Mailpit captura los correos y los muestra en `http://localhost:8025` (SMTP `1025`).
+
+RPCs expuestos:
+
+| Grupo | RPCs |
+|---|---|
+| Registro de eventos | `RegistrarNotificacion`, `NotificarNuevaClase`, `NotificarVideoSubido`, `RegistrarAvisoGeneral` |
+| Consultas | `ListarNotificaciones`, `ListarPlantillas`, `ConsultarCola` |
+| Salud | `Health` |
+
+### 2.3 API Gateway (punto de entrada único)
 
 El API Gateway (`Backend/api-gateway`, TypeScript + Express, puerto 8080) es el único punto de contacto del cliente web (north-south). Responsabilidades:
 

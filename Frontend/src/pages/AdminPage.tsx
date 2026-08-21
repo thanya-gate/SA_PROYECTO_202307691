@@ -113,6 +113,39 @@ function ListaRanking({
   );
 }
 
+function RatingBarList({
+  items,
+  tituloDe,
+}: {
+  items: RankingConClase[];
+  tituloDe: (item: RankingConClase) => string;
+}) {
+  if (items.length === 0) {
+    return <p className="catalogo__estado">Sin datos de calificaciones.</p>;
+  }
+  return (
+    <ol className="barra-lista">
+      {items.map((item) => (
+        <li key={item.claseId} className="barra-item">
+          <div className="barra-item__info">
+            <span className="barra-item__pos">{item.posicion}</span>
+            <Link to={`/catalogo/clase/${item.claseId}`} className="barra-item__titulo">
+              {tituloDe(item)}
+            </Link>
+            <span className="barra-item__valor">★ {item.promedioCalificacion.toFixed(1)}</span>
+          </div>
+          <div className="barra-item__track">
+            <div
+              className="barra-item__fill barra-item__fill--rating"
+              style={{ width: `${(item.promedioCalificacion / 5) * 100}%` }}
+            />
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export default function AdminPage() {
   const { token } = useAuth();
   const tokenActual = token ?? '';
@@ -125,6 +158,8 @@ export default function AdminPage() {
   const [semana, setSemana] = useState(isoHoy());
   const [semanaCalculada, setSemanaCalculada] = useState('');
   const [masVistas, setMasVistas] = useState<RankingConClase[]>([]);
+  const [desdeTendencias, setDesdeTendencias] = useState('');
+  const [hastaTendencias, setHastaTendencias] = useState('');
   const [tendencias, setTendencias] = useState<RankingConClase[]>([]);
   const [ranking, setRanking] = useState<RankingConClase[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -158,7 +193,10 @@ export default function AdminPage() {
         semana: res.semana,
         items: await enriquecer(res.items),
       })),
-      analiticaApi.tendenciasExamenes(LIMITE, tokenActual).then(async (res) => enriquecer(res.items)),
+      analiticaApi.tendenciasExamenes(LIMITE, tokenActual, desdeTendencias, hastaTendencias).then(async (res) => ({
+        semana: res.semana,
+        items: await enriquecer(res.items),
+      })),
       analiticaApi.rankingMejorValoradas(LIMITE, tokenActual).then(async (res) => enriquecer(res.items)),
     ])
       .then(([cursosRes, semestresRes, escuelasRes, vistasRes, tendenciasRes, rankingRes]) => {
@@ -169,7 +207,7 @@ export default function AdminPage() {
         setTotalSemestres(semestresRes.semestres.length);
         setSemanaCalculada(vistasRes.semana);
         setMasVistas(vistasRes.items);
-        setTendencias(tendenciasRes);
+        setTendencias(tendenciasRes.items);
         setRanking(rankingRes);
       })
       .catch((err: unknown) => {
@@ -178,7 +216,7 @@ export default function AdminPage() {
       .finally(() => { if (active) setCargando(false); });
 
     return () => { active = false; };
-  }, [semana, tokenActual]);
+  }, [semana, desdeTendencias, hastaTendencias, tokenActual]);
 
   const tituloDe = (item: RankingConClase): string =>
     item.clase?.tema || item.clase?.curso || 'Clase sin titulo';
@@ -203,14 +241,6 @@ export default function AdminPage() {
       color: COLORES[idx % COLORES.length],
     })),
   [tendencias]);
-
-  const ratingPieItems = useMemo(() =>
-    ranking.slice(0, 8).map((item, idx) => ({
-      label: item.clase?.tema || item.clase?.curso || `Clase ${idx + 1}`,
-      value: item.promedioCalificacion,
-      color: COLORES[idx % COLORES.length],
-    })),
-  [ranking]);
 
   const totalVistasGlobal = masVistas.reduce((s, i) => s + i.totalVistas, 0);
   const promRatingGlobal = ranking.length > 0
@@ -266,7 +296,7 @@ export default function AdminPage() {
           <section className="admin__panel" aria-label="Rating promedio">
             <h2 className="admin__panel-title">Rating promedio por clase</h2>
             <p className="admin__panel-subtitle">Promedio global: {promRatingGlobal} estrellas</p>
-            <PieChart items={ratingPieItems} label="calificaciones" />
+            <RatingBarList items={[...ranking].sort((a, b) => b.promedioCalificacion - a.promedioCalificacion)} tituloDe={tituloDe} />
           </section>
           <section className="admin__panel" aria-label="Accesos rapidos">
             <h2 className="admin__panel-title">Accesos rapidos</h2>
@@ -323,8 +353,32 @@ export default function AdminPage() {
                 <div className="analitica__cabecera">
                   <div>
                     <h3 className="analitica__titulo">Tendencias en epoca de examenes</h3>
-                    <p className="analitica__subtitulo">Clases mas consultadas en las ultimas 3 semanas.</p>
+                    <p className="analitica__subtitulo">
+                      {desdeTendencias && hastaTendencias
+                        ? `Desde ${formatearFecha(desdeTendencias)} al ${formatearFecha(hastaTendencias)}`
+                        : 'Histórico global (últimas 3 semanas)'}
+                    </p>
                   </div>
+                  <label className="analitica__semana">
+                    <span className="analitica__semana-label">Desde</span>
+                    <input
+                      type="date"
+                      className="analitica__semana-input"
+                      value={desdeTendencias}
+                      placeholder="aaaa-mm-dd"
+                      onChange={(e) => setDesdeTendencias(e.target.value)}
+                    />
+                  </label>
+                  <label className="analitica__semana">
+                    <span className="analitica__semana-label">Hasta</span>
+                    <input
+                      type="date"
+                      className="analitica__semana-input"
+                      value={hastaTendencias}
+                      placeholder="aaaa-mm-dd"
+                      onChange={(e) => setHastaTendencias(e.target.value)}
+                    />
+                  </label>
                 </div>
                 <ListaRanking items={tendencias} tituloDe={tituloDe} metaDe={metaDe} />
               </section>

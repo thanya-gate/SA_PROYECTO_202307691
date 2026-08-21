@@ -21,6 +21,11 @@ interface ClasesMasVistasResponse {
   items: RankingItem[];
 }
 
+interface ListaConSemanaResponse {
+  semana: string;
+  items: RankingItem[];
+}
+
 interface ListaResponse {
   items: RankingItem[];
 }
@@ -36,8 +41,11 @@ export const analiticaApi = {
       { token },
     ),
 
-  tendenciasExamenes: (limite: number, token: string): Promise<ListaResponse> =>
-    apiFetch<ListaResponse>(`/analitica/tendencias-examenes?limite=${limite}`, { token }),
+  tendenciasExamenes: (limite: number, token: string, desde?: string, hasta?: string): Promise<ListaConSemanaResponse> =>
+    apiFetch<ListaConSemanaResponse>(
+      `/analitica/tendencias-examenes?limite=${limite}${desde ? `&desde=${encodeURIComponent(desde)}` : ''}${hasta ? `&hasta=${encodeURIComponent(hasta)}` : ''}`,
+      { token },
+    ),
 
   rankingMejorValoradas: (limite: number, token: string): Promise<ListaResponse> =>
     apiFetch<ListaResponse>(`/analitica/ranking-mejor-valoradas?limite=${limite}`, { token }),

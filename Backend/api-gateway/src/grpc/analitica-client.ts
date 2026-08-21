@@ -48,7 +48,7 @@ export const analiticaGrpc = {
   health: () => unary('Health', {}),
 
   clasesMasVistas: (req: { semana?: string; limite?: number }) => unary('ClasesMasVistas', req),
-  tendenciasExamenes: (req: { limite?: number }) => unary('TendenciasExamenes', req),
+  tendenciasExamenes: (req: { limite?: number; desde?: string; hasta?: string }) => unary('TendenciasExamenes', req),
   rankingMejorValoradas: (req: { limite?: number }) => unary('RankingMejorValoradas', req),
   recomendacionesEstudiante: (req: { estudianteId: string; limite?: number }) =>
     unary('RecomendacionesEstudiante', req),

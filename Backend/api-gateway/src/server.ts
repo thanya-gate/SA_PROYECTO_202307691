@@ -168,6 +168,13 @@ export function createGateway(): Express {
     } catch {
       inscripcionStatus = 'unavailable';
     }
+    let notificacionesStatus = 'unknown';
+    try {
+      const health = await notificacionesGrpc.health();
+      notificacionesStatus = health.status;
+    } catch {
+      notificacionesStatus = 'unavailable';
+    }
     res.json({
       status: 'ok',
       service: 'api-gateway',
@@ -177,6 +184,7 @@ export function createGateway(): Express {
       reproductionService: reproductionStatus,
       analiticaService: analiticaStatus,
       inscripcionService: inscripcionStatus,
+      notificacionesService: notificacionesStatus,
     });
   });
 
@@ -554,15 +562,36 @@ export function createGateway(): Express {
 
   app.post('/auth/oauth/authorize', domainGuard, async (req, res, next) => {
     try {
-      const { email, state } = req.body as { email?: string; state?: string };
-      if (!email) {
-        throw new DomainError('ENTRADA_INVALIDA', 'Correo requerido', 400);
+      const { email, state, codeChallenge } = req.body as { email?: string; state?: string; codeChallenge?: string };
+
+      if (config.OAUTH_PROVIDER === 'google') {
+        // Google OAuth 2.0 + PKCE: construir la URL de autorización de Google
+        if (!config.GOOGLE_CLIENT_ID) {
+          throw new DomainError('CONFIG_INVALIDA', 'GOOGLE_CLIENT_ID no está configurado', 500);
+        }
+        if (!state || !codeChallenge) {
+          throw new DomainError('ENTRADA_INVALIDA', 'state y codeChallenge son requeridos', 400);
+        }
+        const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+        googleAuthUrl.searchParams.set('client_id', config.GOOGLE_CLIENT_ID);
+        googleAuthUrl.searchParams.set('redirect_uri', config.OAUTH_REDIRECT_URI);
+        googleAuthUrl.searchParams.set('response_type', 'code');
+        googleAuthUrl.searchParams.set('scope', 'openid email profile');
+        googleAuthUrl.searchParams.set('state', state);
+        googleAuthUrl.searchParams.set('code_challenge', codeChallenge);
+        googleAuthUrl.searchParams.set('code_challenge_method', 'S256');
+        res.json({ login_uri: googleAuthUrl.toString() });
+      } else {
+        // Mock IdP: flujo original con email
+        if (!email) {
+          throw new DomainError('ENTRADA_INVALIDA', 'Correo requerido', 400);
+        }
+        const loginUri = buildIdpLoginUri({
+          email: String(email).trim().toLowerCase(),
+          state: typeof state === 'string' ? state : '',
+        });
+        res.json({ login_uri: loginUri });
       }
-      const loginUri = buildIdpLoginUri({
-        email: String(email).trim().toLowerCase(),
-        state: typeof state === 'string' ? state : '',
-      });
-      res.json({ login_uri: loginUri });
     } catch (err) {
       next(err);
     }
@@ -570,11 +599,16 @@ export function createGateway(): Express {
 
   app.post('/auth/oauth/callback', async (req, res, next) => {
     try {
-      const { code } = req.body as Record<string, unknown>;
+      const { code, codeVerifier } = req.body as Record<string, unknown>;
       if (typeof code !== 'string') {
         throw new DomainError('ENTRADA_INVALIDA', 'Código OAuth requerido', 400);
       }
-      const result = await authGrpc.oauthCallback(code, req.ip, req.headers['user-agent']);
+      const result = await authGrpc.oauthCallback(
+        code,
+        req.ip,
+        req.headers['user-agent'],
+        typeof codeVerifier === 'string' ? codeVerifier : undefined,
+      );
       setSessionCookie(res, result.accessToken, cookieMaxAge);
       res.json({
         message: 'Sesión iniciada con identidad institucional',
@@ -771,11 +805,34 @@ export function createGateway(): Express {
           throw new DomainError('ENTRADA_INVALIDA', 'El archivo CSV no contiene filas de clases', 400);
         }
         const result = await catalogGrpc.cargarClasesCSV(filas);
+
+        const cursosUnicos = new Map<string, { codigo: string; nombre: string; escuela: string; semestre: string; anio: number }>();
+        for (const f of filas) {
+          if (f.codigoCurso && f.nombreCurso && f.escuela && f.semestre && f.anio) {
+            const key = `${f.codigoCurso}|${f.semestre}|${f.anio}`;
+            if (!cursosUnicos.has(key)) {
+              cursosUnicos.set(key, {
+                codigo: f.codigoCurso,
+                nombre: f.nombreCurso,
+                escuela: f.escuela,
+                semestre: f.semestre,
+                anio: f.anio,
+              });
+            }
+          }
+        }
+        for (const curso of cursosUnicos.values()) {
+          try {
+            await inscripcionGrpc.registrarCurso(curso);
+          } catch { /* curso ya existente o error no crítico */ }
+        }
+
         res.status(201).json({
           message: 'Carga masiva procesada mediante sp_cargar_clases_csv',
           registradas: result.registradas,
           omitidas: result.omitidas,
           totalProcesadas: filas.length,
+          cursosSincronizados: cursosUnicos.size,
         });
       } catch (err) {
         if (err instanceof CsvParseError) {
@@ -993,14 +1050,25 @@ export function createGateway(): Express {
       }
 
       await fs.promises.rename(tempPath, targetPath);
-      const urlVideo = `/media/clases/${claseId}.mp4`;
+      const urlVideo = `/media/videos/clases/${claseId}.mp4`;
       await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
       const result = await catalogGrpc.actualizarDuracion(claseId, duracion);
+      const clase = result.clase;
+      if (clase?.cursoId) {
+        notificacionesGrpc.notificarVideoSubido({
+          cursoId: clase.cursoId,
+          codigo: clase.codigo,
+          curso: clase.curso,
+          semestre: clase.semestre,
+          anio: clase.anio,
+          tema: clase.tema,
+        }).catch((err: any) => console.error('[api-gateway] notificarVideoSubido error:', err?.message ?? err));
+      }
       res.status(201).json({
         message: 'Video subido a la plataforma',
         urlVideo,
-        duracion: result.clase?.duracion ?? duracion,
-        clase: result.clase,
+        duracion: clase?.duracion ?? duracion,
+        clase,
       });
     } catch (err) {
       await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
@@ -1017,6 +1085,19 @@ export function createGateway(): Express {
       }
       const result = await catalogGrpc.actualizarUrlVideo(req.params.claseId, urlVideo);
       res.json({ message: 'URL de video actualizada', clase: result.clase });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/catalog/classes/:claseId/duracion', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const { duracion } = req.body as Record<string, unknown>;
+      if (typeof duracion !== 'number' || duracion < 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'duracion debe ser un número no negativo', 400);
+      }
+      const result = await catalogGrpc.actualizarDuracion(req.params.claseId, duracion);
+      res.json({ message: 'Duración actualizada', clase: result.clase });
     } catch (err) {
       next(err);
     }
@@ -1065,7 +1146,7 @@ export function createGateway(): Express {
 //reproduccion
   app.post('/reproduccion/checkpoint', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
-      const { claseId, segundoActual, duracion } = req.body as Record<string, unknown>;
+      const { claseId, segundoActual, duracion, evento } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof segundoActual !== 'number' || typeof duracion !== 'number') {
         throw new DomainError('ENTRADA_INVALIDA', 'claseId, segundoActual y duracion son obligatorios', 400);
       }
@@ -1075,11 +1156,13 @@ export function createGateway(): Express {
         segundoActual,
         duracion,
       });
-      analiticaGrpc.sincronizarVista({
-        claseId,
-        estudianteId: req.context!.userId,
-        duracionVista: segundoActual,
-      }).catch(() => {});
+      if (evento === 'inicio' || evento === 'fin') {
+        analiticaGrpc.sincronizarVista({
+          claseId,
+          estudianteId: req.context!.userId,
+          duracionVista: segundoActual,
+        }).catch(() => {});
+      }
       res.json({
         message: 'Checkpoint guardado',
         historialId: result.historialId,
@@ -1173,10 +1256,14 @@ export function createGateway(): Express {
   app.get('/analitica/tendencias-examenes', authenticate, async (req, res, next) => {
     try {
       const limite = Number(req.query.limite ?? 0);
+      const desde = req.query.desde ? String(req.query.desde) : undefined;
+      const hasta = req.query.hasta ? String(req.query.hasta) : undefined;
       const result = await analiticaGrpc.tendenciasExamenes({
         limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
+        desde,
+        hasta,
       });
-      res.json({ items: result.items });
+      res.json({ semana: result.semana || '', items: result.items });
     } catch (err) {
       next(err);
     }

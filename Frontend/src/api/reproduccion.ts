@@ -46,10 +46,10 @@ interface RegistrarCalificacionResponse {
 }
 
 export const reproduccionApi = {
-  guardarCheckpoint: (claseId: string, segundoActual: number, duracion: number, token: string): Promise<GuardarCheckpointResponse> =>
+  guardarCheckpoint: (claseId: string, segundoActual: number, duracion: number, token: string, evento?: string): Promise<GuardarCheckpointResponse> =>
     apiFetch<GuardarCheckpointResponse>('/reproduccion/checkpoint', {
       method: 'POST',
-      body: { claseId, segundoActual, duracion },
+      body: { claseId, segundoActual, duracion, ...(evento ? { evento } : {}) },
       token,
     }),
 

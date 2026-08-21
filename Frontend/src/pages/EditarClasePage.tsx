@@ -43,6 +43,7 @@ export default function EditarClasePage() {
   const [anio, setAnio] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [materialUrl, setMaterialUrl] = useState('');
+  const [duracion, setDuracion] = useState('');
 
   const [etiquetaDraft, setEtiquetaDraft] = useState('');
   const [etiquetas, setEtiquetas] = useState<string[]>([]);
@@ -64,6 +65,7 @@ export default function EditarClasePage() {
         setAnio(res.clase.anio ? String(res.clase.anio) : '');
         setVideoUrl(res.clase.urlVideo ?? '');
         setMaterialUrl(res.clase.urlMaterial ?? '');
+        setDuracion(res.clase.duracion > 0 ? String(Math.floor(res.clase.duracion / 60)) : '');
         setEtiquetas(res.clase.etiquetas ?? []);
         setParticipantes(
           (res.clase.participantes ?? []).map((p) => ({
@@ -156,7 +158,7 @@ export default function EditarClasePage() {
           anio: Number(anio),
           urlVideo: videoActual,
           urlMaterial: materialActual,
-          duracion: clase.duracion ?? 0,
+          duracion: Math.floor((Number(duracion) || 0) * 60),
           etiquetas,
           participantes: participantesValidos,
         },
@@ -293,6 +295,18 @@ export default function EditarClasePage() {
                     value={materialUrl}
                     placeholder="https://drive.google.com/…"
                     onChange={(e) => setMaterialUrl(e.target.value)}
+                  />
+                </label>
+                <label className="subirclase__campo">
+                  <span className="subirclase__campo-label">Duración (minutos)</span>
+                  <input
+                    className="subirclase__input"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={duracion}
+                    placeholder="Ej. 90"
+                    onChange={(e) => setDuracion(e.target.value)}
                   />
                 </label>
               </div>

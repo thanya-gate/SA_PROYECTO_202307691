@@ -45,6 +45,7 @@ message ClaseDetalle {
   string fecha_publicacion = 13;  
   repeated Participante participantes = 14;
   repeated string etiquetas = 15;
+  string curso_id = 16;
 }
 
 message SemestreResumen {

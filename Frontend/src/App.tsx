@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ClasePage from './pages/ClasePage';
 import HistorialPage from './pages/HistorialPage';
+import NotificacionesPage from './pages/NotificacionesPage';
 import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
 import GestionCursosPage from './pages/GestionCursosPage';
@@ -18,7 +19,6 @@ import SubirClasePage from './pages/SubirClasePage';
 import EditarClasePage from './pages/EditarClasePage';
 import ProfilePage from './pages/ProfilePage';
 import AutorizacionPendientePage from './pages/AutorizacionPendientePage';
-import NotificacionesPage from './pages/NotificacionesPage';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, initializing } = useAuth();

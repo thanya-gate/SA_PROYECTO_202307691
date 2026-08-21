@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="dv0OgKAyzEfrrDcA1nGk">
+    <mxGraphModel dx="5079" dy="666" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="FRGC010_JeR9UFzaYpre-254" parent="1" style="line;strokeWidth=4;direction=south;html=1;perimeter=backbonePerimeter;points=[];outlineConnect=0;" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="-3780" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-255" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontStyle=1;fontSize=14;strokeColor=none;" value="CDU0003.4 Ver material adjunto" vertex="1">
+          <mxGeometry height="40" width="560" x="-3780" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-256" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontStyle=1;strokeColor=none;" value="Usuario" vertex="1">
+          <mxGeometry height="30" width="280" x="-3780" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-257" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontStyle=1;strokeColor=none;" value="Microservicio Catálogo" vertex="1">
+          <mxGeometry height="30" width="280" x="-3410" y="86" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-258" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1">
+          <mxGeometry height="30" width="30" x="-3655" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-259" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;" value="Selecciona el material adjunto desde la ficha técnica" vertex="1">
+          <mxGeometry height="60" width="160" x="-3720" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-260" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;" value="Recupera el archivo asociado" vertex="1">
+          <mxGeometry height="60" width="160" x="-3440" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-261" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="¿El archivo se pudo recuperar?" vertex="1">
+          <mxGeometry height="80" width="100" x="-3410" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-262" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;" value="Muestra: no se pudo cargar el material adjunto" vertex="1">
+          <mxGeometry height="60" width="160" x="-3277" y="577" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-263" parent="1" style="ellipse;shape=doubleEllipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1">
+          <mxGeometry height="30" width="30" x="-3669" y="566" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-264" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;" value="Muestra o descarga el archivo al usuario" vertex="1">
+          <mxGeometry height="60" width="160" x="-3734" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-265" parent="1" style="ellipse;shape=doubleEllipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1">
+          <mxGeometry height="30" width="30" x="-3669" y="566" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-266" edge="1" parent="1" source="FRGC010_JeR9UFzaYpre-258" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="FRGC010_JeR9UFzaYpre-259">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-267" edge="1" parent="1" source="FRGC010_JeR9UFzaYpre-259" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="FRGC010_JeR9UFzaYpre-260">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-268" edge="1" parent="1" source="FRGC010_JeR9UFzaYpre-260" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="FRGC010_JeR9UFzaYpre-261">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-269" edge="1" parent="1" source="FRGC010_JeR9UFzaYpre-261" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="FRGC010_JeR9UFzaYpre-262" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-270" edge="1" parent="1" source="FRGC010_JeR9UFzaYpre-262" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="FRGC010_JeR9UFzaYpre-263">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-271" edge="1" parent="1" source="FRGC010_JeR9UFzaYpre-261" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="FRGC010_JeR9UFzaYpre-264" value="Sí">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-272" edge="1" parent="1" source="FRGC010_JeR9UFzaYpre-264" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="FRGC010_JeR9UFzaYpre-265">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-273" parent="1" style="line;strokeWidth=4;direction=south;html=1;perimeter=backbonePerimeter;points=[];outlineConnect=0;" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="-3470" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FRGC010_JeR9UFzaYpre-274" parent="1" style="line;strokeWidth=4;direction=south;html=1;perimeter=backbonePerimeter;points=[];outlineConnect=0;" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="-3090" y="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

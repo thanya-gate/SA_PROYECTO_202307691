@@ -106,6 +106,10 @@ almacenados, vistas, funciones y triggers).
 ### Diagrama de alto nivel
 ![Diagrama alto nivel](CDU/CDU_AltoNivel_202307691.drawio.svg)
 
+### Primera Descomposición General
+
+![Diagrama primera descomposición](CDU/CDU_PrimeraDescomposicion_202307691.drawio.svg)
+
 ### Primera Descomposición por módulo
 #### Módulo de Autenticación
 ![Diagrama primera descomposición módulo 1](CDU/CDU_PrimeraDescomposicion_M1_202307691.drawio.svg)
@@ -132,6 +136,7 @@ almacenados, vistas, funciones y triggers).
 ---
  
 ### CDU0001.1: Autenticar usuario institucional
+![CDU1](CDU/CDU_Expandido_CDU1_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -169,6 +174,8 @@ almacenados, vistas, funciones y triggers).
 ---
  
 ### CDU0001.2: Validar dominio institucional
+
+![CDU2](CDU/CDU_Expandido_CDU2_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -203,6 +210,8 @@ almacenados, vistas, funciones y triggers).
  
 ### CDU0001.3: Autenticarse vía OAuth institucional
  
+![CDU3](CDU/CDU_Expandido_CDU3_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0001.3 |
@@ -238,6 +247,8 @@ almacenados, vistas, funciones y triggers).
 ---
  
 ### CDU0001.4: Registrar cuenta nueva
+
+![CDU4](CDU/CDU_Expandido_CDU4_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -281,6 +292,8 @@ almacenados, vistas, funciones y triggers).
  
 ### CDU0002.1: Consultar cursos asignados/inscritos
  
+![CDU5](CDU/CDU_Expandido_CDU5_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0002.1 |
@@ -316,6 +329,8 @@ Flujos de excepción:
  
 ### CDU0002.2: Consultar estado de matriculación
  
+![CDU6](CDU/CDU_Expandido_CDU6_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0002.2 |
@@ -348,6 +363,8 @@ Flujos de excepción:
  
 ### CDU0002.3: Gestionar control de acceso por roles (RBAC)
  
+![CDU7](CDU/CDU_Expandido_CDU7_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0002.3 |
@@ -382,6 +399,8 @@ Flujos de excepción:
  
 ### CDU0002.4: Asignar/editar rol de usuario
  
+![CDU8](CDU/CDU_Expandido_CDU8_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0002.4 |
@@ -416,6 +435,8 @@ Flujos de excepción:
  
 ### CDU0002.5: Auditar cambio de permisos
  
+![CDU9](CDU/CDU_Expandido_CDU9_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0002.5 |
@@ -451,6 +472,8 @@ Flujos de excepción:
 ---
  
 ### CDU0003.1: Buscar grabaciones
+
+![CDU10](CDU/CDU_Expandido_CDU10_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -486,6 +509,8 @@ Flujos de excepción:
 ---
  
 ### CDU0003.2: Aplicar filtros de búsqueda
+
+![CDU11](CDU/CDU_Expandido_CDU11_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -519,6 +544,8 @@ Flujos de excepción:
 ---
  
 ### CDU0003.3: Ver ficha técnica de clase
+
+![CDU12](CDU/CDU_Expandido_CDU12_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -553,6 +580,8 @@ Flujos de excepción:
  
 ### CDU0003.4: Ver material adjunto
  
+![CDU13](CDU/CDU_Expandido_CDU13_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0003.4 |
@@ -586,6 +615,8 @@ Flujos de excepción:
  
 ### CDU0003.5: Notificar publicación de nueva clase
  
+![CDU14](CDU/CDU_Expandido_CDU14_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0003.5 |
@@ -622,7 +653,8 @@ Flujos de excepción:
  ![Diagrama expandido módulo 4](CDU/CDU_Expandido_M4_202307691.drawio.svg)
 
 ---
- 
+ ![CDU15](CDU/CDU_Expandido_CDU15_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0004.1 |
@@ -654,7 +686,8 @@ Flujos de excepción:
 | FE-02 | Error de comunicación con Redis | El sistema muestra un mensaje de error genérico y solicita reintentar. |
  
 ---
- 
+ ![CDU16](CDU/CDU_Expandido_CDU16_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0004.2 |
@@ -685,6 +718,8 @@ Flujos de excepción:
  
 ---
  
+![CDU17](CDU/CDU_Expandido_CDU17_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0004.3 |
@@ -716,6 +751,8 @@ Flujos de excepción:
  
 ---
  
+ ![CDU18](CDU/CDU_Expandido_CDU18_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0004.4 |
@@ -754,6 +791,8 @@ Flujos de excepción:
  
 ---
  
+![CDU19](CDU/CDU_Expandido_CDU19_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0005.1 |
@@ -785,6 +824,8 @@ Flujos de excepción:
  
 ---
  
+![CDU20](CDU/CDU_Expandido_CDU20_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0005.2 |
@@ -815,6 +856,8 @@ Flujos de excepción:
  
 ---
  
+![CDU21](CDU/CDU_Expandido_CDU21_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0005.3 |
@@ -846,6 +889,8 @@ Flujos de excepción:
  
 ---
  
+ ![CDU22](CDU/CDU_Expandido_CDU22_202307691.drawio.svg)
+
 | Campo | Descripción |
 |-------|-------------|
 | ID | CDU0005.4 |
@@ -876,6 +921,8 @@ Flujos de excepción:
 | FE-01 | El estudiante no tiene historial reciente | El sistema muestra "Aún no has visto ninguna clase". |
  
 ---
+
+![CDU23](CDU/CDU_Expandido_CDU23_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -912,6 +959,8 @@ Flujos de excepción:
   ![Diagrama expandido módulo 6](CDU/CDU_Expandido_M6_202307691.drawio.svg)
 
 ---
+
+![CDU24](CDU/CDU_Expandido_CDU24_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -943,6 +992,8 @@ Flujos de excepción:
 | FE-01 | El evento de registro llega incompleto  | El sistema descarta la notificación y registra el error. |
  
 ---
+
+![CDU25](CDU/CDU_Expandido_CDU25_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -974,6 +1025,8 @@ Flujos de excepción:
 | FE-01 | No hay estudiantes inscritos en el curso | El sistema descarta el envío sin generar correos. |
  
 ---
+
+![CDU26](CDU/CDU_Expandido_CDU26_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -1005,6 +1058,8 @@ Flujos de excepción:
 | FE-01 | No se seleccionó ningún destinatario | El sistema rechaza el envío y muestra "Selecciona al menos un destinatario". |
  
 ---
+
+![CDU27](CDU/CDU_Expandido_CDU27_202307691.drawio.svg)
  
 | Campo | Descripción |
 |-------|-------------|
@@ -1051,10 +1106,99 @@ Muestra la estructura funcional del sistema, es decir, las clases, módulos, ser
 
 ![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_202307691.drawio.svg)
 
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU1_202307691.drawio.svg)
+
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU2_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU3_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU4_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU5_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU6_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU7_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU8_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU9_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU10_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU11_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU12_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU13_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU14_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU15_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU16_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU17_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU18_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU19_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU20_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU21_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU22_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU23_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU24_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU25_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU26_202307691.drawio.svg)
+![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU27_202307691.drawio.svg)
+
+
+
+
+
+
+
 ### Vista de Procesos 
 Representa cómo se comunican y coordinan los procesos o servicios del sistema durante la ejecución. Esta vista muestra las llamadas remotas entre servicios, el intercambio de datos y la concurrencia.
 
 ![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU1_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU2_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU3_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU4_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU5_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU6_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU7_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU8_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU9_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU10_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU11_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU12_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU13_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU14_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU15_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU16_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU17_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU18_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU19_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU20_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU21_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU22_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU23_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU24_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU25_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU26_202307691.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU27_202307691.drawio.svg)
 
 ### Vista de Componentes
 Describe la organización del software en componentes o módulos, mostrando cómo se divide el sistema, sus dependencias y la función de cada parte.
@@ -1194,6 +1338,8 @@ Representa la sección donde el usuario puede administrar la información de su 
 Corresponde a la interfaz exclusiva para administradores del sistema. Desde este panel es posible gestionar usuarios, cursos, grabaciones, permisos y otros elementos administrativos necesarios para el funcionamiento de la plataforma.
 
 ![M6](Mockups/Mockups_Admin_202307691.drawio.svg)
+
+
 
 
 ## Conclusión

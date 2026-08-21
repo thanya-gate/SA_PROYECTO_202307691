@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi, type AuthResponse, type PublicUser, type RegisterInput, type UpdateProfileInput } from '../api/auth';
+import { generateCodeVerifier, generateCodeChallenge, saveCodeVerifier } from '../utils/pkce';
 
 const TOKEN_KEY = 'yousac_token';
 const OAUTH_STATE_KEY = 'yousac_oauth_state';
@@ -10,7 +11,7 @@ interface AuthContextValue {
   initializing: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
-  loginWithOAuth: (email: string) => Promise<void>;
+  loginWithOAuth: (email?: string) => Promise<void>;
   completeOAuthLogin: (code: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -82,26 +83,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.register(input);
   }
 
-  // Paso 1 del flujo OAuth 2.0 (Authorization Code): pide la URL de autorización
-  // del IdP y redirige el navegador a la pantalla institucional.
-  async function loginWithOAuth(email: string): Promise<void> {
+  // Paso 1 del flujo OAuth 2.0 (Authorization Code + PKCE):
+  // Genera code_verifier + code_challenge, guarda el state y code_verifier,
+  // y redirige al navegador a la URL de autorización del IdP (Google o Mock).
+  async function loginWithOAuth(email?: string): Promise<void> {
     const state = crypto.randomUUID();
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
     try {
       sessionStorage.setItem(OAUTH_STATE_KEY, state);
     } catch {
     }
-    const { login_uri } = await authApi.oauthAuthorize(email, state);
+    saveCodeVerifier(codeVerifier);
+    const { login_uri } = await authApi.oauthAuthorize(state, codeChallenge, email);
     window.location.assign(login_uri);
   }
 
   // Paso 2: el IdP redirige de vuelta al SPA con ?code=...&state=... y aquí se
   // intercambia el código por la sesión (access token + cookie).
   async function completeOAuthLogin(code: string): Promise<void> {
-    saveSession(await authApi.oauthCallback(code));
+    const { loadCodeVerifier, clearCodeVerifier } = await import('../utils/pkce');
+    const codeVerifier = loadCodeVerifier();
+    saveSession(await authApi.oauthCallback(code, codeVerifier ?? undefined));
     try {
       sessionStorage.removeItem(OAUTH_STATE_KEY);
     } catch {
     }
+    clearCodeVerifier();
   }
 
   async function logout(): Promise<void> {

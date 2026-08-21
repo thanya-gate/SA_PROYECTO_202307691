@@ -41,6 +41,8 @@ export default function ClasePage() {
   const [videoSubido, setVideoSubido] = useState<string | null>(null);
   const [urlVideoInput, setUrlVideoInput] = useState('');
   const [guardandoUrl, setGuardandoUrl] = useState(false);
+  const [duracionInput, setDuracionInput] = useState('');
+  const [guardandoDuracion, setGuardandoDuracion] = useState(false);
 
   // Edición / eliminación de la clase (CRUD)
   const [eliminando, setEliminando] = useState(false);
@@ -48,6 +50,7 @@ export default function ClasePage() {
 
   const ultimoSegundoRef = useRef(0);
   const ultimoGuardadoRef = useRef(0);
+  const vistaRegistradaRef = useRef(false);
 
   const tokenActual = token ?? '';
   const videoId = clase ? youtubeVideoId(clase.urlVideo) : null;
@@ -55,11 +58,11 @@ export default function ClasePage() {
   const puedeSubirVideo = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN' || rol === 'ROLE_AUXILIAR');
 
   const guardarCheckpoint = useCallback(
-    async (segundos: number) => {
+    async (segundos: number, evento?: string) => {
       if (!clase || !tokenActual) return;
       const seg = Math.floor(Math.max(0, segundos));
       try {
-        const res = await reproduccionApi.guardarCheckpoint(clase.claseId, seg, clase.duracion, tokenActual);
+        const res = await reproduccionApi.guardarCheckpoint(clase.claseId, seg, clase.duracion, tokenActual, evento);
         ultimoGuardadoRef.current = seg;
         setHistorialId(res.historialId);
         setCheckpoint((prev) =>
@@ -99,8 +102,17 @@ export default function ClasePage() {
     (state: number) => {
       if (state === YT_STATE.PLAYING) {
         setReanudando(false);
+        if (!vistaRegistradaRef.current) {
+          vistaRegistradaRef.current = true;
+          void guardarCheckpoint(ultimoSegundoRef.current, 'inicio');
+        }
       }
-      if (state === YT_STATE.PAUSED || state === YT_STATE.ENDED) {
+      if (state === YT_STATE.ENDED) {
+        void guardarCheckpoint(ultimoSegundoRef.current, 'fin');
+        // Permitir que se registre otra vista si el usuario vuelve a reproducir
+        vistaRegistradaRef.current = false;
+      }
+      if (state === YT_STATE.PAUSED) {
         void guardarCheckpoint(ultimoSegundoRef.current);
       }
     },
@@ -116,6 +128,7 @@ export default function ClasePage() {
       .then(async (res) => {
         if (!active) return;
         setClase(res.clase);
+        setDuracionInput(res.clase.duracion > 0 ? String(Math.floor(res.clase.duracion / 60)) : '');
         void catalogApi
           .search({ curso: res.clase.codigo }, tokenActual)
           .then((rel) => {
@@ -197,6 +210,21 @@ export default function ClasePage() {
       setErrorSubida(err instanceof Error ? err.message : 'No se pudo guardar la URL del video');
     } finally {
       setGuardandoUrl(false);
+    }
+  }
+
+  async function guardarDuracion() {
+    if (!clase || !tokenActual) return;
+    const minutos = Number(duracionInput);
+    if (!Number.isFinite(minutos) || minutos < 0) return;
+    const segundos = Math.floor(minutos * 60);
+    setGuardandoDuracion(true);
+    try {
+      const res = await catalogApi.actualizarDuracion(clase.claseId, segundos, tokenActual);
+      setClase((prev) => (prev ? { ...prev, duracion: res.clase.duracion } : prev));
+    } catch {
+    } finally {
+      setGuardandoDuracion(false);
     }
   }
 
@@ -315,6 +343,26 @@ export default function ClasePage() {
 
                 {videoSubido && <Alert tone="info">Video actualizado. El reproductor usará la nueva fuente.</Alert>}
                 {errorSubida && <Alert tone="error">{errorSubida}</Alert>}
+
+                <div className="clase__subida-url">
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={duracionInput}
+                    onChange={(e) => setDuracionInput(e.target.value)}
+                    placeholder="Duración en minutos"
+                    disabled={guardandoDuracion}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => void guardarDuracion()}
+                    disabled={guardandoDuracion || duracionInput.trim().length === 0}
+                  >
+                    {guardandoDuracion ? 'Guardando…' : 'Guardar duración'}
+                  </Button>
+                </div>
               </div>
             )}
 
