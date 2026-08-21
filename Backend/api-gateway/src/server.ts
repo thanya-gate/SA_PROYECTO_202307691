@@ -1050,7 +1050,7 @@ export function createGateway(): Express {
       }
 
       await fs.promises.rename(tempPath, targetPath);
-      const urlVideo = `/media/clases/${claseId}.mp4`;
+      const urlVideo = `/media/videos/clases/${claseId}.mp4`;
       await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
       const result = await catalogGrpc.actualizarDuracion(claseId, duracion);
       const clase = result.clase;

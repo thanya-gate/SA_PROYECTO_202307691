@@ -25,6 +25,8 @@ services:
       context: ./Backend
       dockerfile: services/auth-service/Dockerfile
     container_name: yousac-auth-service
+    env_file:
+      - ./Backend/services/auth-service/.env
 
     environment:
       NODE_ENV: development
@@ -32,10 +34,13 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-cambiar-en-produccion-1234567890abcdef}
       COOKIE_SECURE: "false"
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
+      OAUTH_PROVIDER: google
       OAUTH_MOCK_ENABLED: "true"
       OAUTH_MOCK_ISSUER: http://api-gateway:8080/mock-oauth
       OAUTH_REDIRECT_URI: http://localhost:8081/oauth/callback
+      GOOGLE_REDIRECT_URI: http://localhost:8081/oauth/callback
       DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@auth-db:5432/${POSTGRES_DB:-yousac_auth}
+      NOTIFICACIONES_GRPC_ADDR: notificaciones-service:50056
     depends_on:
       auth-db:
         condition: service_healthy
@@ -75,6 +80,7 @@ services:
       NODE_ENV: development
       GRPC_PORT: 50052
       DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@catalog-db:5432/${CATALOG_DB:-yousac_catalogo}
+      NOTIFICACIONES_GRPC_ADDR: notificaciones-service:50056
     depends_on:
       catalog-db:
         condition: service_healthy
@@ -215,6 +221,49 @@ services:
       timeout: 10s
       retries: 5
 
+  notificaciones-db:
+    image: postgres:16-alpine
+    container_name: yousac-notificaciones-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yousac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yousac_secret}
+      POSTGRES_DB: ${NOTIFICACIONES_DB:-yousac_notificaciones}
+    ports:
+      - "5437:5432"
+    volumes:
+      - notificaciones-db-data:/var/lib/postgresql/data
+      - ./Backend/sql/notificaciones.sql:/docker-entrypoint-initdb.d/001-notificaciones.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yousac} -d ${NOTIFICACIONES_DB:-yousac_notificaciones}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  notificaciones-service:
+    build:
+      context: ./Backend
+      dockerfile: services/notificaciones-service/Dockerfile
+    container_name: yousac-notificaciones-service
+    env_file:
+      - ./Backend/services/notificaciones-service/.env
+
+    environment:
+      NODE_ENV: development
+    depends_on:
+      notificaciones-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      inscripcion-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
   api-gateway:
     build:
       context: ./Backend
@@ -223,7 +272,9 @@ services:
     ports:
       - "8080:8080" 
     volumes:
-      - media-data:/app/media
+      - ./Backend/media:/app/media
+    env_file:
+      - ./Backend/api-gateway/.env
     environment:
       NODE_ENV: development
       PORT: 8080
@@ -232,12 +283,14 @@ services:
       REPRODUCTION_GRPC_ADDR: reproduccion-service:50053
       ANALITICA_GRPC_ADDR: analitica-service:50054
       INSCRIPCION_GRPC_ADDR: inscripcion-service:50055
+      NOTIFICACIONES_GRPC_ADDR: notificaciones-service:50056
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
       SESSION_COOKIE_NAME: yousac_session
       COOKIE_SECURE: "false"
       COOKIE_SAME_SITE: lax
       COOKIE_PATH: /
       SESSION_TTL_MS: "3600000"
+      OAUTH_PROVIDER: google
       OAUTH_ISSUER_PUBLIC: http://localhost:8080/mock-oauth
       OAUTH_REDIRECT_URI: http://localhost:8081/oauth/callback
       OAUTH_CLIENT_ID: yousac-web
@@ -251,6 +304,8 @@ services:
       analitica-service:
         condition: service_healthy
       inscripcion-service:
+        condition: service_healthy
+      notificaciones-service:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -266,7 +321,7 @@ services:
     ports:
       - "8081:80" 
     volumes:
-      - media-data:/usr/share/nginx/html/media
+      - ./Backend/media:/usr/share/nginx/html/media
     depends_on:
       api-gateway:
         condition: service_healthy
@@ -283,4 +338,5 @@ volumes:
   reproduccion-db-data:
   analitica-db-data:
   inscripcion-db-data:
-  media-data:
+  notificaciones-db-data:
+
