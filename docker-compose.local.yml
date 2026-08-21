@@ -39,6 +39,7 @@ services:
       OAUTH_MOCK_ISSUER: http://api-gateway:8080/mock-oauth
       OAUTH_REDIRECT_URI: http://localhost:8081/oauth/callback
       DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@auth-db:5432/${POSTGRES_DB:-yousac_auth}
+      NOTIFICACIONES_GRPC_ADDR: notificaciones-service:50056
     depends_on:
       auth-db:
         condition: service_healthy
@@ -78,6 +79,7 @@ services:
       NODE_ENV: development
       GRPC_PORT: 50052
       DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@catalog-db:5432/${CATALOG_DB:-yousac_catalogo}
+      NOTIFICACIONES_GRPC_ADDR: notificaciones-service:50056
     depends_on:
       catalog-db:
         condition: service_healthy
@@ -217,6 +219,69 @@ services:
       timeout: 10s
       retries: 5
 
+  notificaciones-db:
+    image: postgres:16-alpine
+    container_name: yousac-notificaciones-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yousac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yousac_secret}
+      POSTGRES_DB: ${NOTIFICACIONES_DB:-yousac_notificaciones}
+    ports:
+      - "5437:5432"
+    volumes:
+      - notificaciones-db-data:/var/lib/postgresql/data
+      - ./Backend/sql/notificaciones.sql:/docker-entrypoint-initdb.d/001-notificaciones.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yousac} -d ${NOTIFICACIONES_DB:-yousac_notificaciones}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Servidor SMTP de prueba (Mailpit): captura los correos y los muestra en
+  # http://localhost:8025 para desarrollo local sin infraestructura real.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: yousac-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
+
+  notificaciones-service:
+    build:
+      context: ./Backend
+      dockerfile: services/notificaciones-service/Dockerfile
+    container_name: yousac-notificaciones-service
+
+    environment:
+      NODE_ENV: development
+      GRPC_PORT: 50056
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yousac}:${POSTGRES_PASSWORD:-yousac_secret}@notificaciones-db:5432/${NOTIFICACIONES_DB:-yousac_notificaciones}
+      AUTH_GRPC_ADDR: auth-service:50051
+      INSCRIPCION_GRPC_ADDR: inscripcion-service:50055
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: "587"
+      SMTP_USER: miauc692@gmail.com
+      SMTP_PASS: twdicacepljhtmzi
+      SMTP_FROM: miauc692@gmail.com
+      MAIL_DEBUG: "true"
+      WORKER_INTERVAL_MS: "15000"
+      MAX_INTENTOS: "5"
+    depends_on:
+      notificaciones-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      inscripcion-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
   api-gateway:
     build:
       context: ./Backend
@@ -234,6 +299,7 @@ services:
       REPRODUCTION_GRPC_ADDR: reproduccion-service:50053
       ANALITICA_GRPC_ADDR: analitica-service:50054
       INSCRIPCION_GRPC_ADDR: inscripcion-service:50055
+      NOTIFICACIONES_GRPC_ADDR: notificaciones-service:50056
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
       SESSION_COOKIE_NAME: yousac_session
       COOKIE_SECURE: "false"
@@ -253,6 +319,8 @@ services:
       analitica-service:
         condition: service_healthy
       inscripcion-service:
+        condition: service_healthy
+      notificaciones-service:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -285,3 +353,4 @@ volumes:
   reproduccion-db-data:
   analitica-db-data:
   inscripcion-db-data:
+  notificaciones-db-data:

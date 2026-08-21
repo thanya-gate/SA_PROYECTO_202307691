@@ -319,6 +319,7 @@ $$;
 CREATE OR REPLACE VIEW vw_ficha_tecnica_clase AS
 SELECT
     cg.id AS clase_id,
+    cg.curso_id,
     cc.codigo,
     cc.nombre AS curso,
     cc.escuela,
@@ -341,7 +342,7 @@ JOIN curso_catalogo cc ON cc.id = cg.curso_id
 LEFT JOIN participante_clase pc ON pc.clase_id = cg.id
 LEFT JOIN clase_etiqueta ce ON ce.clase_id = cg.id
 LEFT JOIN etiqueta et ON et.id = ce.etiqueta_id
-GROUP BY cg.id, cc.codigo, cc.nombre, cc.escuela, cg.unidad, cg.tema,
+GROUP BY cg.id, cg.curso_id, cc.codigo, cc.nombre, cc.escuela, cg.unidad, cg.tema,
          cg.fecha_imparticion, cg.semestre, cg.año, cg.duracion,
          cg.url_video, cg.url_material, cg.fecha_publicacion;
 

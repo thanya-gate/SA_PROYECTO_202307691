@@ -278,6 +278,18 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
+    ListarEstudiantesDeCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const estudianteIds = await container.inscripcionService.listarEstudiantesDeCurso(
+          call.request.cursoId,
+          call.request.semestre,
+        );
+        callback(null, { estudianteIds });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
     Health: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       callback(null, { status: 'SERVING', service: 'inscripcion-service', version: '1.0.0' });
     },

@@ -46,10 +46,10 @@ interface RegistrarCalificacionResponse {
 }
 
 export const reproduccionApi = {
-  guardarCheckpoint: (claseId: string, segundoActual: number, duracion: number, token: string): Promise<GuardarCheckpointResponse> =>
+  guardarCheckpoint: (claseId: string, segundoActual: number, duracion: number, token: string, evento?: string): Promise<GuardarCheckpointResponse> =>
     apiFetch<GuardarCheckpointResponse>('/reproduccion/checkpoint', {
       method: 'POST',
-      body: { claseId, segundoActual, duracion },
+      body: { claseId, segundoActual, duracion, ...(evento ? { evento } : {}) },
       token,
     }),
 
@@ -59,10 +59,10 @@ export const reproduccionApi = {
   historial: (token: string): Promise<HistorialResponse> =>
     apiFetch<HistorialResponse>('/reproduccion/historial', { token }),
 
-  registrarCalificacion: (historialId: string, puntuacion: number, comentario: string, token: string): Promise<RegistrarCalificacionResponse> =>
+  registrarCalificacion: (historialId: string, puntuacion: number, comentario: string, token: string, claseId?: string): Promise<RegistrarCalificacionResponse> =>
     apiFetch<RegistrarCalificacionResponse>('/reproduccion/calificaciones', {
       method: 'POST',
-      body: { historialId, puntuacion, comentario },
+      body: { historialId, puntuacion, comentario, ...(claseId ? { claseId } : {}) },
       token,
     }),
 };

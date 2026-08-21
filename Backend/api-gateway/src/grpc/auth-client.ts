@@ -117,6 +117,6 @@ export const authGrpc = {
     unary('ChangePassword', { userId, currentPassword, newPassword }),
 
   oauthAuthorize: (email: string, roles?: string[]) => unary('OAuthAuthorize', { email, roles }),
-  oauthCallback: (code: string, ip?: string, userAgent?: string) =>
-    unary('OAuthCallback', { code, ip, userAgent }),
+  oauthCallback: (code: string, ip?: string, userAgent?: string, codeVerifier?: string) =>
+    unary('OAuthCallback', { code, ip, userAgent, codeVerifier }),
 };

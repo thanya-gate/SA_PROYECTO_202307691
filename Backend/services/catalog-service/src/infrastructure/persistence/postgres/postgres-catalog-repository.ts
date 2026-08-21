@@ -40,6 +40,7 @@ interface BuscarRow {
 
 interface FichaRow {
   clase_id: string;
+  curso_id: string;
   codigo: string;
   curso: string;
   escuela: string;
@@ -148,7 +149,7 @@ export class PostgresCatalogRepository implements CatalogRepository {
 
   async getClase(claseId: string): Promise<ClaseDetalle | null> {
     const res = await query<FichaRow>(
-      `SELECT clase_id, codigo, curso, escuela, unidad, tema,
+      `SELECT clase_id, curso_id, codigo, curso, escuela, unidad, tema,
               to_char(fecha_imparticion, 'YYYY-MM-DD') AS fecha_imparticion,
               semestre, año, duracion, url_video, url_material,
               fecha_publicacion, participantes, etiquetas
@@ -159,6 +160,7 @@ export class PostgresCatalogRepository implements CatalogRepository {
     const row = res.rows[0];
     return {
       claseId: row.clase_id,
+      cursoId: row.curso_id,
       codigo: row.codigo,
       curso: row.curso,
       escuela: row.escuela,
@@ -195,6 +197,16 @@ export class PostgresCatalogRepository implements CatalogRepository {
     const res = await query<CursoRow>(
       'SELECT id, codigo, nombre, escuela FROM curso_catalogo WHERE codigo = $1',
       [codigo],
+    );
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    return { cursoId: row.id, codigo: row.codigo, nombre: row.nombre, escuela: row.escuela };
+  }
+
+  async buscarCursoPorId(cursoId: string): Promise<CursoCatalogo | null> {
+    const res = await query<CursoRow>(
+      'SELECT id, codigo, nombre, escuela FROM curso_catalogo WHERE id = $1',
+      [cursoId],
     );
     if (res.rows.length === 0) return null;
     const row = res.rows[0];

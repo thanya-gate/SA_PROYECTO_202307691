@@ -10,6 +10,7 @@ import { catalogGrpc } from './grpc/catalog-client';
 import { reproductionGrpc } from './grpc/reproduction-client';
 import { analiticaGrpc } from './grpc/analitica-client';
 import { inscripcionGrpc } from './grpc/inscripcion-client';
+import { notificacionesGrpc } from './grpc/notificaciones-client';
 import { GrpcError } from './grpc/auth-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
@@ -167,6 +168,13 @@ export function createGateway(): Express {
     } catch {
       inscripcionStatus = 'unavailable';
     }
+    let notificacionesStatus = 'unknown';
+    try {
+      const health = await notificacionesGrpc.health();
+      notificacionesStatus = health.status;
+    } catch {
+      notificacionesStatus = 'unavailable';
+    }
     res.json({
       status: 'ok',
       service: 'api-gateway',
@@ -176,6 +184,7 @@ export function createGateway(): Express {
       reproductionService: reproductionStatus,
       analiticaService: analiticaStatus,
       inscripcionService: inscripcionStatus,
+      notificacionesService: notificacionesStatus,
     });
   });
 
@@ -553,15 +562,36 @@ export function createGateway(): Express {
 
   app.post('/auth/oauth/authorize', domainGuard, async (req, res, next) => {
     try {
-      const { email, state } = req.body as { email?: string; state?: string };
-      if (!email) {
-        throw new DomainError('ENTRADA_INVALIDA', 'Correo requerido', 400);
+      const { email, state, codeChallenge } = req.body as { email?: string; state?: string; codeChallenge?: string };
+
+      if (config.OAUTH_PROVIDER === 'google') {
+        // Google OAuth 2.0 + PKCE: construir la URL de autorización de Google
+        if (!config.GOOGLE_CLIENT_ID) {
+          throw new DomainError('CONFIG_INVALIDA', 'GOOGLE_CLIENT_ID no está configurado', 500);
+        }
+        if (!state || !codeChallenge) {
+          throw new DomainError('ENTRADA_INVALIDA', 'state y codeChallenge son requeridos', 400);
+        }
+        const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+        googleAuthUrl.searchParams.set('client_id', config.GOOGLE_CLIENT_ID);
+        googleAuthUrl.searchParams.set('redirect_uri', config.OAUTH_REDIRECT_URI);
+        googleAuthUrl.searchParams.set('response_type', 'code');
+        googleAuthUrl.searchParams.set('scope', 'openid email profile');
+        googleAuthUrl.searchParams.set('state', state);
+        googleAuthUrl.searchParams.set('code_challenge', codeChallenge);
+        googleAuthUrl.searchParams.set('code_challenge_method', 'S256');
+        res.json({ login_uri: googleAuthUrl.toString() });
+      } else {
+        // Mock IdP: flujo original con email
+        if (!email) {
+          throw new DomainError('ENTRADA_INVALIDA', 'Correo requerido', 400);
+        }
+        const loginUri = buildIdpLoginUri({
+          email: String(email).trim().toLowerCase(),
+          state: typeof state === 'string' ? state : '',
+        });
+        res.json({ login_uri: loginUri });
       }
-      const loginUri = buildIdpLoginUri({
-        email: String(email).trim().toLowerCase(),
-        state: typeof state === 'string' ? state : '',
-      });
-      res.json({ login_uri: loginUri });
     } catch (err) {
       next(err);
     }
@@ -569,11 +599,16 @@ export function createGateway(): Express {
 
   app.post('/auth/oauth/callback', async (req, res, next) => {
     try {
-      const { code } = req.body as Record<string, unknown>;
+      const { code, codeVerifier } = req.body as Record<string, unknown>;
       if (typeof code !== 'string') {
         throw new DomainError('ENTRADA_INVALIDA', 'Código OAuth requerido', 400);
       }
-      const result = await authGrpc.oauthCallback(code, req.ip, req.headers['user-agent']);
+      const result = await authGrpc.oauthCallback(
+        code,
+        req.ip,
+        req.headers['user-agent'],
+        typeof codeVerifier === 'string' ? codeVerifier : undefined,
+      );
       setSessionCookie(res, result.accessToken, cookieMaxAge);
       res.json({
         message: 'Sesión iniciada con identidad institucional',
@@ -770,11 +805,34 @@ export function createGateway(): Express {
           throw new DomainError('ENTRADA_INVALIDA', 'El archivo CSV no contiene filas de clases', 400);
         }
         const result = await catalogGrpc.cargarClasesCSV(filas);
+
+        const cursosUnicos = new Map<string, { codigo: string; nombre: string; escuela: string; semestre: string; anio: number }>();
+        for (const f of filas) {
+          if (f.codigoCurso && f.nombreCurso && f.escuela && f.semestre && f.anio) {
+            const key = `${f.codigoCurso}|${f.semestre}|${f.anio}`;
+            if (!cursosUnicos.has(key)) {
+              cursosUnicos.set(key, {
+                codigo: f.codigoCurso,
+                nombre: f.nombreCurso,
+                escuela: f.escuela,
+                semestre: f.semestre,
+                anio: f.anio,
+              });
+            }
+          }
+        }
+        for (const curso of cursosUnicos.values()) {
+          try {
+            await inscripcionGrpc.registrarCurso(curso);
+          } catch { /* curso ya existente o error no crítico */ }
+        }
+
         res.status(201).json({
           message: 'Carga masiva procesada mediante sp_cargar_clases_csv',
           registradas: result.registradas,
           omitidas: result.omitidas,
           totalProcesadas: filas.length,
+          cursosSincronizados: cursosUnicos.size,
         });
       } catch (err) {
         if (err instanceof CsvParseError) {
@@ -992,14 +1050,25 @@ export function createGateway(): Express {
       }
 
       await fs.promises.rename(tempPath, targetPath);
-      const urlVideo = `/media/clases/${claseId}.mp4`;
+      const urlVideo = `/media/videos/clases/${claseId}.mp4`;
       await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
       const result = await catalogGrpc.actualizarDuracion(claseId, duracion);
+      const clase = result.clase;
+      if (clase?.cursoId) {
+        notificacionesGrpc.notificarVideoSubido({
+          cursoId: clase.cursoId,
+          codigo: clase.codigo,
+          curso: clase.curso,
+          semestre: clase.semestre,
+          anio: clase.anio,
+          tema: clase.tema,
+        }).catch((err: any) => console.error('[api-gateway] notificarVideoSubido error:', err?.message ?? err));
+      }
       res.status(201).json({
         message: 'Video subido a la plataforma',
         urlVideo,
-        duracion: result.clase?.duracion ?? duracion,
-        clase: result.clase,
+        duracion: clase?.duracion ?? duracion,
+        clase,
       });
     } catch (err) {
       await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
@@ -1016,6 +1085,19 @@ export function createGateway(): Express {
       }
       const result = await catalogGrpc.actualizarUrlVideo(req.params.claseId, urlVideo);
       res.json({ message: 'URL de video actualizada', clase: result.clase });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.patch('/catalog/classes/:claseId/duracion', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const { duracion } = req.body as Record<string, unknown>;
+      if (typeof duracion !== 'number' || duracion < 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'duracion debe ser un número no negativo', 400);
+      }
+      const result = await catalogGrpc.actualizarDuracion(req.params.claseId, duracion);
+      res.json({ message: 'Duración actualizada', clase: result.clase });
     } catch (err) {
       next(err);
     }
@@ -1064,7 +1146,7 @@ export function createGateway(): Express {
 //reproduccion
   app.post('/reproduccion/checkpoint', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
-      const { claseId, segundoActual, duracion } = req.body as Record<string, unknown>;
+      const { claseId, segundoActual, duracion, evento } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof segundoActual !== 'number' || typeof duracion !== 'number') {
         throw new DomainError('ENTRADA_INVALIDA', 'claseId, segundoActual y duracion son obligatorios', 400);
       }
@@ -1074,6 +1156,13 @@ export function createGateway(): Express {
         segundoActual,
         duracion,
       });
+      if (evento === 'inicio' || evento === 'fin') {
+        analiticaGrpc.sincronizarVista({
+          claseId,
+          estudianteId: req.context!.userId,
+          duracionVista: segundoActual,
+        }).catch(() => {});
+      }
       res.json({
         message: 'Checkpoint guardado',
         historialId: result.historialId,
@@ -1127,7 +1216,7 @@ export function createGateway(): Express {
 
   app.post('/reproduccion/calificaciones', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
-      const { historialId, puntuacion, comentario } = req.body as Record<string, unknown>;
+      const { historialId, puntuacion, comentario, claseId } = req.body as Record<string, unknown>;
       if (typeof historialId !== 'string' || typeof puntuacion !== 'number') {
         throw new DomainError('ENTRADA_INVALIDA', 'historialId y puntuacion son obligatorios', 400);
       }
@@ -1136,6 +1225,13 @@ export function createGateway(): Express {
         puntuacion,
         comentario: typeof comentario === 'string' ? comentario : '',
       });
+      if (typeof claseId === 'string') {
+        analiticaGrpc.sincronizarCalificacion({
+          claseId,
+          estudianteId: req.context!.userId,
+          puntuacion,
+        }).catch(() => {});
+      }
       res.status(201).json({ message: 'Calificación registrada', registrada: result.registrada });
     } catch (err) {
       next(err);
@@ -1160,10 +1256,14 @@ export function createGateway(): Express {
   app.get('/analitica/tendencias-examenes', authenticate, async (req, res, next) => {
     try {
       const limite = Number(req.query.limite ?? 0);
+      const desde = req.query.desde ? String(req.query.desde) : undefined;
+      const hasta = req.query.hasta ? String(req.query.hasta) : undefined;
       const result = await analiticaGrpc.tendenciasExamenes({
         limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
+        desde,
+        hasta,
       });
-      res.json({ items: result.items });
+      res.json({ semana: result.semana || '', items: result.items });
     } catch (err) {
       next(err);
     }
@@ -1184,11 +1284,48 @@ export function createGateway(): Express {
   app.get('/analitica/recomendaciones/me', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const limite = Number(req.query.limite ?? 0);
+      const userId = req.context!.userId;
       const result = await analiticaGrpc.recomendacionesEstudiante({
-        estudianteId: req.context!.userId,
+        estudianteId: userId,
         limite: Number.isFinite(limite) && limite > 0 ? limite : 0,
       });
-      res.json({ items: result.items });
+
+      const items = result.items ?? [];
+      if (items.length === 0) { res.json({ items: [] }); return; }
+
+      const etiquetasPreferidas = await _obtenerEtiquetasPreferidas(userId);
+      if (etiquetasPreferidas.size === 0) {
+        res.json({ items }); return;
+      }
+
+      const etiquetasPorClase = await _obtenerEtiquetasClases(items.map((i: any) => String(i.claseId)));
+
+      const boostMax = 30;
+      const itemsEnriquecidos = items.map((item: any) => {
+        const claseId = String(item.claseId);
+        const etiquetas = etiquetasPorClase[claseId] ?? [];
+        let overlap = 0;
+        for (const et of etiquetas) {
+          if (etiquetasPreferidas.has(et)) overlap++;
+        }
+        const affinity = etiquetas.length > 0 ? overlap / etiquetas.length : 0;
+        const porcentajeOriginal = Number(item.porcentajeRecomendacion) || 0;
+        const porcentajeEnriquecido = Math.min(100, Math.round(porcentajeOriginal + affinity * boostMax));
+        return {
+          claseId,
+          porcentajeRecomendacion: porcentajeEnriquecido,
+          porcentajeOriginal,
+          etiquetas,
+          etiquetasPreferidas: etiquetas.filter((e: string) => etiquetasPreferidas.has(e)),
+          totalVistas: item.totalVistas,
+          promedioCalificacion: item.promedioCalificacion,
+          fechaCalculo: item.fechaCalculo,
+        };
+      });
+
+      itemsEnriquecidos.sort((a: any, b: any) => b.porcentajeRecomendacion - a.porcentajeRecomendacion);
+
+      res.json({ items: itemsEnriquecidos });
     } catch (err) {
       next(err);
     }
@@ -1485,6 +1622,57 @@ export function createGateway(): Express {
     }
   });
 
+  // ===== Notificaciones por correo (módulo 6) =====
+
+  // CDU0006.3 - Aviso general del sistema: el administrador envía un correo a
+  // todos los estudiantes (o a una lista concreta de destinatarios).
+  app.post('/notificaciones/avisos', authenticate, requireRole('ROLE_ADMIN'), async (req, res, next) => {
+    try {
+      const { mensaje, destinatarioIds } = req.body as { mensaje?: unknown; destinatarioIds?: unknown };
+      if (typeof mensaje !== 'string' || mensaje.trim().length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'mensaje es obligatorio', 400);
+      }
+      const ids = Array.isArray(destinatarioIds) ? destinatarioIds.filter((d): d is string => typeof d === 'string') : [];
+      const result = await notificacionesGrpc.registrarAvisoGeneral({ mensaje, destinatarioIds: ids });
+      res.status(201).json({
+        message: 'Aviso encolado para envío por correo',
+        destinatarioIds: result.destinatarioIds,
+        notificacionesEncoladas: result.notificacionesEncoladas,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Bandeja de notificaciones del usuario autenticado.
+  app.get('/notificaciones/me', authenticate, async (req, res, next) => {
+    try {
+      const result = await notificacionesGrpc.listarNotificaciones(req.context!.userId);
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/notificaciones/plantillas', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await notificacionesGrpc.listarPlantillas();
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Estado de la cola de envío (operaciones / diagnóstico).
+  app.get('/notificaciones/cola', authenticate, requireRole('ROLE_ADMIN'), async (_req, res, next) => {
+    try {
+      const result = await notificacionesGrpc.consultarCola();
+      res.json({ items: result.items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use((req, res) => {
     res.status(404).json({ error: { code: 'RUTA_NO_ENCONTRADA', message: `${req.method} ${req.path}` } });
   });
@@ -1492,6 +1680,38 @@ export function createGateway(): Express {
   app.use(errorHandler);
 
   return app;
+}
+
+async function _obtenerEtiquetasPreferidas(userId: string): Promise<Set<string>> {
+  const preferidas = new Set<string>();
+  try {
+    const historial = await reproductionGrpc.historialReciente({ estudianteId: userId });
+    const items = historial.items ?? [];
+    const clasesIds = [...new Set<string>(items.map((i: any) => String(i.claseId)))];
+    const consultas = clasesIds.map(async (claseId: string) => {
+      try {
+        const clase = await catalogGrpc.getClase(claseId);
+        const etiquetas: string[] = clase.clase?.etiquetas ?? [];
+        for (const e of etiquetas) preferidas.add(e.toLowerCase());
+      } catch {}
+    });
+    await Promise.all(consultas);
+  } catch {}
+  return preferidas;
+}
+
+async function _obtenerEtiquetasClases(claseIds: string[]): Promise<Record<string, string[]>> {
+  const resultado: Record<string, string[]> = {};
+  const consultas = claseIds.map(async (claseId) => {
+    try {
+      const clase = await catalogGrpc.getClase(claseId);
+      resultado[claseId] = (clase.clase?.etiquetas ?? []).map((e: string) => e.toLowerCase());
+    } catch {
+      resultado[claseId] = [];
+    }
+  });
+  await Promise.all(consultas);
+  return resultado;
 }
 
 export function listenGateway(app: Express): ReturnType<typeof app.listen> {
@@ -1502,5 +1722,6 @@ export function listenGateway(app: Express): ReturnType<typeof app.listen> {
     console.log(`[api-gateway] gRPC -> reproduccion-service en ${config.REPRODUCTION_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> analitica-service en ${config.ANALITICA_GRPC_ADDR}`);
     console.log(`[api-gateway] gRPC -> inscripcion-service en ${config.INSCRIPCION_GRPC_ADDR}`);
+    console.log(`[api-gateway] gRPC -> notificaciones-service en ${config.NOTIFICACIONES_GRPC_ADDR}`);
   });
 }

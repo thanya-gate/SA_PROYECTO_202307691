@@ -34,7 +34,13 @@ const envSchema = z.object({
     .transform((v) => v === 'true'),
   OAUTH_MOCK_ISSUER: z.string().default('http://localhost:3000/mock-oauth'),
   OAUTH_REDIRECT_URI: z.string().default('http://localhost:3000/auth/oauth/callback'),
+  // Google OAuth 2.0 (PKCE)
+  OAUTH_PROVIDER: z.enum(['google', 'mock']).default('mock'),
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().default(''),
+  GOOGLE_REDIRECT_URI: z.string().default('http://localhost:8081/oauth/callback'),
   GRPC_PORT: z.coerce.number().default(50051),
+  NOTIFICACIONES_GRPC_ADDR: z.string().default('localhost:50056'),
 
   // ===== Persistencia (Database per Microservice - PostgreSQL) =====
   // Si DATABASE_URL está vacío, el servicio usa los repositorios en memoria

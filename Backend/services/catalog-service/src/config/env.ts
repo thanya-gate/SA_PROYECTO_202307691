@@ -10,6 +10,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL es obligatoria (Database per Microservice)'),
   DB_POOL_MAX: z.coerce.number().default(10),
   DB_CONNECTION_TIMEOUT_MS: z.coerce.number().default(10000),
+
+  NOTIFICACIONES_GRPC_ADDR: z.string().default('localhost:50056'),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -63,8 +63,10 @@ class AnaliticaServicer(AnaliticaServiceServicer):
         self, request: TendenciasExamenesRequest, context
     ) -> TendenciasExamenesResponse:
         def ejecutar() -> TendenciasExamenesResponse:
-            items = self._servicio.tendencias_examenes(request.limite)
-            return TendenciasExamenesResponse(items=[_a_ranking_item(item) for item in items])
+            desde = request.desde if hasattr(request, 'desde') and request.desde else None
+            hasta = request.hasta if hasattr(request, 'hasta') and request.hasta else None
+            semana, items = self._servicio.tendencias_examenes(request.limite, desde, hasta)
+            return TendenciasExamenesResponse(semana=semana, items=[_a_ranking_item(item) for item in items])
 
         return _manejar(context, ejecutar)
 

@@ -14,6 +14,7 @@ export interface LoginResult {
   session: Session;
   accessToken: string;
   expiresAt: Date;
+  newUser?: boolean;
 }
 
 export interface OAuthProfile {
@@ -152,12 +153,15 @@ export class AuthService {
   async loginWithOAuth(
     profile: OAuthProfile,
     meta: { ip?: string; userAgent?: string },
+    providerName: string = 'institucional',
   ): Promise<LoginResult> {
     const email = this.domainValidator.validate(profile.email);
 
     let user = await this.users.findByEmail(email);
+    let newUser = false;
 
     if (!user) {
+      newUser = true;
       const passwordHash = await this.password.hash(randomUUID());
       user = createUser({
         userId: randomUUID(),
@@ -167,15 +171,16 @@ export class AuthService {
         roles: profile.roles,
       });
       await this.users.save(user);
-      await this.users.linkOAuthProvider(user.userId, 'institucional');
+      await this.users.linkOAuthProvider(user.userId, providerName);
     } else {
-      const hasProvider = user.oauthProviders.includes('institucional');
+      const hasProvider = user.oauthProviders.includes(providerName);
       if (!hasProvider) {
-        await this.users.linkOAuthProvider(user.userId, 'institucional');
+        await this.users.linkOAuthProvider(user.userId, providerName);
       }
     }
 
-    return this.establishSession(user, meta);
+    const result = await this.establishSession(user, meta);
+    return { ...result, newUser };
   }
 
   async logout(sessionId: string): Promise<void> {

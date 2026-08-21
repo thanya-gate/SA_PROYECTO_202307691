@@ -12,6 +12,7 @@ const envSchema = z.object({
   REPRODUCTION_GRPC_ADDR: z.string().default('localhost:50053'),
   ANALITICA_GRPC_ADDR: z.string().default('localhost:50054'),
   INSCRIPCION_GRPC_ADDR: z.string().default('localhost:50055'),
+  NOTIFICACIONES_GRPC_ADDR: z.string().default('localhost:50056'),
 
   MEDIA_DIR: z.string().default('/app/media'),
 
@@ -35,6 +36,9 @@ const envSchema = z.object({
   OAUTH_ISSUER_PUBLIC: z.string().default('http://localhost:8080/mock-oauth'),
   OAUTH_REDIRECT_URI: z.string().default('http://localhost:8081/oauth/callback'),
   OAUTH_CLIENT_ID: z.string().default('yousac-web'),
+  // Google OAuth 2.0 (PKCE) — cuando OAUTH_PROVIDER=google se usa Google como IdP real
+  OAUTH_PROVIDER: z.enum(['google', 'mock']).default('mock'),
+  GOOGLE_CLIENT_ID: z.string().default(''),
 
   PUBLIC_PATHS: z.string().default('/health'),
 });

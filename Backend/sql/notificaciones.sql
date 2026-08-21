@@ -11,7 +11,8 @@ CREATE TABLE plantilla_correo (
 
 CREATE TABLE notificacion (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id     UUID NOT NULL,       
+    usuario_id     UUID NOT NULL,
+    correo_destino VARCHAR(320) NOT NULL,
     plantilla_id   UUID NOT NULL REFERENCES plantilla_correo(id),
     tipo           VARCHAR(30) NOT NULL,
     datos_contexto JSONB NOT NULL DEFAULT '{}',
@@ -30,6 +31,7 @@ CREATE TABLE cola_envio (
 );
 
 CREATE INDEX idx_notificacion_estado ON notificacion (estado);
+CREATE INDEX idx_notificacion_usuario ON notificacion (usuario_id);
 CREATE INDEX idx_cola_estado ON cola_envio (estado, fecha_proximo_intento);
 
 --funcines
@@ -70,6 +72,7 @@ $$;
 CREATE OR REPLACE PROCEDURE sp_registrar_notificacion(
     INOUT p_notificacion_id UUID,
     p_usuario_id UUID,
+    p_correo_destino VARCHAR(320),
     p_plantilla_id UUID,
     p_tipo VARCHAR(30),
     p_datos_contexto JSONB DEFAULT '{}'
@@ -77,8 +80,8 @@ CREATE OR REPLACE PROCEDURE sp_registrar_notificacion(
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO notificacion (usuario_id, plantilla_id, tipo, datos_contexto)
-    VALUES (p_usuario_id, p_plantilla_id, p_tipo, p_datos_contexto)
+    INSERT INTO notificacion (usuario_id, correo_destino, plantilla_id, tipo, datos_contexto)
+    VALUES (p_usuario_id, p_correo_destino, p_plantilla_id, p_tipo, p_datos_contexto)
     RETURNING id INTO p_notificacion_id;
 END;
 $$;
@@ -111,11 +114,27 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE PROCEDURE sp_marcar_fallida_definitiva(p_cola_id INT)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE cola_envio
+    SET estado = 'FALLIDA_DEFINITIVA', fecha_proximo_intento = NULL
+    WHERE id = p_cola_id;
+
+    UPDATE notificacion
+    SET estado = 'FALLIDA'
+    WHERE id = (SELECT notificacion_id FROM cola_envio WHERE id = p_cola_id)
+      AND estado = 'PENDIENTE';
+END;
+$$;
+
 --vistas
 CREATE OR REPLACE VIEW vw_notificaciones_pendientes AS
 SELECT
     n.id AS notificacion_id,
     n.usuario_id,
+    n.correo_destino,
     n.tipo,
     n.datos_contexto,
     ce.id AS cola_id,

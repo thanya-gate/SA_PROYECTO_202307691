@@ -26,10 +26,7 @@ if _version_not_supported:
 
 
 class AnaliticaServiceStub(object):
-    """=====================================================================
-    Servicio
-    =====================================================================
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -72,11 +69,6 @@ class AnaliticaServiceStub(object):
                 request_serializer=analitica__pb2.SincronizarCalificacionRequest.SerializeToString,
                 response_deserializer=analitica__pb2.SincronizarCalificacionResponse.FromString,
                 _registered_method=True)
-        self.CargarEventosCSV = channel.unary_unary(
-                '/yousac.analitica.v1.AnaliticaService/CargarEventosCSV',
-                request_serializer=analitica__pb2.CargarEventosCSVRequest.SerializeToString,
-                response_deserializer=analitica__pb2.CargarEventosCSVResponse.FromString,
-                _registered_method=True)
         self.RecalcularTendencias = channel.unary_unary(
                 '/yousac.analitica.v1.AnaliticaService/RecalcularTendencias',
                 request_serializer=analitica__pb2.RecalcularTendenciasRequest.SerializeToString,
@@ -85,10 +77,7 @@ class AnaliticaServiceStub(object):
 
 
 class AnaliticaServiceServicer(object):
-    """=====================================================================
-    Servicio
-    =====================================================================
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def Health(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -97,8 +86,7 @@ class AnaliticaServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ClasesMasVistas(self, request, context):
-        """--- Consultas de analítica / tendencias ---
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -122,8 +110,7 @@ class AnaliticaServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SincronizarVista(self, request, context):
-        """--- Ingesta y mantenimiento ---
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -134,14 +121,9 @@ class AnaliticaServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def CargarEventosCSV(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def RecalcularTendencias(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """rpc CargarEventosCSV(CargarEventosCSVRequest) returns (CargarEventosCSVResponse);  // [INGESTA DESACTIVADA]
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -184,11 +166,6 @@ def add_AnaliticaServiceServicer_to_server(servicer, server):
                     request_deserializer=analitica__pb2.SincronizarCalificacionRequest.FromString,
                     response_serializer=analitica__pb2.SincronizarCalificacionResponse.SerializeToString,
             ),
-            'CargarEventosCSV': grpc.unary_unary_rpc_method_handler(
-                    servicer.CargarEventosCSV,
-                    request_deserializer=analitica__pb2.CargarEventosCSVRequest.FromString,
-                    response_serializer=analitica__pb2.CargarEventosCSVResponse.SerializeToString,
-            ),
             'RecalcularTendencias': grpc.unary_unary_rpc_method_handler(
                     servicer.RecalcularTendencias,
                     request_deserializer=analitica__pb2.RecalcularTendenciasRequest.FromString,
@@ -203,10 +180,7 @@ def add_AnaliticaServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class AnaliticaService(object):
-    """=====================================================================
-    Servicio
-    =====================================================================
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def Health(request,
@@ -387,33 +361,6 @@ class AnaliticaService(object):
             '/yousac.analitica.v1.AnaliticaService/SincronizarCalificacion',
             analitica__pb2.SincronizarCalificacionRequest.SerializeToString,
             analitica__pb2.SincronizarCalificacionResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def CargarEventosCSV(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/yousac.analitica.v1.AnaliticaService/CargarEventosCSV',
-            analitica__pb2.CargarEventosCSVRequest.SerializeToString,
-            analitica__pb2.CargarEventosCSVResponse.FromString,
             options,
             channel_credentials,
             insecure,

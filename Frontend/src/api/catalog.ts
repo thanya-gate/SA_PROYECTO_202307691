@@ -156,6 +156,13 @@ export const catalogApi = {
       token,
     }),
 
+  actualizarDuracion: (claseId: string, duracion: number, token: string): Promise<{ message: string; clase: ClaseDetalle }> =>
+    apiFetch<{ message: string; clase: ClaseDetalle }>(`/catalog/classes/${claseId}/duracion`, {
+      method: 'PATCH',
+      body: { duracion },
+      token,
+    }),
+
   eliminarClase: (claseId: string, token: string): Promise<{ message: string }> =>
     apiFetch<{ message: string }>(`/catalog/classes/${claseId}`, {
       method: 'DELETE',

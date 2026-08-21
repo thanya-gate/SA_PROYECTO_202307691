@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x61nalitica.proto\x12\x13yousac.analitica.v1\"\x0f\n\rHealthRequest\"B\n\x0eHealthResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x0f\n\x07service\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\"\x84\x01\n\x0bRankingItem\x12\x10\n\x08\x63lase_id\x18\x01 \x01(\t\x12\x14\n\x0ctotal_vistas\x18\x02 \x01(\x05\x12\x1d\n\x15promedio_calificacion\x18\x03 \x01(\x01\x12\x1c\n\x14total_calificaciones\x18\x04 \x01(\x05\x12\x10\n\x08posicion\x18\x05 \x01(\x05\"8\n\x16\x43lasesMasVistasRequest\x12\x0e\n\x06semana\x18\x01 \x01(\t\x12\x0e\n\x06limite\x18\x02 \x01(\x05\"Z\n\x17\x43lasesMasVistasResponse\x12\x0e\n\x06semana\x18\x01 \x01(\t\x12/\n\x05items\x18\x02 \x03(\x0b\x32 .yousac.analitica.v1.RankingItem\"+\n\x19TendenciasExamenesRequest\x12\x0e\n\x06limite\x18\x01 \x01(\x05\"M\n\x1aTendenciasExamenesResponse\x12/\n\x05items\x18\x01 \x03(\x0b\x32 .yousac.analitica.v1.RankingItem\".\n\x1cRankingMejorValoradasRequest\x12\x0e\n\x06limite\x18\x01 \x01(\x05\"P\n\x1dRankingMejorValoradasResponse\x12/\n\x05items\x18\x01 \x03(\x0b\x32 .yousac.analitica.v1.RankingItem\"\x93\x01\n\x11RecomendacionItem\x12\x10\n\x08\x63lase_id\x18\x01 \x01(\t\x12 \n\x18porcentaje_recomendacion\x18\x02 \x01(\x01\x12\x14\n\x0ctotal_vistas\x18\x03 \x01(\x05\x12\x1d\n\x15promedio_calificacion\x18\x04 \x01(\x01\x12\x15\n\rfecha_calculo\x18\x05 \x01(\t\"I\n RecomendacionesEstudianteRequest\x12\x15\n\restudiante_id\x18\x01 \x01(\t\x12\x0e\n\x06limite\x18\x02 \x01(\x05\"Z\n!RecomendacionesEstudianteResponse\x12\x35\n\x05items\x18\x01 \x03(\x0b\x32&.yousac.analitica.v1.RecomendacionItem\"Z\n\x17SincronizarVistaRequest\x12\x10\n\x08\x63lase_id\x18\x01 \x01(\t\x12\x15\n\restudiante_id\x18\x02 \x01(\t\x12\x16\n\x0e\x64uracion_vista\x18\x03 \x01(\x05\".\n\x18SincronizarVistaResponse\x12\x12\n\nregistrada\x18\x01 \x01(\x08\"]\n\x1eSincronizarCalificacionRequest\x12\x10\n\x08\x63lase_id\x18\x01 \x01(\t\x12\x15\n\restudiante_id\x18\x02 \x01(\t\x12\x12\n\npuntuacion\x18\x03 \x01(\x05\"5\n\x1fSincronizarCalificacionResponse\x12\x12\n\nregistrada\x18\x01 \x01(\x08\"@\n\x17\x43\x61rgarEventosCSVRequest\x12\x11\n\tcontenido\x18\x01 \x01(\t\x12\x12\n\nreemplazar\x18\x02 \x01(\x08\"R\n\x18\x43\x61rgarEventosCSVResponse\x12\x1a\n\x12registros_cargados\x18\x01 \x01(\x05\x12\x1a\n\x12registros_omitidos\x18\x02 \x01(\x05\"-\n\x1bRecalcularTendenciasRequest\x12\x0e\n\x06semana\x18\x01 \x01(\t\"3\n\x1cRecalcularTendenciasResponse\x12\x13\n\x0brecalculada\x18\x01 \x01(\x08\x32\xbd\x08\n\x10\x41naliticaService\x12Q\n\x06Health\x12\".yousac.analitica.v1.HealthRequest\x1a#.yousac.analitica.v1.HealthResponse\x12l\n\x0f\x43lasesMasVistas\x12+.yousac.analitica.v1.ClasesMasVistasRequest\x1a,.yousac.analitica.v1.ClasesMasVistasResponse\x12u\n\x12TendenciasExamenes\x12..yousac.analitica.v1.TendenciasExamenesRequest\x1a/.yousac.analitica.v1.TendenciasExamenesResponse\x12~\n\x15RankingMejorValoradas\x12\x31.yousac.analitica.v1.RankingMejorValoradasRequest\x1a\x32.yousac.analitica.v1.RankingMejorValoradasResponse\x12\x8a\x01\n\x19RecomendacionesEstudiante\x12\x35.yousac.analitica.v1.RecomendacionesEstudianteRequest\x1a\x36.yousac.analitica.v1.RecomendacionesEstudianteResponse\x12o\n\x10SincronizarVista\x12,.yousac.analitica.v1.SincronizarVistaRequest\x1a-.yousac.analitica.v1.SincronizarVistaResponse\x12\x84\x01\n\x17SincronizarCalificacion\x12\x33.yousac.analitica.v1.SincronizarCalificacionRequest\x1a\x34.yousac.analitica.v1.SincronizarCalificacionResponse\x12o\n\x10\x43\x61rgarEventosCSV\x12,.yousac.analitica.v1.CargarEventosCSVRequest\x1a-.yousac.analitica.v1.CargarEventosCSVResponse\x12{\n\x14RecalcularTendencias\x12\x30.yousac.analitica.v1.RecalcularTendenciasRequest\x1a\x31.yousac.analitica.v1.RecalcularTendenciasResponseBCP\x01Z?yousac.com/yousac/analitica-service/gen/analiticav1;analiticav1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x61nalitica.proto\x12\x13yousac.analitica.v1\"\x0f\n\rHealthRequest\"B\n\x0eHealthResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x0f\n\x07service\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\"\x84\x01\n\x0bRankingItem\x12\x10\n\x08\x63lase_id\x18\x01 \x01(\t\x12\x14\n\x0ctotal_vistas\x18\x02 \x01(\x05\x12\x1d\n\x15promedio_calificacion\x18\x03 \x01(\x01\x12\x1c\n\x14total_calificaciones\x18\x04 \x01(\x05\x12\x10\n\x08posicion\x18\x05 \x01(\x05\"8\n\x16\x43lasesMasVistasRequest\x12\x0e\n\x06semana\x18\x01 \x01(\t\x12\x0e\n\x06limite\x18\x02 \x01(\x05\"Z\n\x17\x43lasesMasVistasResponse\x12\x0e\n\x06semana\x18\x01 \x01(\t\x12/\n\x05items\x18\x02 \x03(\x0b\x32 .yousac.analitica.v1.RankingItem\"I\n\x19TendenciasExamenesRequest\x12\x0e\n\x06limite\x18\x01 \x01(\x05\x12\r\n\x05\x64\x65sde\x18\x02 \x01(\t\x12\r\n\x05hasta\x18\x03 \x01(\t\"]\n\x1aTendenciasExamenesResponse\x12\x0e\n\x06semana\x18\x02 \x01(\t\x12/\n\x05items\x18\x01 \x03(\x0b\x32 .yousac.analitica.v1.RankingItem\".\n\x1cRankingMejorValoradasRequest\x12\x0e\n\x06limite\x18\x01 \x01(\x05\"P\n\x1dRankingMejorValoradasResponse\x12/\n\x05items\x18\x01 \x03(\x0b\x32 .yousac.analitica.v1.RankingItem\"\x93\x01\n\x11RecomendacionItem\x12\x10\n\x08\x63lase_id\x18\x01 \x01(\t\x12 \n\x18porcentaje_recomendacion\x18\x02 \x01(\x01\x12\x14\n\x0ctotal_vistas\x18\x03 \x01(\x05\x12\x1d\n\x15promedio_calificacion\x18\x04 \x01(\x01\x12\x15\n\rfecha_calculo\x18\x05 \x01(\t\"I\n RecomendacionesEstudianteRequest\x12\x15\n\restudiante_id\x18\x01 \x01(\t\x12\x0e\n\x06limite\x18\x02 \x01(\x05\"Z\n!RecomendacionesEstudianteResponse\x12\x35\n\x05items\x18\x01 \x03(\x0b\x32&.yousac.analitica.v1.RecomendacionItem\"Z\n\x17SincronizarVistaRequest\x12\x10\n\x08\x63lase_id\x18\x01 \x01(\t\x12\x15\n\restudiante_id\x18\x02 \x01(\t\x12\x16\n\x0e\x64uracion_vista\x18\x03 \x01(\x05\".\n\x18SincronizarVistaResponse\x12\x12\n\nregistrada\x18\x01 \x01(\x08\"]\n\x1eSincronizarCalificacionRequest\x12\x10\n\x08\x63lase_id\x18\x01 \x01(\t\x12\x15\n\restudiante_id\x18\x02 \x01(\t\x12\x12\n\npuntuacion\x18\x03 \x01(\x05\"5\n\x1fSincronizarCalificacionResponse\x12\x12\n\nregistrada\x18\x01 \x01(\x08\"-\n\x1bRecalcularTendenciasRequest\x12\x0e\n\x06semana\x18\x01 \x01(\t\"3\n\x1cRecalcularTendenciasResponse\x12\x13\n\x0brecalculada\x18\x01 \x01(\x08\x32\xcc\x07\n\x10\x41naliticaService\x12Q\n\x06Health\x12\".yousac.analitica.v1.HealthRequest\x1a#.yousac.analitica.v1.HealthResponse\x12l\n\x0f\x43lasesMasVistas\x12+.yousac.analitica.v1.ClasesMasVistasRequest\x1a,.yousac.analitica.v1.ClasesMasVistasResponse\x12u\n\x12TendenciasExamenes\x12..yousac.analitica.v1.TendenciasExamenesRequest\x1a/.yousac.analitica.v1.TendenciasExamenesResponse\x12~\n\x15RankingMejorValoradas\x12\x31.yousac.analitica.v1.RankingMejorValoradasRequest\x1a\x32.yousac.analitica.v1.RankingMejorValoradasResponse\x12\x8a\x01\n\x19RecomendacionesEstudiante\x12\x35.yousac.analitica.v1.RecomendacionesEstudianteRequest\x1a\x36.yousac.analitica.v1.RecomendacionesEstudianteResponse\x12o\n\x10SincronizarVista\x12,.yousac.analitica.v1.SincronizarVistaRequest\x1a-.yousac.analitica.v1.SincronizarVistaResponse\x12\x84\x01\n\x17SincronizarCalificacion\x12\x33.yousac.analitica.v1.SincronizarCalificacionRequest\x1a\x34.yousac.analitica.v1.SincronizarCalificacionResponse\x12{\n\x14RecalcularTendencias\x12\x30.yousac.analitica.v1.RecalcularTendenciasRequest\x1a\x31.yousac.analitica.v1.RecalcularTendenciasResponseBCP\x01Z?yousac.com/yousac/analitica-service/gen/analiticav1;analiticav1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -43,35 +43,31 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CLASESMASVISTASRESPONSE']._serialized_start=318
   _globals['_CLASESMASVISTASRESPONSE']._serialized_end=408
   _globals['_TENDENCIASEXAMENESREQUEST']._serialized_start=410
-  _globals['_TENDENCIASEXAMENESREQUEST']._serialized_end=453
-  _globals['_TENDENCIASEXAMENESRESPONSE']._serialized_start=455
-  _globals['_TENDENCIASEXAMENESRESPONSE']._serialized_end=532
-  _globals['_RANKINGMEJORVALORADASREQUEST']._serialized_start=534
-  _globals['_RANKINGMEJORVALORADASREQUEST']._serialized_end=580
-  _globals['_RANKINGMEJORVALORADASRESPONSE']._serialized_start=582
-  _globals['_RANKINGMEJORVALORADASRESPONSE']._serialized_end=662
-  _globals['_RECOMENDACIONITEM']._serialized_start=665
-  _globals['_RECOMENDACIONITEM']._serialized_end=812
-  _globals['_RECOMENDACIONESESTUDIANTEREQUEST']._serialized_start=814
-  _globals['_RECOMENDACIONESESTUDIANTEREQUEST']._serialized_end=887
-  _globals['_RECOMENDACIONESESTUDIANTERESPONSE']._serialized_start=889
-  _globals['_RECOMENDACIONESESTUDIANTERESPONSE']._serialized_end=979
-  _globals['_SINCRONIZARVISTAREQUEST']._serialized_start=981
-  _globals['_SINCRONIZARVISTAREQUEST']._serialized_end=1071
-  _globals['_SINCRONIZARVISTARESPONSE']._serialized_start=1073
-  _globals['_SINCRONIZARVISTARESPONSE']._serialized_end=1119
-  _globals['_SINCRONIZARCALIFICACIONREQUEST']._serialized_start=1121
-  _globals['_SINCRONIZARCALIFICACIONREQUEST']._serialized_end=1214
-  _globals['_SINCRONIZARCALIFICACIONRESPONSE']._serialized_start=1216
-  _globals['_SINCRONIZARCALIFICACIONRESPONSE']._serialized_end=1269
-  _globals['_CARGAREVENTOSCSVREQUEST']._serialized_start=1271
-  _globals['_CARGAREVENTOSCSVREQUEST']._serialized_end=1335
-  _globals['_CARGAREVENTOSCSVRESPONSE']._serialized_start=1337
-  _globals['_CARGAREVENTOSCSVRESPONSE']._serialized_end=1419
-  _globals['_RECALCULARTENDENCIASREQUEST']._serialized_start=1421
-  _globals['_RECALCULARTENDENCIASREQUEST']._serialized_end=1466
-  _globals['_RECALCULARTENDENCIASRESPONSE']._serialized_start=1468
-  _globals['_RECALCULARTENDENCIASRESPONSE']._serialized_end=1519
-  _globals['_ANALITICASERVICE']._serialized_start=1522
-  _globals['_ANALITICASERVICE']._serialized_end=2607
+  _globals['_TENDENCIASEXAMENESREQUEST']._serialized_end=483
+  _globals['_TENDENCIASEXAMENESRESPONSE']._serialized_start=485
+  _globals['_TENDENCIASEXAMENESRESPONSE']._serialized_end=578
+  _globals['_RANKINGMEJORVALORADASREQUEST']._serialized_start=580
+  _globals['_RANKINGMEJORVALORADASREQUEST']._serialized_end=626
+  _globals['_RANKINGMEJORVALORADASRESPONSE']._serialized_start=628
+  _globals['_RANKINGMEJORVALORADASRESPONSE']._serialized_end=708
+  _globals['_RECOMENDACIONITEM']._serialized_start=711
+  _globals['_RECOMENDACIONITEM']._serialized_end=858
+  _globals['_RECOMENDACIONESESTUDIANTEREQUEST']._serialized_start=860
+  _globals['_RECOMENDACIONESESTUDIANTEREQUEST']._serialized_end=933
+  _globals['_RECOMENDACIONESESTUDIANTERESPONSE']._serialized_start=935
+  _globals['_RECOMENDACIONESESTUDIANTERESPONSE']._serialized_end=1025
+  _globals['_SINCRONIZARVISTAREQUEST']._serialized_start=1027
+  _globals['_SINCRONIZARVISTAREQUEST']._serialized_end=1117
+  _globals['_SINCRONIZARVISTARESPONSE']._serialized_start=1119
+  _globals['_SINCRONIZARVISTARESPONSE']._serialized_end=1165
+  _globals['_SINCRONIZARCALIFICACIONREQUEST']._serialized_start=1167
+  _globals['_SINCRONIZARCALIFICACIONREQUEST']._serialized_end=1260
+  _globals['_SINCRONIZARCALIFICACIONRESPONSE']._serialized_start=1262
+  _globals['_SINCRONIZARCALIFICACIONRESPONSE']._serialized_end=1315
+  _globals['_RECALCULARTENDENCIASREQUEST']._serialized_start=1317
+  _globals['_RECALCULARTENDENCIASREQUEST']._serialized_end=1362
+  _globals['_RECALCULARTENDENCIASRESPONSE']._serialized_start=1364
+  _globals['_RECALCULARTENDENCIASRESPONSE']._serialized_end=1415
+  _globals['_ANALITICASERVICE']._serialized_start=1418
+  _globals['_ANALITICASERVICE']._serialized_end=2390
 # @@protoc_insertion_point(module_scope)

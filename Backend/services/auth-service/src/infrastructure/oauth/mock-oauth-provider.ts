@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import { DomainError } from '../../domain/errors/domain-error';
 import { Role } from '../../domain/enums/role';
 import { OAuthProfile } from '../../application/services/auth.service';
+import { OAuthProvider, OAuthTokenExchangeResult } from '../../application/ports/oauth-provider';
 
 /**
  * Proveedor OAuth 2.0 institucional (mock).
@@ -9,13 +10,12 @@ import { OAuthProfile } from '../../application/services/auth.service';
  * Simula el proveedor federado de la universidad (RF-04 / CDU0001.3):
  *  - authorize(email): genera un authorization code (como si el usuario ya
  *    se autenticó en la pantalla del proveedor institucional).
- *  - exchange(code): intercambia el código por el perfil federado (id_token).
+ *  - exchangeCode(code): intercambia el código por el perfil federado.
  *
- * Para el proveedor real (p.ej. Microsoft Entra / Google Workspace institucional):
- *  sustituir por el flujo Authorization Code + verificación del id_token JWT
- *  contra OAUTH_ISSUER_URL (JWKS) y validación de audiencia.
+ * Para el proveedor real (p.ej. Google OAuth 2.0):
+ *  ver GoogleOAuthProvider que implementa el flujo Authorization Code + PKCE.
  */
-export class MockOAuthProvider {
+export class MockOAuthProvider implements OAuthProvider {
   private readonly codes = new Map<string, { profile: OAuthProfile; expiresAt: number }>();
 
   constructor(private readonly issuer: string) {}
@@ -34,6 +34,30 @@ export class MockOAuthProvider {
     return code;
   }
 
+  /**
+   * Implementación de OAuthProvider: intercambia el code por el perfil.
+   * El codeVerifier se ignora en el mock (no aplica PKCE).
+   */
+  async exchangeCode(code: string, _codeVerifier?: string): Promise<OAuthTokenExchangeResult> {
+    const entry = this.codes.get(code);
+    if (!entry) {
+      throw new DomainError('TOKEN_INVALIDO', 'Código OAuth inválido', 400);
+    }
+    if (entry.expiresAt < Date.now()) {
+      throw new DomainError('TOKEN_EXPIRADO', 'El código OAuth ha expirado', 400);
+    }
+    this.codes.delete(code);
+    return {
+      sub: entry.profile.sub,
+      email: entry.profile.email,
+      emailVerified: entry.profile.emailVerified,
+    };
+  }
+
+  /**
+   * Método legacy para el flujo mock del gateway (genera un code interno).
+   * Mantenido para retrocompatibilidad con el Mock IdP.
+   */
   exchange(code: string): OAuthProfile {
     const entry = this.codes.get(code);
     if (!entry) {

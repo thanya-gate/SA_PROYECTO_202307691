@@ -9,15 +9,18 @@ import { PostgresVerificationTokenRepository } from './infrastructure/persistenc
 import { JwtTokenService } from './infrastructure/auth/jwt-token-service';
 import { BcryptPasswordService } from './infrastructure/auth/bcrypt-password-service';
 import { MockOAuthProvider } from './infrastructure/oauth/mock-oauth-provider';
+import { GoogleOAuthProvider } from './infrastructure/oauth/google-oauth-provider';
 import { UserRepository } from './application/ports/user-repository';
 import { SessionRepository } from './application/ports/session-repository';
 import { VerificationTokenRepository } from './application/ports/verification-token-repository';
 import { TokenService, PasswordService } from './application/ports/token-service';
+import { OAuthProvider } from './application/ports/oauth-provider';
 import { SessionService } from './application/services/session.service';
 import { AuthService } from './application/services/auth.service';
 import { ProfileService } from './application/services/profile.service';
 import { AccountService } from './application/services/account.service';
 import { SolicitudService } from './application/services/solicitud.service';
+import { NotificacionesGrpcClient } from './infrastructure/grpc/notificaciones-client';
 
 
 export class Container {
@@ -27,7 +30,8 @@ export class Container {
   readonly tokenService: TokenService;
   readonly passwordService: PasswordService;
   readonly domainValidator: EmailDomainValidator;
-  readonly oauthProvider: MockOAuthProvider;
+  readonly oauthProvider: OAuthProvider;
+  readonly notificacionesClient: NotificacionesGrpcClient;
 
   readonly sessionService: SessionService;
   readonly authService: AuthService;
@@ -56,7 +60,17 @@ export class Container {
     });
     this.passwordService = new BcryptPasswordService();
     this.domainValidator = new EmailDomainValidator(config.ALLOWED_EMAIL_DOMAINS);
-    this.oauthProvider = new MockOAuthProvider(config.OAUTH_MOCK_ISSUER);
+
+    if (config.OAUTH_PROVIDER === 'google' && config.GOOGLE_CLIENT_ID) {
+      this.oauthProvider = new GoogleOAuthProvider(
+        config.GOOGLE_CLIENT_ID,
+        config.GOOGLE_CLIENT_SECRET,
+        config.GOOGLE_REDIRECT_URI,
+        config.ALLOWED_EMAIL_DOMAINS,
+      );
+    } else {
+      this.oauthProvider = new MockOAuthProvider(config.OAUTH_MOCK_ISSUER);
+    }
 
     this.sessionService = new SessionService(this.sessionRepository);
     this.authService = new AuthService(
@@ -76,6 +90,7 @@ export class Container {
       this.domainValidator,
     );
     this.solicitudService = new SolicitudService(this.userRepository);
+    this.notificacionesClient = new NotificacionesGrpcClient();
   }
 }
 

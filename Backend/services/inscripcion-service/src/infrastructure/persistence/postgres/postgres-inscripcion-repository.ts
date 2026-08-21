@@ -282,6 +282,18 @@ export class PostgresInscripcionRepository implements InscripcionRepository {
     }));
   }
 
+  async listarEstudiantesDeCurso(cursoId: string, semestre: string): Promise<string[]> {
+    const res = await query<{ estudiante_id: string }>(
+      `SELECT DISTINCT estudiante_id
+       FROM asignacion_curso
+       WHERE curso_id = $1
+         AND semestre = $2
+         AND estado_matricula IN ('PENDIENTE', 'MATRICULADO')`,
+      [cursoId, semestre],
+    );
+    return res.rows.map((r) => r.estudiante_id);
+  }
+
   async eliminarDocente(docenteId: string): Promise<void> {
     const res = await query<{ p_eliminado: boolean }>(
       'CALL sp_eliminar_docente($1, NULL)',

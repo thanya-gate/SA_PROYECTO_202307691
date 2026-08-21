@@ -1,0 +1,331 @@
+# =============================================================================
+# YoUSAC - Entorno de Producción en la Nube (Google Cloud Platform)
+# =============================================================================
+# Este archivo docker-compose.cloud.yml despliega la arquitectura completa
+# usando Google Cloud Platform:
+#
+# - Compute Engine: Host principal para los contenedores (VM e2-standard-2)
+# - Cloud SQL (PostgreSQL 16): Base de datos por microservicio (6 instancias)
+# - Memorystore (Redis): Capa de caché para analítica
+# - Cloud Storage: Almacenamiento de videos y materiales (gcsfuse)
+# - Secret Manager: Gestión segura de credenciales
+# - Cloud Load Balancer: Punto de entrada con certificado SSL
+# - Cloud CDN: Cacheo de assets estáticos
+#
+# ============================================================================
+
+name: yousac-cloud
+
+services:
+  # ---------------------------------------------------------------------------
+  # Cloud SQL Proxies — Un proxy por base de datos (Cloud SQL Auth Proxy)
+  # ---------------------------------------------------------------------------
+  # Cada proxy expone un puerto TCP local para que los servicios se conecten
+  # de forma segura a su instancia de Cloud SQL sin abrir puertos 5432.
+  # Los servicios se conectan vía 127.0.0.1:PORT.
+  # El proxy usa las credenciales del metadata server de la VM.
+
+  auth-db-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
+    container_name: yousac-auth-db-proxy
+    command:
+      - "--address=0.0.0.0"
+      - "--port=5432"
+      - "${CLOUD_SQL_CONNECTION_NAME_AUTH}"
+    network_mode: "host"
+    restart: unless-stopped
+
+  catalog-db-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
+    container_name: yousac-catalog-db-proxy
+    command:
+      - "--address=0.0.0.0"
+      - "--port=15432"
+      - "${CLOUD_SQL_CONNECTION_NAME_CATALOG}"
+    network_mode: "host"
+    restart: unless-stopped
+
+  reproduccion-db-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
+    container_name: yousac-reproduccion-db-proxy
+    command:
+      - "--address=0.0.0.0"
+      - "--port=15433"
+      - "${CLOUD_SQL_CONNECTION_NAME_REPRODUCCION}"
+    network_mode: "host"
+    restart: unless-stopped
+
+  analitica-db-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
+    container_name: yousac-analitica-db-proxy
+    command:
+      - "--address=0.0.0.0"
+      - "--port=15434"
+      - "${CLOUD_SQL_CONNECTION_NAME_ANALITICA}"
+    network_mode: "host"
+    restart: unless-stopped
+
+  inscripcion-db-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
+    container_name: yousac-inscripcion-db-proxy
+    command:
+      - "--address=0.0.0.0"
+      - "--port=15435"
+      - "${CLOUD_SQL_CONNECTION_NAME_INSCRIPCION}"
+    network_mode: "host"
+    restart: unless-stopped
+
+  notificaciones-db-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
+    container_name: yousac-notificaciones-db-proxy
+    command:
+      - "--address=0.0.0.0"
+      - "--port=15436"
+      - "${CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES}"
+    network_mode: "host"
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Auth Service (TypeScript)
+  # ---------------------------------------------------------------------------
+  auth-service:
+    build:
+      context: ./Backend
+      dockerfile: services/auth-service/Dockerfile
+    container_name: yousac-auth-service
+    network_mode: "host"
+    environment:
+      NODE_ENV: production
+      GRPC_PORT: 50051
+      JWT_SECRET: "${JWT_SECRET}"
+      COOKIE_SECURE: "true"
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
+      SEED_DEMO: "${SEED_DEMO:-false}"
+      OAUTH_PROVIDER: "${OAUTH_PROVIDER:-google}"
+      OAUTH_MOCK_ENABLED: "${OAUTH_MOCK_ENABLED:-false}"
+      OAUTH_ISSUER_PUBLIC: "${OAUTH_ISSUER_PUBLIC:-http://34.59.46.34/mock-oauth}"
+      OAUTH_REDIRECT_URI: "${OAUTH_REDIRECT_URI:-http://34.59.46.34/auth/oauth/callback}"
+      OAUTH_CLIENT_ID: "${OAUTH_CLIENT_ID:-yousac-web}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-http://34.59.46.34/auth/oauth/callback}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${AUTH_DB:-yousac_auth}"
+      NOTIFICACIONES_GRPC_ADDR: 127.0.0.1:50056
+    depends_on:
+      auth-db-proxy:
+        condition: service_started
+      notificaciones-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Catalog Service (TypeScript)
+  # ---------------------------------------------------------------------------
+  catalog-service:
+    build:
+      context: ./Backend
+      dockerfile: services/catalog-service/Dockerfile
+    container_name: yousac-catalog-service
+    network_mode: "host"
+    environment:
+      NODE_ENV: production
+      GRPC_PORT: 50052
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15432/${CATALOG_DB:-yousac_catalog}"
+      NOTIFICACIONES_GRPC_ADDR: 127.0.0.1:50056
+    depends_on:
+      catalog-db-proxy:
+        condition: service_started
+      notificaciones-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Reproducción Service (Go)
+  # ---------------------------------------------------------------------------
+  reproduccion-service:
+    build:
+      context: ./Backend/services/reproduccion-service
+      dockerfile: Dockerfile
+    container_name: yousac-reproduccion-service
+    network_mode: "host"
+    environment:
+      NODE_ENV: production
+      GRPC_PORT: 50053
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15433/${REPRODUCCION_DB:-yousac_reproduccion}"
+    depends_on:
+      reproduccion-db-proxy:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/server", "-healthcheck"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Analítica Service (Python) — Tendencias, Recomendaciones, Cache Redis
+  # ---------------------------------------------------------------------------
+  analitica-service:
+    build:
+      context: ./Backend/services/analitica-service
+      dockerfile: Dockerfile
+    container_name: yousac-analitica-service
+    network_mode: "host"
+    environment:
+      GRPC_PORT: 50054
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15434/${ANALITICA_DB:-yousac_analitica}"
+      REDIS_URL: "redis://${REDIS_HOST:-localhost}:${REDIS_PORT:-6379}/0"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+      CACHE_TTL_SEGUNDOS: "600"
+    depends_on:
+      analitica-db-proxy:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Inscripción Service (TypeScript)
+  # ---------------------------------------------------------------------------
+  inscripcion-service:
+    build:
+      context: ./Backend
+      dockerfile: services/inscripcion-service/Dockerfile
+    container_name: yousac-inscripcion-service
+    network_mode: "host"
+    environment:
+      NODE_ENV: production
+      GRPC_PORT: 50055
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15435/${INSCRIPCION_DB:-yousac_inscripcion}"
+    depends_on:
+      inscripcion-db-proxy:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Notificaciones Service (TypeScript) — Emails institucionales + SMTP
+  # ---------------------------------------------------------------------------
+  notificaciones-service:
+    build:
+      context: ./Backend
+      dockerfile: services/notificaciones-service/Dockerfile
+    container_name: yousac-notificaciones-service
+    network_mode: "host"
+    environment:
+      NODE_ENV: production
+      GRPC_PORT: 50056
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15436/${NOTIFICACIONES_DB:-yousac_notificaciones}"
+      AUTH_GRPC_ADDR: 127.0.0.1:50051
+      INSCRIPCION_GRPC_ADDR: 127.0.0.1:50055
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      MAIL_DEBUG: "false"
+      WORKER_INTERVAL_MS: "15000"
+      MAX_INTENTOS: "5"
+    depends_on:
+      notificaciones-db-proxy:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # API Gateway (TypeScript) — Punto de entrada único (north-south)
+  # ---------------------------------------------------------------------------
+  api-gateway:
+    build:
+      context: ./Backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: yousac-api-gateway
+    network_mode: "host"
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      AUTH_GRPC_ADDR: 127.0.0.1:50051
+      CATALOG_GRPC_ADDR: 127.0.0.1:50052
+      REPRODUCTION_GRPC_ADDR: 127.0.0.1:50053
+      ANALITICA_GRPC_ADDR: 127.0.0.1:50054
+      INSCRIPCION_GRPC_ADDR: 127.0.0.1:50055
+      NOTIFICACIONES_GRPC_ADDR: 127.0.0.1:50056
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
+      SESSION_COOKIE_NAME: yousac_session
+      COOKIE_SECURE: "true"
+      COOKIE_SAME_SITE: strict
+      COOKIE_PATH: /
+      SESSION_TTL_MS: "3600000"
+      OAUTH_PROVIDER: "${OAUTH_PROVIDER:-google}"
+      OAUTH_ISSUER_PUBLIC: ${OAUTH_ISSUER_PUBLIC:-http://34.59.46.34.nip.io/mock-oauth}
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-http://34.59.46.34.nip.io/auth/oauth/callback}
+      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID:-yousac-web}
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-http://34.59.46.34.nip.io/auth/oauth/callback}"
+      MEDIA_DIR: /mnt/media/videos
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      reproduccion-service:
+        condition: service_healthy
+      analitica-service:
+        condition: service_healthy
+      inscripcion-service:
+        condition: service_healthy
+      notificaciones-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    volumes:
+      # Videos montados via gcsfuse en el host
+      - /mnt/media/videos:/mnt/media/videos
+
+  # ---------------------------------------------------------------------------
+  # Frontend Web (React + nginx)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./Frontend
+    container_name: yousac-web
+    network_mode: "host"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    volumes:
+      # Servir videos directamente desde Cloud Storage (montado via gcsfuse)
+      - /mnt/media/videos:/usr/share/nginx/html/media/videos:ro

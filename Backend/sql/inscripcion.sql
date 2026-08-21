@@ -41,7 +41,7 @@ CREATE TABLE asignacion_curso (
     estudiante_id    UUID NOT NULL,     
     curso_id         UUID NOT NULL REFERENCES curso(id) ON DELETE CASCADE,
     semestre         VARCHAR(10) NOT NULL,
-    estado_matricula VARCHAR(15) NOT NULL DEFAULT 'PENDIENTE',
+    estado_matricula VARCHAR(15) NOT NULL DEFAULT 'MATRICULADO',
     fecha_asignacion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (estudiante_id, curso_id, semestre)
 );
@@ -99,7 +99,7 @@ BEGIN
     END IF;
 
     INSERT INTO asignacion_curso (estudiante_id, curso_id, semestre, estado_matricula)
-    VALUES (p_estudiante_id, p_curso_id, p_semestre, 'PENDIENTE')
+    VALUES (p_estudiante_id, p_curso_id, p_semestre, 'MATRICULADO')
     RETURNING id INTO p_inscripcion_id;
 END;
 $$;

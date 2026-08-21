@@ -113,6 +113,13 @@ export class InscripcionService {
     return this.repository.listarAsignaciones();
   }
 
+  async listarEstudiantesDeCurso(cursoId: string, semestre: string): Promise<string[]> {
+    if (!cursoId || !semestre) {
+      throw new DomainError('ENTRADA_INVALIDA', 'cursoId y semestre son obligatorios', 400);
+    }
+    return this.repository.listarEstudiantesDeCurso(cursoId, semestre);
+  }
+
   async eliminarDocente(docenteId: string): Promise<void> {
     if (!docenteId) {
       throw new DomainError('ENTRADA_INVALIDA', 'docenteId es obligatorio', 400);

@@ -250,6 +250,11 @@ export function createGrpcServer(): grpc.Server {
           ip: call.request.ip,
           userAgent: call.request.userAgent,
         });
+
+        // CDU0006.1 - Confirmación de registro por correo (asíncrono; el envío
+        // ocurre en la cola del notificaciones-service).
+        void container.notificacionesClient.notificarConfirmacionRegistro(result.user);
+
         callback(null, {
           user: userToProto(result.user),
           accessToken: result.accessToken,
@@ -516,10 +521,11 @@ export function createGrpcServer(): grpc.Server {
       }
     },
 
-    // ===== OAuth 2.0 (mock) =====
+    // ===== OAuth 2.0 (mock - solo se usa cuando OAUTH_PROVIDER=mock) =====
     OAuthAuthorize: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const code = container.oauthProvider.authorize(
+        const mockProvider = container.oauthProvider as import('../../infrastructure/oauth/mock-oauth-provider').MockOAuthProvider;
+        const code = mockProvider.authorize(
           call.request.email,
           (call.request.roles ?? []).map((r: string) => protoToRole[r]),
         );
@@ -534,16 +540,24 @@ export function createGrpcServer(): grpc.Server {
 
     OAuthCallback: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const profile = container.oauthProvider.exchange(call.request.code);
+        const profile = await container.oauthProvider.exchangeCode(
+          call.request.code,
+          call.request.codeVerifier || call.request.code_verifier,
+        );
         const result = await container.authService.loginWithOAuth(profile, {
           ip: call.request.ip,
           userAgent: call.request.userAgent,
-        });
+        }, config.OAUTH_PROVIDER === 'google' ? 'google' : 'institucional');
+
+        if (result.newUser) {
+          void container.notificacionesClient.notificarConfirmacionRegistro(result.user);
+        }
+
         callback(null, {
           user: userToProto(result.user),
           accessToken: result.accessToken,
           expiresAt: result.expiresAt.toISOString(),
-          provider: 'institucional',
+          provider: config.OAUTH_PROVIDER === 'google' ? 'google' : 'institucional',
         });
       } catch (err: any) {
         callback(mapError(err));

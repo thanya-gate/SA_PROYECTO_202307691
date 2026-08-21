@@ -105,6 +105,7 @@ export interface CatalogRepository {
   getClase(claseId: string): Promise<ClaseDetalle | null>;
   listarPorSemestre(semestre?: string): Promise<SemestreResumen[]>;
   buscarCursoPorCodigo(codigo: string): Promise<CursoCatalogo | null>;
+  buscarCursoPorId(cursoId: string): Promise<CursoCatalogo | null>;
   publicarClase(
     input: PublicarClaseInput,
   ): Promise<{ claseId: string; fechaPublicacion: string }>;

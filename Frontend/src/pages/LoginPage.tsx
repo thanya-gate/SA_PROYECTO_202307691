@@ -24,8 +24,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [oauthOpen, setOauthOpen] = useState(false);
-  const [oauthEmail, setOauthEmail] = useState('');
   const [oauthSubmitting, setOauthSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
@@ -48,20 +46,11 @@ export default function LoginPage() {
     }
   }
 
-  async function handleOAuth(event: FormEvent) {
-    event.preventDefault();
+  async function handleOAuth() {
     setError(null);
-
-    if (!isInstitutionalEmail(oauthEmail)) {
-      setError('Correo no autorizado. Solo se permiten dominios @ing.usac.edu.gt y @ingenieria.usac.edu.gt.');
-      return;
-    }
-
     setOauthSubmitting(true);
     try {
-      // Redirige a la pantalla del proveedor institucional (IdP). El navegador
-      // volverá a /oauth/callback con el authorization code.
-      await loginWithOAuth(oauthEmail);
+      await loginWithOAuth();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo iniciar el flujo de autenticación institucional.');
       setOauthSubmitting(false);
@@ -119,30 +108,9 @@ export default function LoginPage() {
         </div>
 
         <div className="auth-card__oauth">
-          {!oauthOpen ? (
-            <Button variant="oauth" type="button" onClick={() => setOauthOpen(true)}>
-              Ingresar con cuenta institucional
-            </Button>
-          ) : (
-            <form className="auth-card__oauth-form" onSubmit={handleOAuth} noValidate>
-              <TextField
-                id="oauth-email"
-                label="Correo institucional (OAuth)"
-                type="email"
-                placeholder="persona@ing.usac.edu.gt"
-                value={oauthEmail}
-                onChange={(e) => setOauthEmail(e.target.value)}
-                autoFocus
-                required
-              />
-              <Button variant="oauth" type="submit" loading={oauthSubmitting}>
-                Ir a la cuenta institucional
-              </Button>
-              <p className="auth-card__oauth-hint">
-                Serás redirigido a la pantalla del proveedor institucional para autenticarte.
-              </p>
-            </form>
-          )}
+          <Button variant="oauth" type="button" loading={oauthSubmitting} onClick={handleOAuth}>
+            Ingresar con cuenta institucional
+          </Button>
         </div>
       </section>
     </AuthLayout>
