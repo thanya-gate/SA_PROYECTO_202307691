@@ -205,7 +205,12 @@ export default function SubirClasePage() {
         tokenActual,
       );
       const claseId = res.claseId;
-      if (videoFile) await mediaApi.subirVideo(claseId, videoFile, tokenActual);
+      if (conArchivoVideo && videoFile) {
+        const uploadRes = await mediaApi.subirVideo(claseId, videoFile, tokenActual);
+        if (uploadRes.duracion > 0) {
+          await catalogApi.actualizarDuracion(claseId, uploadRes.duracion, tokenActual);
+        }
+      }
       if (materialFile) await mediaApi.subirMaterial(claseId, materialFile, tokenActual);
       setExito('Clase publicada correctamente.');
       setExitoClaseId(claseId);

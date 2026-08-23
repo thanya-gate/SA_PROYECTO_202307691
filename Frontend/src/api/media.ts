@@ -1,12 +1,15 @@
 import { config } from '../config/env';
 import { apiFetch, ApiError } from './http';
+import { detectarDuracionArchivo } from '../utils/video';
 
 interface SubirVideoResponse {
   message: string;
   urlVideo: string;
+  duracion: number;
   clase: {
     claseId: string;
     urlVideo: string;
+    duracion: number;
   };
 }
 
@@ -21,9 +24,12 @@ interface SubirMaterialResponse {
 
 interface EstablecerUrlResponse {
   message: string;
+  urlVideo?: string;
+  duracion?: number;
   clase: {
     claseId: string;
     urlVideo: string;
+    duracion: number;
   };
 }
 
@@ -32,11 +38,15 @@ interface ErrorEnvelope {
 }
 
 export const mediaApi = {
-  subirVideo: (claseId: string, file: File, token: string): Promise<SubirVideoResponse> =>
-    fetch(`${config.apiBaseUrl}/catalog/classes/${encodeURIComponent(claseId)}/video`, {
+  subirVideo: async (claseId: string, file: File, token: string): Promise<SubirVideoResponse> => {
+    // El navegador pre-detecta la duración; el servidor la usa como respaldo
+    // cuando ffprobe no puede leer los metadatos del archivo.
+    const duracionCliente = await detectarDuracionArchivo(file).catch(() => null);
+    return fetch(`${config.apiBaseUrl}/catalog/classes/${encodeURIComponent(claseId)}/video`, {
       method: 'POST',
       headers: {
         'Content-Type': file.type || 'application/octet-stream',
+        ...(duracionCliente ? { 'x-video-duracion-segundos': String(duracionCliente) } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: file,
@@ -60,7 +70,8 @@ export const mediaApi = {
         );
       }
       return data as SubirVideoResponse;
-    }),
+    });
+  },
 
   subirMaterial: (claseId: string, file: File, token: string): Promise<SubirMaterialResponse> =>
     fetch(`${config.apiBaseUrl}/catalog/classes/${encodeURIComponent(claseId)}/material`, {

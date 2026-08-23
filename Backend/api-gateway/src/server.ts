@@ -20,9 +20,11 @@ import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
 import { errorHandler } from './middleware/error-handler';
 import { createIdpRouter, buildIdpLoginUri } from './mock-idp';
+import { createStorageBackend } from './storage/storage';
 
 const cookieMaxAge = config.SESSION_TTL_MS;
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+const MAX_VIDEO_DURATION_SECONDS = 24 * 60 * 60;
 const MAX_MATERIAL_BYTES = 50 * 1024 * 1024;
 const MATERIAL_EXTENSIONS: Record<string, string> = {
   'application/pdf': '.pdf',
@@ -34,23 +36,87 @@ const MATERIAL_EXTENSIONS: Record<string, string> = {
   'image/png': '.png',
   'image/jpeg': '.jpg',
 };
+// Backend de almacenamiento multimedia según STORAGE_BACKEND: 'local' guarda
+// en disco (MEDIA_DIR) y 'gcs' sube a Cloud Storage y devuelve la URL del bucket.
+const storage = createStorageBackend(config.STORAGE_BACKEND, Object.values(MATERIAL_EXTENSIONS));
 const execFileAsync = promisify(execFile);
 
 /**
  * Detecta la duración real de un archivo de video (segundos) leyendo sus
- * metadatos con ffprobe. Reemplaza la duración que se fija manualmente al
- * publicar la clase.
+ * metadatos con ffprobe. Se consultan la duración del contenedor (format) y la
+ * de cada stream: en algunos archivos (p. ej. WebM grabados en navegador o MP4
+ * fragmentados) el formato reporta N/A pero los streams sí tienen duración.
  */
 async function detectVideoDuration(filePath: string): Promise<number | null> {
   try {
     const { stdout } = await execFileAsync(
       'ffprobe',
-      ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filePath],
+      [
+        '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-show_entries', 'stream=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        filePath,
+      ],
       { timeout: 60_000, maxBuffer: 1024 * 1024 },
     );
-    const seconds = Number.parseFloat(stdout.trim());
-    if (!Number.isFinite(seconds) || seconds <= 0) return null;
-    return Math.round(seconds);
+    for (const line of stdout.split(/\r?\n/)) {
+      const seconds = Number.parseFloat(line.trim());
+      if (Number.isFinite(seconds) && seconds > 0) return Math.round(seconds);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extrae el ID de video de una URL de YouTube y usa la YouTube Data API v3
+ * para obtener la duración en segundos. Devuelve null si no se puede
+ * determinar (por ejemplo, si YOUTUBE_API_KEY no está configurada).
+ */
+async function detectYoutubeDuration(urlVideo: string): Promise<number | null> {
+  if (!config.YOUTUBE_API_KEY) return null;
+
+  // Extrae el video ID de YouTube de varias formas de URL conocidas
+  let videoId: string | null = null;
+  try {
+    const parsed = new URL(urlVideo);
+    if (parsed.hostname.includes('youtu.be')) {
+      videoId = parsed.pathname.slice(1) || null;
+    } else if (parsed.hostname.includes('youtube.com')) {
+      videoId = parsed.searchParams.get('v');
+      if (!videoId && parsed.pathname.includes('/embed/')) {
+        videoId = parsed.pathname.split('/embed/')[1]?.split(/[?#]/)[0] ?? null;
+      }
+    }
+  } catch {
+    return null;
+  }
+  if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return null;
+
+  try {
+    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${config.YOUTUBE_API_KEY}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch(apiUrl, { signal: controller.signal });
+      if (!res.ok) return null;
+      const data = await res.json() as { items?: Array<{ contentDetails?: { duration?: string } }> };
+      const isoDuration = data.items?.[0]?.contentDetails?.duration;
+      if (!isoDuration) return null;
+      // ISO 8601 duration format: PT#M#S or PT#S or PT#H#M#S
+      const match = isoDuration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+      if (!match) return null;
+      const hours = parseInt(match[1] ?? '0', 10);
+      const minutes = parseInt(match[2] ?? '0', 10);
+      const seconds = parseInt(match[3] ?? '0', 10);
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      if (totalSeconds <= 0) return null;
+      return totalSeconds;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   } catch {
     return null;
   }
@@ -704,10 +770,8 @@ export function createGateway(): Express {
     const claseId = req.params.claseId;
     try {
       await catalogGrpc.eliminarClase(claseId);
-      await fs.promises.rm(path.join(config.MEDIA_DIR, 'clases', `${claseId}.mp4`), { force: true }).catch(() => {});
-      for (const ext of Object.values(MATERIAL_EXTENSIONS)) {
-        await fs.promises.rm(path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`), { force: true }).catch(() => {});
-      }
+      // Limpieza best-effort de los archivos multimedia (disco o bucket).
+      await storage.eliminarArchivosClase(claseId).catch(() => {});
       res.json({ message: 'Clase eliminada' });
     } catch (err) {
       next(err);
@@ -1037,7 +1101,15 @@ export function createGateway(): Express {
 
       // Se detecta la duración real del video a partir de sus metadatos
       // (ffprobe) y se actualiza la clase, ignorando la duración manual.
-      const duracion = await detectVideoDuration(tempPath);
+      // Si ffprobe no puede leerla (códec exótico), se respeta la duración
+      // que detectó el navegador (header x-video-duracion-segundos).
+      let duracion = await detectVideoDuration(tempPath);
+      if (duracion === null || duracion <= 0) {
+        const cliente = Number.parseInt(String(req.headers['x-video-duracion-segundos'] ?? ''), 10);
+        if (Number.isFinite(cliente) && cliente > 0 && cliente <= MAX_VIDEO_DURATION_SECONDS) {
+          duracion = cliente;
+        }
+      }
       if (duracion === null || duracion === 0) {
         await fs.promises.rm(tempPath, { force: true }).catch(() => {});
         return next(
@@ -1049,8 +1121,9 @@ export function createGateway(): Express {
         );
       }
 
-      await fs.promises.rename(tempPath, targetPath);
-      const urlVideo = `/media/videos/clases/${claseId}.mp4`;
+      // El backend decide dónde vive el archivo final (disco o bucket) y
+      // devuelve la URL pública que se persiste en el catálogo.
+      const urlVideo = await storage.guardarVideo(claseId, tempPath, req.headers['content-type'] ?? 'video/mp4');
       await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
       const result = await catalogGrpc.actualizarDuracion(claseId, duracion);
       const clase = result.clase;
@@ -1084,7 +1157,15 @@ export function createGateway(): Express {
         throw new DomainError('ENTRADA_INVALIDA', 'urlVideo debe ser una URL de YouTube válida (http/https)', 400);
       }
       const result = await catalogGrpc.actualizarUrlVideo(req.params.claseId, urlVideo);
-      res.json({ message: 'URL de video actualizada', clase: result.clase });
+      // Detecta la duración del video de YouTube usando la YouTube Data API v3.
+      // Si no está configurada la API key, la duración se deja como está (0 o manual).
+      const duracion = await detectYoutubeDuration(urlVideo);
+      let clase = result.clase;
+      if (duracion !== null && duracion > 0) {
+        const duracionResult = await catalogGrpc.actualizarDuracion(req.params.claseId, duracion);
+        clase = duracionResult.clase;
+      }
+      res.json({ message: 'URL de video actualizada', urlVideo, duracion: clase.duracion, clase });
     } catch (err) {
       next(err);
     }
@@ -1123,14 +1204,9 @@ export function createGateway(): Express {
         req.pipe(out);
       });
 
-      // Se elimina el material anterior de la misma clase para no dejar huérfanos.
-      for (const prevExt of Object.values(MATERIAL_EXTENSIONS)) {
-        if (prevExt === ext) continue;
-        await fs.promises.rm(path.join(path.dirname(targetPath), `${claseId}${prevExt}`), { force: true }).catch(() => {});
-      }
-
-      await fs.promises.rename(tempPath, targetPath);
-      const urlMaterial = `/media/materiales/${claseId}${ext}`;
+      // El backend se encarga de limpiar el material previo con otra
+      // extensión, hacer el commit del archivo y devolver la URL pública.
+      const urlMaterial = await storage.guardarMaterial(claseId, tempPath, ext, req.headers['content-type'] ?? 'application/octet-stream');
       const result = await catalogGrpc.actualizarUrlMaterial(claseId, urlMaterial);
       res.status(201).json({
         message: 'Material subido a la plataforma',

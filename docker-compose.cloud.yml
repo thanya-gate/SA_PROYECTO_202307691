@@ -305,6 +305,11 @@ services:
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
       GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-https://yousac-thany.duckdns.org/oauth/callback}"
       MEDIA_DIR: /mnt/media/videos
+      # gcs = los videos/materiales se suben al bucket y la clase guarda su URL pública
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-gcs}
+      GCS_BUCKET_VIDEOS: ${GCS_BUCKET_VIDEOS:-yousac-videos}
+      GCS_BUCKET_MATERIAL: ${GCS_BUCKET_MATERIAL:-yousac-material}
+      GCS_PUBLIC_BASE_URL: ${GCS_PUBLIC_BASE_URL:-}
     depends_on:
       auth-service:
         condition: service_healthy
@@ -338,6 +343,9 @@ services:
     network_mode: "host"
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+      NGINX_PORT: "8081"
+      BACKEND_URL: http://127.0.0.1:8080
+      FORWARD_PROTO: https
     depends_on:
       api-gateway:
         condition: service_healthy

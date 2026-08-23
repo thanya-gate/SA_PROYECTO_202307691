@@ -16,6 +16,15 @@ const envSchema = z.object({
 
   MEDIA_DIR: z.string().default('/app/media'),
 
+  // Almacenamiento de videos/materiales: 'local' guarda en MEDIA_DIR (disco,
+  // servido por nginx) y 'gcs' sube los objetos a Cloud Storage y devuelve la
+  // URL pública del bucket.
+  STORAGE_BACKEND: z.enum(['local', 'gcs']).default('local'),
+  GCS_BUCKET_VIDEOS: z.string().default('yousac-videos'),
+  GCS_BUCKET_MATERIAL: z.string().default('yousac-material'),
+  // Base pública opcional (ej. dominio CDN); vacío = https://storage.googleapis.com/<bucket>
+  GCS_PUBLIC_BASE_URL: z.string().default(''),
+
   ALLOWED_EMAIL_DOMAINS: z
     .string()
     .default('ingenieria.usac.edu.gt,ing.usac.edu.gt')
@@ -39,6 +48,8 @@ const envSchema = z.object({
   // Google OAuth 2.0 (PKCE) — cuando OAUTH_PROVIDER=google se usa Google como IdP real
   OAUTH_PROVIDER: z.enum(['google', 'mock']).default('mock'),
   GOOGLE_CLIENT_ID: z.string().default(''),
+  // YouTube Data API v3 — opcional, para detectar la duración de videos de YouTube
+  YOUTUBE_API_KEY: z.string().default(''),
 
   PUBLIC_PATHS: z.string().default('/health'),
 });
