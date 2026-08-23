@@ -9,14 +9,36 @@
 # - Memorystore (Redis): Capa de caché para analítica
 # - Cloud Storage: Almacenamiento de videos y materiales (gcsfuse)
 # - Secret Manager: Gestión segura de credenciales
-# - Cloud Load Balancer: Punto de entrada con certificado SSL
+# - Caddy (Reverse Proxy TLS): Let's Encrypt + DuckDNS (yousac-thany.duckdns.org)
 # - Cloud CDN: Cacheo de assets estáticos
 #
 # ============================================================================
 
 name: yousac-cloud
 
+x-yousac-env: &yousac-env
+  NODE_ENV: production
+
 services:
+  # ---------------------------------------------------------------------------
+  # Caddy — Reverse proxy TLS (Let's Encrypt + DuckDNS)
+  # ---------------------------------------------------------------------------
+  # Caddy escucha en 443/80, obtiene el certificado TLS de Let's Encrypt para
+  # yousac-thany.duckdns.org y proxya todo al Frontend nginx (port 80).
+  # El email de ACME se configura via variable de entorno.
+  caddy:
+    image: caddy:2-alpine
+    container_name: yousac-caddy
+    network_mode: "host"
+    environment:
+      ACME_EMAIL: "${ACME_EMAIL:-yousac-ads@gmail.com}"
+      DOMAIN: "${DOMAIN:-yousac-thany.duckdns.org}"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
   # ---------------------------------------------------------------------------
   # Cloud SQL Proxies — Un proxy por base de datos (Cloud SQL Auth Proxy)
   # ---------------------------------------------------------------------------
@@ -93,9 +115,11 @@ services:
       context: ./Backend
       dockerfile: services/auth-service/Dockerfile
     container_name: yousac-auth-service
+    env_file:
+      - .env.cloud
     network_mode: "host"
     environment:
-      NODE_ENV: production
+      <<: *yousac-env
       GRPC_PORT: 50051
       JWT_SECRET: "${JWT_SECRET}"
       COOKIE_SECURE: "true"
@@ -103,12 +127,12 @@ services:
       SEED_DEMO: "${SEED_DEMO:-false}"
       OAUTH_PROVIDER: "${OAUTH_PROVIDER:-google}"
       OAUTH_MOCK_ENABLED: "${OAUTH_MOCK_ENABLED:-false}"
-      OAUTH_ISSUER_PUBLIC: "${OAUTH_ISSUER_PUBLIC:-http://34.59.46.34/mock-oauth}"
-      OAUTH_REDIRECT_URI: "${OAUTH_REDIRECT_URI:-http://34.59.46.34/auth/oauth/callback}"
+      OAUTH_MOCK_ISSUER: "${OAUTH_ISSUER_PUBLIC:-https://yousac-thany.duckdns.org/mock-oauth}"
+      OAUTH_REDIRECT_URI: "${OAUTH_REDIRECT_URI:-https://yousac-thany.duckdns.org/oauth/callback}"
       OAUTH_CLIENT_ID: "${OAUTH_CLIENT_ID:-yousac-web}"
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
       GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
-      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-http://34.59.46.34/auth/oauth/callback}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-https://yousac-thany.duckdns.org/oauth/callback}"
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${AUTH_DB:-yousac_auth}"
       NOTIFICACIONES_GRPC_ADDR: 127.0.0.1:50056
     depends_on:
@@ -133,7 +157,7 @@ services:
     container_name: yousac-catalog-service
     network_mode: "host"
     environment:
-      NODE_ENV: production
+      <<: *yousac-env
       GRPC_PORT: 50052
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15432/${CATALOG_DB:-yousac_catalog}"
       NOTIFICACIONES_GRPC_ADDR: 127.0.0.1:50056
@@ -159,7 +183,7 @@ services:
     container_name: yousac-reproduccion-service
     network_mode: "host"
     environment:
-      NODE_ENV: production
+      <<: *yousac-env
       GRPC_PORT: 50053
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15433/${REPRODUCCION_DB:-yousac_reproduccion}"
     depends_on:
@@ -184,7 +208,7 @@ services:
     environment:
       GRPC_PORT: 50054
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15434/${ANALITICA_DB:-yousac_analitica}"
-      REDIS_URL: "redis://${REDIS_HOST:-localhost}:${REDIS_PORT:-6379}/0"
+      REDIS_URL: "redis://${REDIS_HOST:-10.210.16.3}:${REDIS_PORT:-6379}/0"
       REDIS_PASSWORD: "${REDIS_PASSWORD}"
       CACHE_TTL_SEGUNDOS: "600"
     depends_on:
@@ -207,7 +231,7 @@ services:
     container_name: yousac-inscripcion-service
     network_mode: "host"
     environment:
-      NODE_ENV: production
+      <<: *yousac-env
       GRPC_PORT: 50055
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15435/${INSCRIPCION_DB:-yousac_inscripcion}"
     depends_on:
@@ -228,21 +252,16 @@ services:
       context: ./Backend
       dockerfile: services/notificaciones-service/Dockerfile
     container_name: yousac-notificaciones-service
+    env_file:
+      - .env.cloud
     network_mode: "host"
     environment:
-      NODE_ENV: production
-      GRPC_PORT: 50056
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15436/${NOTIFICACIONES_DB:-yousac_notificaciones}"
       AUTH_GRPC_ADDR: 127.0.0.1:50051
       INSCRIPCION_GRPC_ADDR: 127.0.0.1:50055
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: "${SMTP_PORT:-587}"
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-      SMTP_FROM: ${SMTP_FROM}
-      MAIL_DEBUG: "false"
       WORKER_INTERVAL_MS: "15000"
       MAX_INTENTOS: "5"
+      GRPC_PORT: 50056
     depends_on:
       notificaciones-db-proxy:
         condition: service_started
@@ -261,9 +280,11 @@ services:
       context: ./Backend
       dockerfile: api-gateway/Dockerfile
     container_name: yousac-api-gateway
+    env_file:
+      - .env.cloud
     network_mode: "host"
     environment:
-      NODE_ENV: production
+      <<: *yousac-env
       PORT: 8080
       AUTH_GRPC_ADDR: 127.0.0.1:50051
       CATALOG_GRPC_ADDR: 127.0.0.1:50052
@@ -278,12 +299,17 @@ services:
       COOKIE_PATH: /
       SESSION_TTL_MS: "3600000"
       OAUTH_PROVIDER: "${OAUTH_PROVIDER:-google}"
-      OAUTH_ISSUER_PUBLIC: ${OAUTH_ISSUER_PUBLIC:-http://34.59.46.34.nip.io/mock-oauth}
-      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-http://34.59.46.34.nip.io/auth/oauth/callback}
+      OAUTH_ISSUER_PUBLIC: ${OAUTH_ISSUER_PUBLIC:-https://yousac-thany.duckdns.org/mock-oauth}
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-https://yousac-thany.duckdns.org/oauth/callback}
       OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID:-yousac-web}
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
-      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-http://34.59.46.34.nip.io/auth/oauth/callback}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-https://yousac-thany.duckdns.org/oauth/callback}"
       MEDIA_DIR: /mnt/media/videos
+      # gcs = los videos/materiales se suben al bucket y la clase guarda su URL pública
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-gcs}
+      GCS_BUCKET_VIDEOS: ${GCS_BUCKET_VIDEOS:-yousac-videos}
+      GCS_BUCKET_MATERIAL: ${GCS_BUCKET_MATERIAL:-yousac-material}
+      GCS_PUBLIC_BASE_URL: ${GCS_PUBLIC_BASE_URL:-}
     depends_on:
       auth-service:
         condition: service_healthy
@@ -317,15 +343,22 @@ services:
     network_mode: "host"
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+      NGINX_PORT: "8081"
+      BACKEND_URL: http://127.0.0.1:8080
+      FORWARD_PROTO: https
     depends_on:
       api-gateway:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/healthz"]
       interval: 15s
       timeout: 5s
       retries: 5
     volumes:
       # Servir videos directamente desde Cloud Storage (montado via gcsfuse)
       - /mnt/media/videos:/usr/share/nginx/html/media/videos:ro
+
+volumes:
+  caddy_data:
+  caddy_config:

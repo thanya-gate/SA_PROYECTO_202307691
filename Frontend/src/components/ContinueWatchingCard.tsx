@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import { CardThumbnail } from './CardThumbnail';
 import type { HistorialItem } from '../api/reproduccion';
+import { thumbnailDeClase } from '../utils/video';
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -14,6 +16,7 @@ export function ContinueWatchingCard({ item }: { item: HistorialItem }) {
 
   return (
     <Link to={`/catalogo/clase/${item.claseId}`} className="home-card">
+      <CardThumbnail src={thumbnailDeClase(item.urlVideo, item.claseId)} alt={titulo} />
       <div className="home-card__cabecera">
         <h3 className="home-card__titulo">{titulo}</h3>
         <span className="home-card__badge home-card__badge--avance">

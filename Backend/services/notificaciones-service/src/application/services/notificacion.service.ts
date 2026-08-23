@@ -66,7 +66,24 @@ export class NotificacionService {
     const destinatarios = await this.obtenerUsuarios(estudianteIds);
     const destinatarioIds = destinatarios.map((u) => u.usuarioId);
 
-    return { destinatarioIds, notificacionesEncoladas: 0 };
+    let encoladas = 0;
+    for (const usuario of destinatarios) {
+      await this.repository.registrarNotificacion({
+        usuarioId: usuario.usuarioId,
+        correoDestino: usuario.email,
+        plantilla: 'nueva_clase',
+        tipo: 'NUEVA_CLASE',
+        datosContexto: {
+          codigo: input.codigo,
+          curso: input.curso,
+          tema: input.tema,
+          semestre: input.semestre,
+        },
+      });
+      encoladas += 1;
+    }
+
+    return { destinatarioIds, notificacionesEncoladas: encoladas };
   }
 
   async notificarVideoSubido(raw: {

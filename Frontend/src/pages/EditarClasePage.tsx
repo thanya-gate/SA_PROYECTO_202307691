@@ -5,6 +5,7 @@ import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
+import { esVideoLocal, formatSegundos, parseDuracionInput } from '../utils/video';
 
 const YT_URL_REGEX = /^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i;
 
@@ -17,10 +18,6 @@ function fechaParaInput(iso: string): string {
   if (!iso) return '';
   const m = iso.match(/^(\d{4}-\d{2}-\d{2})/);
   return m ? m[1] : '';
-}
-
-function esVideoLocal(url: string): boolean {
-  return typeof url === 'string' && url.startsWith('/media/');
 }
 
 export default function EditarClasePage() {
@@ -65,7 +62,7 @@ export default function EditarClasePage() {
         setAnio(res.clase.anio ? String(res.clase.anio) : '');
         setVideoUrl(res.clase.urlVideo ?? '');
         setMaterialUrl(res.clase.urlMaterial ?? '');
-        setDuracion(res.clase.duracion > 0 ? String(Math.floor(res.clase.duracion / 60)) : '');
+        setDuracion(res.clase.duracion > 0 ? formatSegundos(res.clase.duracion) : '');
         setEtiquetas(res.clase.etiquetas ?? []);
         setParticipantes(
           (res.clase.participantes ?? []).map((p) => ({
@@ -131,6 +128,11 @@ export default function EditarClasePage() {
       setError('La URL del video debe ser una URL válida de YouTube (http/https).');
       return;
     }
+    const duracionSegundos = duracion.trim() ? parseDuracionInput(duracion) : 0;
+    if (duracionSegundos === null) {
+      setError('La duración debe tener formato mm:ss o h:mm:ss (ej. 12:34).');
+      return;
+    }
     if (!semestre.trim()) {
       setError('El semestre es obligatorio.');
       return;
@@ -158,7 +160,7 @@ export default function EditarClasePage() {
           anio: Number(anio),
           urlVideo: videoActual,
           urlMaterial: materialActual,
-          duracion: Math.floor((Number(duracion) || 0) * 60),
+          duracion: duracionSegundos,
           etiquetas,
           participantes: participantesValidos,
         },
@@ -298,14 +300,13 @@ export default function EditarClasePage() {
                   />
                 </label>
                 <label className="subirclase__campo">
-                  <span className="subirclase__campo-label">Duración (minutos)</span>
+                  <span className="subirclase__campo-label">Duración (mm:ss)</span>
                   <input
                     className="subirclase__input"
-                    type="number"
-                    min={0}
-                    step={1}
+                    type="text"
+                    inputMode="numeric"
                     value={duracion}
-                    placeholder="Ej. 90"
+                    placeholder="Ej. 12:34"
                     onChange={(e) => setDuracion(e.target.value)}
                   />
                 </label>

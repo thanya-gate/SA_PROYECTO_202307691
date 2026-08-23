@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { reproduccionApi, type HistorialItem } from '../api/reproduccion';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
+import { CardThumbnail } from '../components/CardThumbnail';
 import { Alert } from '../components/ui/Alert';
-import { formatDuracion, formatFecha, formatSegundos } from '../utils/video';
+import { formatDuracion, formatFecha, formatSegundos, thumbnailDeClase } from '../utils/video';
 
 export default function HistorialPage() {
   const { token } = useAuth();
@@ -71,35 +72,38 @@ export default function HistorialPage() {
               return (
                 <li key={item.claseId}>
                   <Link to={`/catalogo/clase/${item.claseId}`} className="historial__item">
-                    <div className="historial__item-cabecera">
-                      <div>
-                        <h3 className="historial__item-titulo">{titulo}</h3>
-                        <p className="historial__item-meta">
-                          {[item.codigo, item.curso, item.unidad, item.semestre]
-                            .filter(Boolean)
-                            .join(' · ')}
-                          {item.anio ? ` · ${item.anio}` : ''}
-                        </p>
+                    <CardThumbnail src={thumbnailDeClase(item.urlVideo, item.claseId)} alt={titulo} />
+                    <div className="historial__item-contenido">
+                      <div className="historial__item-cabecera">
+                        <div>
+                          <h3 className="historial__item-titulo">{titulo}</h3>
+                          <p className="historial__item-meta">
+                            {[item.codigo, item.curso, item.unidad, item.semestre]
+                              .filter(Boolean)
+                              .join(' · ')}
+                            {item.anio ? ` · ${item.anio}` : ''}
+                          </p>
+                        </div>
+                        <span className="historial__item-fecha">
+                          {formatFecha(item.fechaUltimaVisualizacion)}
+                        </span>
                       </div>
-                      <span className="historial__item-fecha">
-                        {formatFecha(item.fechaUltimaVisualizacion)}
-                      </span>
-                    </div>
 
-                    <div className="historial__item-progreso" aria-hidden="true">
-                      <div
-                        className="historial__item-progreso-llenado"
-                        style={{ width: `${porcentaje}%` }}
-                      />
-                    </div>
+                      <div className="historial__item-progreso" aria-hidden="true">
+                        <div
+                          className="historial__item-progreso-llenado"
+                          style={{ width: `${porcentaje}%` }}
+                        />
+                      </div>
 
-                    <div className="historial__item-pie">
-                      <span className="historial__item-posicion">
-                        {reanudable
-                          ? `Reanudar en ${formatSegundos(item.segundoActual)} de ${formatDuracion(item.duracion)}`
-                          : `Duración ${formatDuracion(item.duracion)}`}
-                      </span>
-                      <span className="historial__item-avance">{porcentaje.toFixed(1)}%</span>
+                      <div className="historial__item-pie">
+                        <span className="historial__item-posicion">
+                          {reanudable
+                            ? `Reanudar en ${formatSegundos(item.segundoActual)} de ${formatDuracion(item.duracion)}`
+                            : `Duración ${formatDuracion(item.duracion)}`}
+                        </span>
+                        <span className="historial__item-avance">{porcentaje.toFixed(1)}%</span>
+                      </div>
                     </div>
                   </Link>
                 </li>

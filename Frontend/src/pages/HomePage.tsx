@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
+import { CardThumbnail } from '../components/CardThumbnail';
 import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
 import { RecommendationCard, type RecomendacionConClase } from '../components/RecommendationCard';
 import { reproduccionApi, type HistorialItem } from '../api/reproduccion';
 import { analiticaApi, type RankingItem } from '../api/analitica';
 import { catalogApi, type ClaseDetalle } from '../api/catalog';
+import { thumbnailDeClase } from '../utils/video';
 
 interface ClaseInfo {
   codigo: string;
@@ -16,6 +18,7 @@ interface ClaseInfo {
   tema: string;
   semestre: string;
   anio: number;
+  urlVideo: string;
 }
 
 interface TrendingConClase extends RankingItem {
@@ -33,6 +36,7 @@ function aClaseInfo(clase: ClaseDetalle): ClaseInfo {
     tema: clase.tema,
     semestre: clase.semestre,
     anio: clase.anio,
+    urlVideo: clase.urlVideo,
   };
 }
 
@@ -140,7 +144,7 @@ export default function HomePage() {
   }, [tokenActual, puedeRecomendaciones]);
 
   return (
-    <AppLayout wide>
+    <AppLayout>
       <div className="home__main">
         <h1 className="home__welcome">Hola, {user?.email}</h1>
         <p className="home__subtitle">
@@ -202,6 +206,10 @@ export default function HomePage() {
                       to={`/catalogo/clase/${item.claseId}`}
                       className="home-card"
                     >
+                      <CardThumbnail
+                        src={thumbnailDeClase(item.clase?.urlVideo, item.claseId)}
+                        alt={item.clase?.tema || item.clase?.curso || 'Clase sin título'}
+                      />
                       <div className="home-card__cabecera">
                         <h3 className="home-card__titulo">
                           {item.clase?.tema || item.clase?.curso || 'Clase sin título'}
