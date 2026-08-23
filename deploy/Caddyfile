@@ -1,0 +1,11 @@
+{
+    email yousac-ads@gmail.com
+}
+
+yousac-thany.duckdns.org {
+    encode zstd gzip
+
+    # El frontend (nginx en el puerto 8081) maneja el routing de /api/* -> api-gateway
+    # y el SPA fallback.
+    reverse_proxy 127.0.0.1:8081
+}

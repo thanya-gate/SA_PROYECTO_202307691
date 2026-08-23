@@ -33,8 +33,8 @@ const envSchema = z.object({
   // OAuth 2.0 (Authorization Code). El "IdP" simulado se aloja en el gateway
   // (OAUTH_ISSUER_PUBLIC es la URL visible desde el navegador) y redirige al
   // SPA (OAUTH_REDIRECT_URI) con el código. OAUTH_CLIENT_ID identifica al cliente web.
-  OAUTH_ISSUER_PUBLIC: z.string().default('http://localhost:8080/mock-oauth'),
-  OAUTH_REDIRECT_URI: z.string().default('http://localhost:8081/oauth/callback'),
+  OAUTH_ISSUER_PUBLIC: z.string().default('https://yousac-thany.duckdns.org/mock-oauth'),
+  OAUTH_REDIRECT_URI: z.string().default('https://yousac-thany.duckdns.org/oauth/callback'),
   OAUTH_CLIENT_ID: z.string().default('yousac-web'),
   // Google OAuth 2.0 (PKCE) — cuando OAUTH_PROVIDER=google se usa Google como IdP real
   OAUTH_PROVIDER: z.enum(['google', 'mock']).default('mock'),
