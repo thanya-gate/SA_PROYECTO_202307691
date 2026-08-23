@@ -71,6 +71,37 @@ async function detectVideoDuration(filePath: string): Promise<number | null> {
 }
 
 /**
+ * Genera una miniatura (JPEG) del video extrayendo un fotograma con ffmpeg.
+ * El fotograma se toma aproximadamente al 10% de la duración (mínimo 1s,
+ * máximo 60s) para mostrar contenido representativo y evitar la pantalla
+ * negra inicial. Es mejor esfuerzo: si ffmpeg falla devuelve false y la
+ * subida del video continúa sin miniatura.
+ */
+async function generarThumbnail(videoPath: string, thumbPath: string, duracionSegundos: number): Promise<boolean> {
+  const segundo = Math.min(60, Math.max(1, Math.floor(duracionSegundos / 10)));
+  try {
+    await execFileAsync(
+      'ffmpeg',
+      [
+        '-y',
+        '-ss', String(segundo),
+        '-i', videoPath,
+        '-frames:v', '1',
+        '-vf', 'scale=640:-2',
+        '-q:v', '4',
+        thumbPath,
+      ],
+      { timeout: 30_000, maxBuffer: 1024 * 1024 },
+    );
+    return true;
+  } catch {
+    // Limpieza ante fallo parcial: no debe quedar un JPEG corrupto.
+    await fs.promises.rm(thumbPath, { force: true }).catch(() => {});
+    return false;
+  }
+}
+
+/**
  * Extrae el ID de video de una URL de YouTube y usa la YouTube Data API v3
  * para obtener la duración en segundos. Devuelve null si no se puede
  * determinar (por ejemplo, si YOUTUBE_API_KEY no está configurada).
@@ -1121,9 +1152,18 @@ export function createGateway(): Express {
         );
       }
 
+      // Miniatura del video: se extrae un fotograma con ffmpeg mientras el
+      // archivo aún está en el temporal. Es mejor esfuerzo: si falla, la clase
+      // simplemente no tendrá miniatura y las tarjetas mostrarán el marcador.
+      const thumbTempPath = `${tempPath}.thumb.jpg`;
+      const thumbnailGenerada = await generarThumbnail(tempPath, thumbTempPath, duracion);
+
       // El backend decide dónde vive el archivo final (disco o bucket) y
       // devuelve la URL pública que se persiste en el catálogo.
       const urlVideo = await storage.guardarVideo(claseId, tempPath, req.headers['content-type'] ?? 'video/mp4');
+      if (thumbnailGenerada) {
+        await storage.guardarThumbnail(claseId, thumbTempPath).catch(() => {});
+      }
       await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
       const result = await catalogGrpc.actualizarDuracion(claseId, duracion);
       const clase = result.clase;
@@ -1145,6 +1185,7 @@ export function createGateway(): Express {
       });
     } catch (err) {
       await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
+      await fs.promises.rm(`${targetPath}.uploading.thumb.jpg`, { force: true }).catch(() => {});
       await fs.promises.rm(targetPath, { force: true }).catch(() => {});
       next(err);
     }

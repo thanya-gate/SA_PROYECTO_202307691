@@ -24,6 +24,25 @@ export function esVideoLocal(url: string): boolean {
   return /^https?:\/\//i.test(url) && youtubeVideoId(url) === null;
 }
 
+/**
+ * Deduce la miniatura de una clase a partir de su URL de video:
+ *  - YouTube: usa la imagen oficial del video (img.youtube.com).
+ *  - Archivo propio: el gateway genera thumbnails/<claseId>.jpg junto al
+ *    video, así que la URL se obtiene reemplazando el segmento /clases/ por
+ *    /thumbnails/ (funciona igual con rutas relativas y URLs del bucket).
+ * Devuelve null cuando no hay miniatura deducible; la tarjeta mostrará su
+ * marcador genérico.
+ */
+export function thumbnailDeClase(urlVideo: string | undefined, claseId: string | undefined): string | null {
+  if (!urlVideo || !claseId) return null;
+  const yt = youtubeVideoId(urlVideo);
+  if (yt) return `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`;
+  if (/\/clases\/[^/?#]+/.test(urlVideo)) {
+    return urlVideo.replace(/\/clases\/[^/?#]+/, `/thumbnails/${encodeURIComponent(claseId)}.jpg`);
+  }
+  return null;
+}
+
 export function formatSegundos(totalSegundos: number): string {
   if (!Number.isFinite(totalSegundos) || totalSegundos <= 0) return '0:00';
   const horas = Math.floor(totalSegundos / 3600);

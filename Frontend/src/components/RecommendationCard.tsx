@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import { CardThumbnail } from './CardThumbnail';
 import type { RecomendacionItem } from '../api/analitica';
+import { thumbnailDeClase } from '../utils/video';
 
 export interface RecomendacionConClase extends RecomendacionItem {
   clase?: {
@@ -10,6 +12,7 @@ export interface RecomendacionConClase extends RecomendacionItem {
     tema: string;
     semestre: string;
     anio: number;
+    urlVideo: string;
   };
 }
 
@@ -22,6 +25,7 @@ export function RecommendationCard({ item }: { item: RecomendacionConClase }) {
 
   return (
     <Link to={`/catalogo/clase/${item.claseId}`} className="home-card">
+      <CardThumbnail src={thumbnailDeClase(item.clase?.urlVideo, item.claseId)} alt={titulo} />
       <div className="home-card__cabecera">
         <h3 className="home-card__titulo">{titulo}</h3>
         <span className="home-card__badge home-card__badge--recomendacion">

@@ -20,7 +20,14 @@ export interface StorageBackend {
    */
   guardarMaterial(claseId: string, tempPath: string, ext: string, contentType: string): Promise<string>;
 
-  /** Elimina el video y todos los materiales asociados a una clase. */
+  /**
+   * Mueve la miniatura temporal (JPEG) a su ubicación determinista
+   * thumbnails/<claseId>.jpg. La URL pública no se persiste: el frontend la
+   * deduce a partir de la URL del video.
+   */
+  guardarThumbnail(claseId: string, tempPath: string): Promise<void>;
+
+  /** Elimina el video, su miniatura y todos los materiales asociados a una clase. */
   eliminarArchivosClase(claseId: string): Promise<void>;
 }
 
@@ -48,11 +55,18 @@ class LocalStorageBackend implements StorageBackend {
     return `/media/materiales/${claseId}${ext}`;
   }
 
+  async guardarThumbnail(claseId: string, tempPath: string): Promise<void> {
+    const targetPath = path.join(config.MEDIA_DIR, 'thumbnails', `${claseId}.jpg`);
+    await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.promises.rename(tempPath, targetPath);
+  }
+
   async eliminarArchivosClase(claseId: string): Promise<void> {
     // Se intentan ambas rutas por compatibilidad con archivos creados cuando
     // la URL guardada era /media/videos/clases/...
     await fs.promises.rm(path.join(config.MEDIA_DIR, 'videos', 'clases', `${claseId}.mp4`), { force: true }).catch(() => {});
     await fs.promises.rm(path.join(config.MEDIA_DIR, 'clases', `${claseId}.mp4`), { force: true }).catch(() => {});
+    await fs.promises.rm(path.join(config.MEDIA_DIR, 'thumbnails', `${claseId}.jpg`), { force: true }).catch(() => {});
     for (const ext of this.extensionesMaterial) {
       await fs.promises.rm(path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`), { force: true }).catch(() => {});
     }
@@ -106,8 +120,13 @@ class GcsStorageBackend implements StorageBackend {
     return this.subir(config.GCS_BUCKET_MATERIAL, `materiales/${claseId}${ext}`, tempPath, contentType);
   }
 
+  async guardarThumbnail(claseId: string, tempPath: string): Promise<void> {
+    await this.subir(config.GCS_BUCKET_VIDEOS, `thumbnails/${claseId}.jpg`, tempPath, 'image/jpeg');
+  }
+
   async eliminarArchivosClase(claseId: string): Promise<void> {
     await this.eliminarObjeto(config.GCS_BUCKET_VIDEOS, `clases/${claseId}.mp4`);
+    await this.eliminarObjeto(config.GCS_BUCKET_VIDEOS, `thumbnails/${claseId}.jpg`);
     for (const ext of this.extensionesMaterial) {
       await this.eliminarObjeto(config.GCS_BUCKET_MATERIAL, `materiales/${claseId}${ext}`);
     }
