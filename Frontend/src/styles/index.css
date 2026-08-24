@@ -3457,6 +3457,9 @@ body {
 }
 
 /* ===== Home card (shared) ===== */
+/* El padding superior es 0 para que la miniatura quede pegada al borde de la
+   tarjeta (igual que en el catálogo); el contenido textual conserva su aire
+   con el padding inferior/lateral. */
 .home-card {
   display: flex;
   flex-direction: column;
@@ -3464,7 +3467,8 @@ body {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 0.95rem 1.1rem;
+  padding: 0 1.1rem 0.95rem;
+  overflow: hidden;
   text-decoration: none;
   color: inherit;
   box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
@@ -3587,11 +3591,13 @@ body {
 /* ===== Miniaturas de tarjetas (CardThumbnail) ===== */
 /* Contenedor 16:9 compartido por inicio, catálogo e historial. Mantiene el
    degradado institucional como marcador mientras carga o cuando la clase no
-   tiene miniatura generada. */
+   tiene miniatura generada. flex-shrink:0 evita que el flexbox comprima la
+   caja y "acorte" la imagen. */
 .card-thumb {
   position: relative;
   aspect-ratio: 16 / 9;
   width: 100%;
+  flex-shrink: 0;
   overflow: hidden;
   background:
     linear-gradient(135deg, rgba(30, 90, 156, 0.92), rgba(30, 90, 156, 0.85)),
@@ -3630,10 +3636,11 @@ body {
   line-height: 1;
 }
 
-/* En las tarjetas del inicio la miniatura va arriba del contenido, a sangre
-   (compensando el padding de la tarjeta) y separada del texto por un borde. */
+/* En las tarjetas del inicio la miniatura va arriba del contenido, pegada a
+   los bordes (la tarjeta ya no tiene padding superior) e igual que en el
+   catálogo: caja 16:9 limpia, sin márgenes negativos. */
 .home-card .card-thumb {
-  margin: -0.95rem -1.1rem 0.15rem;
+  margin: 0 0 0.15rem;
   border-radius: var(--radius) var(--radius) 0 0;
   border-bottom: 1px solid var(--color-border);
 }
@@ -3652,10 +3659,12 @@ body {
   z-index: 1;
 }
 
-/* Historial: fila horizontal con miniatura fija a la izquierda. */
+/* Historial: fila horizontal con miniatura fija a la izquierda. align-self
+   evita que el estiramiento vertical del flex altere la proporción 16:9. */
 .historial__item .card-thumb {
   width: 180px;
   flex-shrink: 0;
+  align-self: flex-start;
   border-radius: calc(var(--radius) - 6px);
 }
 
