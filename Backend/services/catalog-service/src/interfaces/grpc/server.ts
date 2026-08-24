@@ -7,6 +7,7 @@ import { container } from '../../container';
 import {
   ClaseDetalle,
   ClaseResumen,
+  MaterialAdjunto,
   SemestreResumen,
 } from '../../domain/entities/clase';
 
@@ -54,6 +55,23 @@ function claseDetalleToProto(c: ClaseDetalle) {
     participantes: c.participantes.map((p) => ({ nombre: p.nombre, rol: p.rol })),
     etiquetas: c.etiquetas,
     cursoId: c.cursoId,
+    materiales: (c.materiales ?? []).map(materialToProto),
+  };
+}
+
+function materialToProto(m: MaterialAdjunto) {
+  return {
+    materialId: m.materialId,
+    claseId: m.claseId,
+    nombreArchivo: m.nombreArchivo,
+    mimeType: m.mimeType,
+    extension: m.extension,
+    tamanoBytes: m.tamanoBytes,
+    versionActual: m.versionActual,
+    totalDescargas: m.totalDescargas,
+    subidoPor: m.subidoPor ?? '',
+    fechaSubida: m.fechaSubida,
+    urlArchivo: m.urlArchivo ?? '',
   };
 }
 
@@ -72,6 +90,7 @@ const domainErrorToGrpcCode: Record<string, number> = {
   SEMESTRE_NO_ENCONTRADO: 5,
   ESCUELA_NO_ENCONTRADA: 5,
   DOCENTE_NO_ENCONTRADO: 5,
+  MATERIAL_NO_ENCONTRADO: 5,
   ENTRADA_INVALIDA: 3, 
   CONFLICTO: 6,
   CURSO_CODIGO_DUPLICADO: 6,
@@ -454,6 +473,77 @@ export function createGrpcServer(): grpc.Server {
       try {
         await container.catalogService.eliminarCurso(call.request.cursoId);
         callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    // ---- Materiales adjuntos (Fase 2) ----
+
+    RegistrarMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const material = await container.catalogService.registrarMaterial({
+          materialId: call.request.materialId || undefined,
+          claseId: call.request.claseId,
+          nombreArchivo: call.request.nombreArchivo,
+          mimeType: call.request.mimeType,
+          extension: call.request.extension,
+          tamanoBytes: Number(call.request.tamanoBytes ?? 0),
+          urlArchivo: call.request.urlArchivo,
+          subidoPor: call.request.subidoPor || undefined,
+        });
+        callback(null, { material: materialToProto(material) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ObtenerMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const material = await container.catalogService.obtenerMaterial(call.request.materialId);
+        callback(null, { material: materialToProto(material) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    AgregarVersionMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const material = await container.catalogService.agregarVersionMaterial({
+          materialId: call.request.materialId,
+          tamanoBytes: Number(call.request.tamanoBytes ?? 0),
+          urlArchivo: call.request.urlArchivo,
+        });
+        callback(null, { material: materialToProto(material) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarMateriales: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const materiales = await container.catalogService.listarMateriales(call.request.claseId);
+        callback(null, { materiales: materiales.map(materialToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await container.catalogService.eliminarMaterial(call.request.materialId);
+        callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    RegistrarDescargaMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const totalDescargas = await container.catalogService.registrarDescargaMaterial(
+          call.request.materialId,
+        );
+        callback(null, { totalDescargas });
       } catch (err: any) {
         callback(mapError(err));
       }

@@ -116,3 +116,31 @@ export const claseCSVSchema = z.object({
   auxiliares: z.array(z.string()).default([]),
 });
 export type ClaseCSVInput = z.infer<typeof claseCSVSchema>;
+
+// ---- Materiales adjuntos ----
+
+export const registrarMaterialSchema = z.object({
+  materialId: z.string().uuid('materialId inválido').optional(),
+  claseId: z.string().uuid('claseId inválido'),
+  nombreArchivo: z
+    .string()
+    .trim()
+    .min(1, 'nombreArchivo es obligatorio')
+    .max(255, 'nombreArchivo no puede exceder 255 caracteres'),
+  mimeType: z.string().trim().min(1, 'mimeType es obligatorio').max(100),
+  extension: z
+    .string()
+    .trim()
+    .regex(/^\.[A-Za-z0-9]{1,9}$/, 'extensión inválida (formato .pdf, .zip, ...)'),
+  tamanoBytes: z.number().int().min(0, 'tamanoBytes no puede ser negativo').default(0),
+  urlArchivo: z.string().trim().min(1, 'urlArchivo es obligatorio').max(2000),
+  subidoPor: optionalText(64),
+});
+export type RegistrarMaterialInputDto = z.infer<typeof registrarMaterialSchema>;
+
+export const agregarVersionMaterialSchema = z.object({
+  materialId: z.string().uuid('materialId inválido'),
+  tamanoBytes: z.number().int().min(0, 'tamanoBytes no puede ser negativo').default(0),
+  urlArchivo: z.string().trim().min(1, 'urlArchivo es obligatorio').max(2000),
+});
+export type AgregarVersionMaterialInput = z.infer<typeof agregarVersionMaterialSchema>;
