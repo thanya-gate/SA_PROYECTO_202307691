@@ -15,12 +15,16 @@ import {
   RegistrarEscuelaInput,
   ActualizarEscuelaInput,
   ActualizarCursoInput,
+  RegistrarMaterialInput,
+  AgregarVersionMaterialInput,
+  EliminarMaterialResult,
 } from '../../../application/ports/catalog-repository';
 import {
   ClaseDetalle,
   CursoAdmin,
   CursoCatalogo,
   EscuelaAdmin,
+  MaterialAdjunto,
   Participante,
   SemestreAdmin,
   SemestreResumen,
@@ -84,6 +88,20 @@ interface EscuelaAdminRow {
   cursos: string;
 }
 
+interface MaterialRow {
+  material_id: string;
+  clase_id: string;
+  nombre_archivo: string;
+  mime_type: string;
+  extension: string;
+  tamano_bytes: string | number;
+  version_actual: string | number;
+  total_descargas: string | number;
+  subido_por: string | null;
+  fecha_subida: Date;
+  url_archivo: string | null;
+}
+
 const PARTICIPANTE_REGEX = /^(.+) \((CATEDRATICO|AUXILIAR)\)$/;
 
 function parseParticipantes(raw: string[]): Participante[] {
@@ -95,6 +113,22 @@ function parseParticipantes(raw: string[]): Participante[] {
     }
   }
   return result;
+}
+
+function mapMaterial(r: MaterialRow): MaterialAdjunto {
+  return {
+    materialId: r.material_id,
+    claseId: r.clase_id,
+    nombreArchivo: r.nombre_archivo,
+    mimeType: r.mime_type,
+    extension: r.extension,
+    tamanoBytes: Number(r.tamano_bytes ?? 0),
+    versionActual: Number(r.version_actual ?? 1),
+    totalDescargas: Number(r.total_descargas ?? 0),
+    subidoPor: r.subido_por,
+    fechaSubida: new Date(r.fecha_subida).toISOString(),
+    urlArchivo: r.url_archivo,
+  };
 }
 
 
@@ -175,6 +209,7 @@ export class PostgresCatalogRepository implements CatalogRepository {
       fechaPublicacion: row.fecha_publicacion.toISOString(),
       participantes: parseParticipantes(row.participantes ?? []),
       etiquetas: row.etiquetas ?? [],
+      materiales: await this.listarMateriales(claseId),
     };
   }
 
@@ -492,5 +527,82 @@ export class PostgresCatalogRepository implements CatalogRepository {
     if (!res.rows[0]?.p_eliminado) {
       throw new DomainError('CURSO_NO_ENCONTRADO', 'El curso no existe en el catálogo', 404);
     }
+  }
+
+//Material
+
+  async registrarMaterial(input: RegistrarMaterialInput): Promise<MaterialAdjunto> {
+    const res = await query<{ p_material_id: string }>(
+      `CALL sp_registrar_material($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        input.claseId,
+        input.nombreArchivo,
+        input.mimeType,
+        input.extension,
+        input.tamanoBytes ?? 0,
+        input.urlArchivo,
+        input.materialId ?? null,
+      ],
+    );
+    const materialId = res.rows[0]?.p_material_id ?? input.materialId;
+    return this.obtenerMaterial(materialId) as Promise<MaterialAdjunto>;
+  }
+
+  async obtenerMaterial(materialId: string): Promise<MaterialAdjunto | null> {
+    const res = await query<MaterialRow>(
+      `SELECT material_id, clase_id, nombre_archivo, mime_type, extension,
+              tamano_bytes, version_actual, total_descargas, subido_por,
+              fecha_subida, url_archivo
+       FROM vw_materiales_clase WHERE material_id = $1`,
+      [materialId],
+    );
+    if (res.rows.length === 0) return null;
+    return mapMaterial(res.rows[0]);
+  }
+
+  async agregarVersionMaterial(input: AgregarVersionMaterialInput): Promise<MaterialAdjunto> {
+    const res = await query<{ p_numero_version: string | number }>(
+      'CALL sp_agregar_version_material($1, $2, $3, NULL)',
+      [input.materialId, input.tamanoBytes ?? 0, input.urlArchivo],
+    );
+    if (res.rows.length === 0 || !res.rows[0]?.p_numero_version) {
+      throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+    }
+    return this.obtenerMaterial(input.materialId) as Promise<MaterialAdjunto>;
+  }
+
+  async listarMateriales(claseId: string): Promise<MaterialAdjunto[]> {
+    const res = await query<MaterialRow>(
+      `SELECT material_id, clase_id, nombre_archivo, mime_type, extension,
+              tamano_bytes, version_actual, total_descargas, subido_por,
+              fecha_subida, url_archivo
+       FROM vw_materiales_clase
+       WHERE clase_id = $1
+       ORDER BY fecha_subida DESC`,
+      [claseId],
+    );
+    return res.rows.map(mapMaterial);
+  }
+
+  async eliminarMaterial(materialId: string): Promise<EliminarMaterialResult> {
+    const res = await query<{ p_eliminado: boolean; p_clase_id: string | null }>(
+      'CALL sp_eliminar_material($1, NULL, NULL)',
+      [materialId],
+    );
+    return {
+      eliminado: Boolean(res.rows[0]?.p_eliminado),
+      claseId: res.rows[0]?.p_clase_id ?? null,
+    };
+  }
+
+  async registrarDescargaMaterial(materialId: string): Promise<number> {
+    const res = await query<{ p_total_descargas: string | number }>(
+      'CALL sp_registrar_descarga_material($1, NULL)',
+      [materialId],
+    );
+    if (!res.rows[0] || res.rows[0].p_total_descargas === null) {
+      throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+    }
+    return Number(res.rows[0].p_total_descargas);
   }
 }

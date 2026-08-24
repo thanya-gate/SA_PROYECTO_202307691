@@ -3,22 +3,28 @@ import path from 'path';
 import { Storage } from '@google-cloud/storage';
 import { config } from '../config/env';
 
-/**
- * Backend de almacenamiento multimedia. El gateway escribe siempre el archivo
- * entrante en un temporal (para poder validar con ffprobe) y luego delega al
- * backend el "commit": moverlo a su destino final (disco) o subirlo al bucket
- * (Cloud Storage). Cada backend genera la URL pública que se persiste en la
- * base de datos y que el frontend usará para reproducir.
- */
+
 export interface StorageBackend {
   /** Mueve el video temporal a su destino y devuelve la URL pública. */
   guardarVideo(claseId: string, tempPath: string, contentType: string): Promise<string>;
 
   /**
    * Mueve el material temporal a su destino, elimina los materiales previos de
-   * la clase con otra extensión y devuelve la URL pública.
+   * la clase con otra extensión y devuelve la URL pública. (Flujo legado de un
+   * solo material por clase.)
    */
   guardarMaterial(claseId: string, tempPath: string, ext: string, contentType: string): Promise<string>;
+
+// Para el repositorio de material
+  guardarMaterialVersion(
+    claseId: string,
+    materialId: string,
+    nombreArchivo: string,
+    tempPath: string,
+    contentType: string,
+  ): Promise<string>;
+
+  eliminarMaterial(claseId: string, materialId: string): Promise<void>;
 
   /**
    * Mueve la miniatura temporal (JPEG) a su ubicación determinista
@@ -29,6 +35,22 @@ export interface StorageBackend {
 
   /** Elimina el video, su miniatura y todos los materiales asociados a una clase. */
   eliminarArchivosClase(claseId: string): Promise<void>;
+}
+
+/**
+ * Normaliza el nombre de archivo original para usarlo en disco o como objeto
+ * de bucket: descarta rutas, caracteres de control y todo lo que no sea
+ * letra/número/punto/guion. Devuelve '' si queda vacío.
+ */
+export function sanitizarNombreArchivo(nombre: string): string {
+  const base = nombre.split(/[\\/]/).pop() ?? '';
+  const limpio = base
+    .normalize('NFKD')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/[^A-Za-z0-9._-]+/g, '_')
+    .replace(/^\.+/, '')
+    .slice(0, 120);
+  return limpio === '.' || limpio === '..' ? '' : limpio;
 }
 
 /**
@@ -55,6 +77,27 @@ class LocalStorageBackend implements StorageBackend {
     return `/media/materiales/${claseId}${ext}`;
   }
 
+  async guardarMaterialVersion(
+    claseId: string,
+    materialId: string,
+    nombreArchivo: string,
+    tempPath: string,
+    _contentType: string,
+  ): Promise<string> {
+    const stamp = Date.now();
+    const objetoNombre = `${stamp}-${nombreArchivo}`;
+    const dirDestino = path.join(config.MEDIA_DIR, 'materiales', claseId, materialId);
+    const targetPath = path.join(dirDestino, objetoNombre);
+    await fs.promises.mkdir(dirDestino, { recursive: true });
+    await fs.promises.rename(tempPath, targetPath);
+    return `/media/materiales/${claseId}/${materialId}/${objetoNombre}`;
+  }
+
+  async eliminarMaterial(claseId: string, materialId: string): Promise<void> {
+    const dirMaterial = path.join(config.MEDIA_DIR, 'materiales', claseId, materialId);
+    await fs.promises.rm(dirMaterial, { recursive: true, force: true }).catch(() => {});
+  }
+
   async guardarThumbnail(claseId: string, tempPath: string): Promise<void> {
     const targetPath = path.join(config.MEDIA_DIR, 'thumbnails', `${claseId}.jpg`);
     await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
@@ -70,6 +113,8 @@ class LocalStorageBackend implements StorageBackend {
     for (const ext of this.extensionesMaterial) {
       await fs.promises.rm(path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`), { force: true }).catch(() => {});
     }
+
+    await fs.promises.rm(path.join(config.MEDIA_DIR, 'materiales', claseId), { recursive: true, force: true }).catch(() => {});
   }
 }
 
@@ -120,6 +165,22 @@ class GcsStorageBackend implements StorageBackend {
     return this.subir(config.GCS_BUCKET_MATERIAL, `materiales/${claseId}${ext}`, tempPath, contentType);
   }
 
+  async guardarMaterialVersion(
+    claseId: string,
+    materialId: string,
+    nombreArchivo: string,
+    tempPath: string,
+    contentType: string,
+  ): Promise<string> {
+    const objeto = `materiales/${claseId}/${materialId}/${Date.now()}-${nombreArchivo}`;
+    return this.subir(config.GCS_BUCKET_MATERIAL, objeto, tempPath, contentType);
+  }
+
+  async eliminarMaterial(claseId: string, materialId: string): Promise<void> {
+    const prefix = `materiales/${claseId}/${materialId}/`;
+    await this.storage.bucket(config.GCS_BUCKET_MATERIAL).deleteFiles({ prefix, force: true }).catch(() => {});
+  }
+
   async guardarThumbnail(claseId: string, tempPath: string): Promise<void> {
     await this.subir(config.GCS_BUCKET_VIDEOS, `thumbnails/${claseId}.jpg`, tempPath, 'image/jpeg');
   }
@@ -130,6 +191,8 @@ class GcsStorageBackend implements StorageBackend {
     for (const ext of this.extensionesMaterial) {
       await this.eliminarObjeto(config.GCS_BUCKET_MATERIAL, `materiales/${claseId}${ext}`);
     }
+    // Repositorio de materiales (Fase 2): elimina todas las versiones.
+    await this.storage.bucket(config.GCS_BUCKET_MATERIAL).deleteFiles({ prefix: `materiales/${claseId}/`, force: true }).catch(() => {});
   }
 }
 

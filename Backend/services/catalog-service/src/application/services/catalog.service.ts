@@ -14,12 +14,16 @@ import {
   ActualizarEscuelaInput,
   ActualizarCursoInput,
   SearchCriteria,
+  RegistrarMaterialInput,
+  AgregarVersionMaterialInput,
+  EliminarMaterialResult,
 } from '../ports/catalog-repository';
 import {
   ClaseDetalle,
   CursoAdmin,
   CursoCatalogo,
   EscuelaAdmin,
+  MaterialAdjunto,
   SemestreAdmin,
   SemestreResumen,
 } from '../../domain/entities/clase';
@@ -34,6 +38,8 @@ import {
   registrarEscuelaSchema,
   actualizarEscuelaSchema,
   actualizarCursoSchema,
+  registrarMaterialSchema,
+  agregarVersionMaterialSchema,
 } from '../dto/catalog-schemas';
 
 function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
@@ -202,5 +208,71 @@ export class CatalogService {
       throw new DomainError('ENTRADA_INVALIDA', 'cursoId es obligatorio', 400);
     }
     return this.repository.eliminarCurso(cursoId);
+  }
+
+  // ---- Materiales adjuntos (Fase 2) ----
+
+  async registrarMaterial(raw: RegistrarMaterialInput): Promise<MaterialAdjunto> {
+    const input = parse(registrarMaterialSchema, raw);
+    const material = await this.repository.registrarMaterial(input);
+    if (!material) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se pudo registrar el material', 400);
+    }
+    return material;
+  }
+
+  async obtenerMaterial(materialId: string): Promise<MaterialAdjunto> {
+    if (!materialId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'materialId es obligatorio', 400);
+    }
+    const material = await this.repository.obtenerMaterial(materialId);
+    if (!material) {
+      throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+    }
+    return material;
+  }
+
+  async agregarVersionMaterial(raw: AgregarVersionMaterialInput): Promise<MaterialAdjunto> {
+    const input = parse(agregarVersionMaterialSchema, raw);
+    try {
+      return await this.repository.agregarVersionMaterial(input);
+    } catch (err: any) {
+      if (String(err?.message ?? '').includes('MATERIAL_NO_ENCONTRADO')) {
+        throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+      }
+      throw err;
+    }
+  }
+
+  async listarMateriales(claseId: string): Promise<MaterialAdjunto[]> {
+    if (!claseId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'claseId es obligatorio', 400);
+    }
+    return this.repository.listarMateriales(claseId);
+  }
+
+  async eliminarMaterial(materialId: string): Promise<EliminarMaterialResult> {
+    if (!materialId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'materialId es obligatorio', 400);
+    }
+    const result = await this.repository.eliminarMaterial(materialId);
+    if (!result.eliminado) {
+      throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+    }
+    return result;
+  }
+
+  async registrarDescargaMaterial(materialId: string): Promise<number> {
+    if (!materialId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'materialId es obligatorio', 400);
+    }
+    try {
+      return await this.repository.registrarDescargaMaterial(materialId);
+    } catch (err: any) {
+      if (String(err?.message ?? '').includes('MATERIAL_NO_ENCONTRADO')) {
+        throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+      }
+      throw err;
+    }
   }
 }

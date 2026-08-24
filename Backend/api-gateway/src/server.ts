@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { randomUUID } from 'crypto';
 import { config } from './config/env';
 import { authGrpc } from './grpc/auth-client';
 import { catalogGrpc } from './grpc/catalog-client';
@@ -20,7 +21,7 @@ import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
 import { errorHandler } from './middleware/error-handler';
 import { createIdpRouter, buildIdpLoginUri } from './mock-idp';
-import { createStorageBackend } from './storage/storage';
+import { createStorageBackend, sanitizarNombreArchivo } from './storage/storage';
 
 const cookieMaxAge = config.SESSION_TTL_MS;
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
@@ -40,6 +41,61 @@ const MATERIAL_EXTENSIONS: Record<string, string> = {
 // en disco (MEDIA_DIR) y 'gcs' sube a Cloud Storage y devuelve la URL del bucket.
 const storage = createStorageBackend(config.STORAGE_BACKEND, Object.values(MATERIAL_EXTENSIONS));
 const execFileAsync = promisify(execFile);
+
+// Normaliza un MaterialAdjunto que llega por gRPC
+
+function normalizarMaterial(raw: any): Record<string, unknown> {
+  if (!raw) return {};
+  return {
+    ...raw,
+    tamanoBytes: Number(raw.tamanoBytes ?? 0),
+    totalDescargas: Number(raw.totalDescargas ?? 0),
+  };
+}
+
+//Validacion del contenido que se sube (MIME)
+function extensionDesdeMime(contentType: string | undefined): string {
+  const ext = contentType ? MATERIAL_EXTENSIONS[contentType] : undefined;
+  if (!ext) {
+    throw new DomainError(
+      'TIPO_NO_PERMITIDO',
+      `Tipo de archivo no permitido. Tipos aceptados: ${Object.keys(MATERIAL_EXTENSIONS).join(', ')}`,
+      415,
+    );
+  }
+  return ext;
+}
+
+function resolverNombreArchivo(headerValor: unknown, ext: string): string {
+  const crudo = typeof headerValor === 'string' && headerValor.trim().length > 0
+    ? headerValor.trim()
+    : `material${ext}`;
+  let nombre = sanitizarNombreArchivo(crudo);
+  if (!nombre) nombre = `material${ext}`;
+  if (!nombre.toLowerCase().endsWith(ext)) {
+    nombre = `${nombre}${ext}`;
+  }
+  return nombre;
+}
+
+async function escribirTemporal(rutaTemp: string, req: express.Request): Promise<void> {
+  await fs.promises.mkdir(path.dirname(rutaTemp), { recursive: true });
+  await new Promise<void>((resolve, reject) => {
+    const out = fs.createWriteStream(rutaTemp);
+    out.on('error', reject);
+    out.on('close', resolve);
+    req.on('error', reject);
+    req.pipe(out);
+  });
+}
+
+function validarTamanoMaterial(req: express.Request): number {
+  const contentLength = Number(req.headers['content-length'] ?? 0);
+  if (!contentLength || contentLength > MAX_MATERIAL_BYTES) {
+    throw new DomainError('ENTRADA_INVALIDA', 'El archivo debe pesar entre 1 byte y 50 MB', 400);
+  }
+  return contentLength;
+}
 
 /**
  * Detecta la duración real de un archivo de video (segundos) leyendo sus
@@ -1256,6 +1312,132 @@ export function createGateway(): Express {
       });
     } catch (err) {
       await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
+      next(err);
+    }
+  });
+
+//Rerpositorio de material
+  app.get('/catalog/classes/:claseId/materials', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarMateriales(req.params.claseId);
+      res.json({ materiales: (result.materiales ?? []).map(normalizarMaterial) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Sube un nuevo material a la clase (catedrático / auxiliar / admin).
+  app.post('/catalog/classes/:claseId/materials', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    const materialId = randomUUID();
+    let rutaTemp = '';
+    try {
+      const tamano = validarTamanoMaterial(req);
+      const mime = req.headers['content-type'] ?? '';
+      const ext = extensionDesdeMime(mime);
+      const nombreArchivo = resolverNombreArchivo(req.headers['x-filename'], ext);
+
+      rutaTemp = path.join(config.MEDIA_DIR, 'materiales', '.tmp', `${materialId}.uploading`);
+      await escribirTemporal(rutaTemp, req);
+
+      // El binario se persiste primero (mismo flujo que los videos) y luego
+      // se registra la metadata en el catálogo vía gRPC.
+      const urlArchivo = await storage.guardarMaterialVersion(req.params.claseId, materialId, nombreArchivo, rutaTemp, mime);
+      rutaTemp = '';
+      try {
+        const result = await catalogGrpc.registrarMaterial({
+          materialId,
+          claseId: req.params.claseId,
+          nombreArchivo,
+          mimeType: mime,
+          extension: ext,
+          tamanoBytes: tamano,
+          urlArchivo,
+        });
+        res.status(201).json({
+          message: 'Material publicado',
+          material: normalizarMaterial(result.material),
+        });
+      } catch (grpcErr) {
+        await storage.eliminarMaterial(req.params.claseId, materialId).catch(() => {});
+        throw grpcErr;
+      }
+    } catch (err) {
+      if (rutaTemp) await fs.promises.rm(rutaTemp, { force: true }).catch(() => {});
+      next(err);
+    }
+  });
+
+  // Publica una nueva versión de un material existente.
+  app.post('/catalog/materials/:materialId/versiones', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    let rutaTemp = '';
+    try {
+      const tamano = validarTamanoMaterial(req);
+      const mime = req.headers['content-type'] ?? '';
+      const ext = extensionDesdeMime(mime);
+      const nombreArchivo = resolverNombreArchivo(req.headers['x-filename'], ext);
+
+      const actual = await catalogGrpc.obtenerMaterial(req.params.materialId);
+      const claseId = String(actual?.material?.claseId ?? '');
+      if (!claseId) {
+        throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+      }
+
+      rutaTemp = path.join(config.MEDIA_DIR, 'materiales', '.tmp', `${req.params.materialId}.uploading`);
+      await escribirTemporal(rutaTemp, req);
+
+      const urlArchivo = await storage.guardarMaterialVersion(claseId, req.params.materialId, nombreArchivo, rutaTemp, mime);
+      rutaTemp = '';
+      try {
+        const result = await catalogGrpc.agregarVersionMaterial({
+          materialId: req.params.materialId,
+          tamanoBytes: tamano,
+          urlArchivo,
+        });
+        res.status(201).json({
+          message: `Versión ${result.material?.versionActual ?? '?'} publicada`,
+          material: normalizarMaterial(result.material),
+        });
+      } catch (grpcErr) {
+        await storage.eliminarMaterial(claseId, req.params.materialId).catch(() => {});
+        throw grpcErr;
+      }
+    } catch (err) {
+      if (rutaTemp) await fs.promises.rm(rutaTemp, { force: true }).catch(() => {});
+      next(err);
+    }
+  });
+
+  // Detalle de un material.
+  app.get('/catalog/materials/:materialId', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.obtenerMaterial(req.params.materialId);
+      res.json({ material: normalizarMaterial(result.material) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Elimina un material (metadata + todas sus versiones físicas).
+  app.delete('/catalog/materials/:materialId', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const detalle = await catalogGrpc.obtenerMaterial(req.params.materialId);
+      await catalogGrpc.eliminarMaterial(req.params.materialId);
+      const claseId = String(detalle?.material?.claseId ?? '');
+      if (claseId) {
+        await storage.eliminarMaterial(claseId, req.params.materialId).catch(() => {});
+      }
+      res.json({ message: 'Material eliminado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Métricas: registra una descarga y devuelve el total acumulado del archivo.
+  app.post('/catalog/materials/:materialId/descarga', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.registrarDescargaMaterial(req.params.materialId);
+      res.json({ message: 'Descarga registrada', totalDescargas: Number(result.totalDescargas ?? 0) });
+    } catch (err) {
       next(err);
     }
   });
