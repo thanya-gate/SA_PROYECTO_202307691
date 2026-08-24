@@ -1,16 +1,4 @@
-# =============================================================================
-# YoUSAC - Entorno de Desarrollo (Práctica 4 - Fase 2)
-# =============================================================================
-# Entorno de desarrollo activo orquestado con Docker Compose. Todo el avance
-# de la Fase 2 debe ejecutarse y validarse mediante este archivo:
-#
-#   docker compose -f docker-compose.dev.yml up --build
-#
-# Diferencias con el entorno de nube (docker-compose.cloud.yml):
-#   - Bases de datos PostgreSQL locales (contenedores efímeros de desarrollo).
-#   - Almacenamiento de media en disco (STORAGE_BACKEND=local, MEDIA_DIR).
-#   - NODE_ENV=development en todos los servicios.
-# =============================================================================
+# docker compose -f docker-compose.dev.yml up --build
 
 name: yousac-dev
 
@@ -293,8 +281,6 @@ services:
     environment:
       NODE_ENV: development
       PORT: 8080
-      # En desarrollo el binario de videos/materiales vive en disco (MEDIA_DIR);
-      # en la nube se usa STORAGE_BACKEND=gcs con Cloud Storage.
       STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       AUTH_GRPC_ADDR: auth-service:50051
       CATALOG_GRPC_ADDR: catalog-service:50052
