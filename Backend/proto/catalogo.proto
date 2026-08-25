@@ -47,6 +47,59 @@ message ClaseDetalle {
   repeated string etiquetas = 15;
   string curso_id = 16;
   repeated MaterialAdjunto materiales = 17;
+  repeated Capitulo capitulos = 18;
+}
+
+message Capitulo {
+  string capitulo_id = 1;
+  string clase_id = 2;
+  string titulo = 3;
+  int32 inicio_segundos = 4;
+  int32 fin_segundos = 5;
+  int32 orden = 6;
+  string fecha_creacion = 7;
+  string fecha_actualizacion = 8;
+}
+
+message ListarCapitulosRequest {
+  string clase_id = 1;
+}
+
+message ListarCapitulosResponse {
+  repeated Capitulo capitulos = 1;
+}
+
+message CrearCapituloRequest {
+  string clase_id = 1;
+  string titulo = 2;
+  int32 inicio_segundos = 3;
+  int32 fin_segundos = 4;
+  int32 orden = 5;
+}
+
+message CrearCapituloResponse {
+  Capitulo capitulo = 1;
+}
+
+message ActualizarCapituloRequest {
+  string capitulo_id = 1;
+  string clase_id = 2;
+  string titulo = 3;
+  int32 inicio_segundos = 4;
+  int32 fin_segundos = 5;
+  int32 orden = 6;
+}
+
+message ActualizarCapituloResponse {
+  Capitulo capitulo = 1;
+}
+
+message EliminarCapituloRequest {
+  string capitulo_id = 1;
+}
+
+message EliminarCapituloResponse {
+  string clase_id = 1;
 }
 
 message SemestreResumen {
@@ -414,6 +467,12 @@ service CatalogoService {
   rpc ListarMateriales(ListarMaterialesRequest) returns (ListarMaterialesResponse);
   rpc EliminarMaterial(EliminarMaterialRequest) returns (EliminarMaterialResponse);
   rpc RegistrarDescargaMaterial(RegistrarDescargaMaterialRequest) returns (RegistrarDescargaMaterialResponse);
+
+  // --- Segmentación por capítulos y temas (Práctica 4) ---
+  rpc ListarCapitulos(ListarCapitulosRequest) returns (ListarCapitulosResponse);
+  rpc CrearCapitulo(CrearCapituloRequest) returns (CrearCapituloResponse);
+  rpc ActualizarCapitulo(ActualizarCapituloRequest) returns (ActualizarCapituloResponse);
+  rpc EliminarCapitulo(EliminarCapituloRequest) returns (EliminarCapituloResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
 }

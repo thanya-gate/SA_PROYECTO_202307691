@@ -1,6 +1,7 @@
 import {
   ClaseDetalle,
   ClaseResumen,
+  Capitulo,
   CursoAdmin,
   CursoCatalogo,
   EscuelaAdmin,
@@ -123,6 +124,18 @@ export interface EliminarMaterialResult {
   claseId: string | null;
 }
 
+export interface CrearCapituloInput {
+  claseId: string;
+  titulo: string;
+  inicioSegundos: number;
+  finSegundos: number;
+  orden?: number;
+}
+
+export interface ActualizarCapituloInput extends CrearCapituloInput {
+  capituloId: string;
+}
+
 export interface CatalogRepository {
   buscar(criteria: SearchCriteria): Promise<BuscarResult>;
   getClase(claseId: string): Promise<ClaseDetalle | null>;
@@ -160,4 +173,9 @@ export interface CatalogRepository {
   listarMateriales(claseId: string): Promise<MaterialAdjunto[]>;
   eliminarMaterial(materialId: string): Promise<EliminarMaterialResult>;
   registrarDescargaMaterial(materialId: string): Promise<number>;
+
+  listarCapitulos(claseId: string): Promise<Capitulo[]>;
+  crearCapitulo(input: CrearCapituloInput): Promise<Capitulo>;
+  actualizarCapitulo(input: ActualizarCapituloInput): Promise<Capitulo | null>;
+  eliminarCapitulo(capituloId: string): Promise<{ eliminado: boolean; claseId: string | null }>;
 }

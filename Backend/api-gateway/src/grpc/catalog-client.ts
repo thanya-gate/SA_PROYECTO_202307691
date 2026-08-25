@@ -136,4 +136,23 @@ export const catalogGrpc = {
   eliminarMaterial: (materialId: string) => unary('EliminarMaterial', { materialId }),
   registrarDescargaMaterial: (materialId: string) =>
     unary('RegistrarDescargaMaterial', { materialId }),
+
+  // Segmentación por capítulos y temas
+  listarCapitulos: (claseId: string) => unary('ListarCapitulos', { claseId }),
+  crearCapitulo: (req: {
+    claseId: string;
+    titulo: string;
+    inicioSegundos: number;
+    finSegundos: number;
+    orden?: number;
+  }) => unary('CrearCapitulo', req),
+  actualizarCapitulo: (req: {
+    capituloId: string;
+    claseId: string;
+    titulo: string;
+    inicioSegundos: number;
+    finSegundos: number;
+    orden?: number;
+  }) => unary('ActualizarCapitulo', req),
+  eliminarCapitulo: (capituloId: string) => unary('EliminarCapitulo', { capituloId }),
 };
