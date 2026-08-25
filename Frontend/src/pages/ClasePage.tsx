@@ -6,6 +6,8 @@ import { mediaApi } from '../api/media';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import { MaterialesPanel } from '../components/MaterialesPanel';
+import { ChapterManager } from '../components/ChapterManager';
+import { ChapterTimeline } from '../components/ChapterTimeline';
 import { YT_STATE, YouTubePlayer } from '../components/YouTubePlayer';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { Alert } from '../components/ui/Alert';
@@ -43,6 +45,10 @@ export default function ClasePage() {
   const [urlVideoInput, setUrlVideoInput] = useState('');
   const [guardandoUrl, setGuardandoUrl] = useState(false);
 
+  // Segmentación de la reproducción: ambos reproductores exponen un adaptador
+  // de seek para que la barra de capítulos sea independiente de la fuente.
+  const [currentSeconds, setCurrentSeconds] = useState(0);
+
   // Edición / eliminación de la clase (CRUD)
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
@@ -50,6 +56,7 @@ export default function ClasePage() {
   const ultimoSegundoRef = useRef(0);
   const ultimoGuardadoRef = useRef(0);
   const vistaRegistradaRef = useRef(false);
+  const seekRef = useRef<(seconds: number) => void>(() => {});
 
   const tokenActual = token ?? '';
   const videoId = clase ? youtubeVideoId(clase.urlVideo) : null;
@@ -90,12 +97,20 @@ export default function ClasePage() {
   const handleTick = useCallback(
     (seconds: number) => {
       ultimoSegundoRef.current = seconds;
+      setCurrentSeconds(seconds);
       if (seconds - ultimoGuardadoRef.current >= CHECKPOINT_INTERVAL_SECONDS) {
         void guardarCheckpoint(seconds);
       }
     },
     [guardarCheckpoint],
   );
+
+  const handleSeek = useCallback((seconds: number) => {
+    const destino = Math.max(0, Math.floor(seconds));
+    seekRef.current(destino);
+    ultimoSegundoRef.current = destino;
+    setCurrentSeconds(destino);
+  }, []);
 
   const handleStateChange = useCallback(
     (state: number) => {
@@ -122,6 +137,8 @@ export default function ClasePage() {
     let active = true;
     setCargando(true);
     setError(null);
+    setCurrentSeconds(0);
+    seekRef.current = () => {};
     catalogApi
       .getClase(claseId, tokenActual)
       .then(async (res) => {
@@ -279,6 +296,9 @@ export default function ClasePage() {
                 <YouTubePlayer
                   videoId={videoId}
                   startSeconds={checkpoint?.segundoActual ?? 0}
+                  onReady={(player) => {
+                    seekRef.current = (seconds) => player.seekTo(seconds, true);
+                  }}
                   onTick={handleTick}
                   onStateChange={handleStateChange}
                 />
@@ -286,6 +306,9 @@ export default function ClasePage() {
                 <LocalVideoPlayer
                   src={clase.urlVideo}
                   startSeconds={checkpoint?.segundoActual ?? 0}
+                  onReady={(player) => {
+                    seekRef.current = (seconds) => player.seekTo(seconds);
+                  }}
                   onTick={handleTick}
                   onStateChange={handleStateChange}
                 />
@@ -293,6 +316,22 @@ export default function ClasePage() {
                 <p className="clase__sin-video">No hay video disponible para esta clase.</p>
               )}
             </div>
+
+            <ChapterTimeline
+              capitulos={clase.capitulos ?? []}
+              duracion={clase.duracion}
+              currentSeconds={currentSeconds}
+              onSeek={handleSeek}
+            />
+
+            {puedeGestionarContenido && (
+              <ChapterManager
+                claseId={clase.claseId}
+                duracion={clase.duracion}
+                capitulos={clase.capitulos ?? []}
+                onChange={(capitulos) => setClase((prev) => (prev ? { ...prev, capitulos } : prev))}
+              />
+            )}
 
             {puedeGestionarContenido && (
               <div className="clase__subida">

@@ -1016,3 +1016,233 @@ BEGIN
     FROM material WHERE id = p_material_id;
 END;
 $$;
+
+-- =====================================================================
+-- Segmentación por capítulos y temas (Práctica 4, alcance 2)
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS capitulo (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    clase_id            UUID NOT NULL REFERENCES clase_grabada(id) ON DELETE CASCADE,
+    titulo              VARCHAR(200) NOT NULL,
+    inicio_segundos     INT NOT NULL CHECK (inicio_segundos >= 0),
+    fin_segundos        INT NOT NULL CHECK (fin_segundos > inicio_segundos),
+    orden               INT NOT NULL CHECK (orden >= 1),
+    fecha_creacion      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (clase_id, orden)
+);
+
+CREATE INDEX IF NOT EXISTS idx_capitulo_clase_tiempo
+    ON capitulo (clase_id, inicio_segundos, fin_segundos);
+
+CREATE OR REPLACE VIEW vw_capitulos_clase AS
+SELECT
+    c.id AS capitulo_id,
+    c.clase_id,
+    c.titulo,
+    c.inicio_segundos,
+    c.fin_segundos,
+    c.orden,
+    c.fecha_creacion,
+    c.fecha_actualizacion
+FROM capitulo c;
+
+CREATE OR REPLACE FUNCTION fn_validar_rango_capitulo(
+    p_clase_id UUID,
+    p_inicio_segundos INT,
+    p_fin_segundos INT,
+    p_capitulo_id UUID DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_duracion INT;
+BEGIN
+    SELECT duracion INTO v_duracion
+    FROM clase_grabada
+    WHERE id = p_clase_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'CLASE_NO_ENCONTRADA: la clase no existe';
+    END IF;
+
+    IF p_inicio_segundos IS NULL OR p_inicio_segundos < 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: inicio_segundos no puede ser negativo';
+    END IF;
+
+    IF p_fin_segundos IS NULL OR p_fin_segundos <= p_inicio_segundos THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: fin_segundos debe ser mayor que inicio_segundos';
+    END IF;
+
+    IF v_duracion IS NULL OR v_duracion <= 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: la clase debe tener una duracion valida antes de segmentarla';
+    END IF;
+
+    IF p_fin_segundos > v_duracion THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el capitulo excede la duracion de la clase';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM capitulo c
+        WHERE c.clase_id = p_clase_id
+          AND (p_capitulo_id IS NULL OR c.id <> p_capitulo_id)
+          AND c.inicio_segundos < p_fin_segundos
+          AND c.fin_segundos > p_inicio_segundos
+    ) THEN
+        RAISE EXCEPTION 'CONFLICTO: el rango del capitulo se sobrepone con otro capitulo';
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_trg_validar_duracion_capitulos()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_fin_maximo INT;
+BEGIN
+    SELECT MAX(fin_segundos) INTO v_fin_maximo
+    FROM capitulo
+    WHERE clase_id = NEW.id;
+
+    IF v_fin_maximo IS NOT NULL AND (NEW.duracion IS NULL OR NEW.duracion < v_fin_maximo) THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: la nueva duracion es menor que el final de un capitulo existente';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_validar_duracion_capitulos ON clase_grabada;
+CREATE TRIGGER trg_validar_duracion_capitulos
+    BEFORE UPDATE OF duracion ON clase_grabada
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_validar_duracion_capitulos();
+
+CREATE OR REPLACE FUNCTION fn_trg_capitulo_actualizado()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.fecha_actualizacion := NOW();
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_capitulo_actualizado ON capitulo;
+CREATE TRIGGER trg_capitulo_actualizado
+    BEFORE UPDATE ON capitulo
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_capitulo_actualizado();
+
+CREATE OR REPLACE PROCEDURE sp_crear_capitulo(
+    p_clase_id UUID,
+    p_titulo VARCHAR(200),
+    p_inicio_segundos INT,
+    p_fin_segundos INT,
+    p_orden INT DEFAULT NULL,
+    INOUT p_capitulo_id UUID DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_orden INT;
+BEGIN
+    LOCK TABLE capitulo IN SHARE ROW EXCLUSIVE MODE;
+    PERFORM fn_validar_rango_capitulo(p_clase_id, p_inicio_segundos, p_fin_segundos);
+
+    IF p_titulo IS NULL OR length(trim(p_titulo)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: titulo es obligatorio';
+    END IF;
+
+    IF p_orden IS NULL OR p_orden < 1 THEN
+        SELECT COALESCE(MAX(orden), 0) + 1 INTO v_orden
+        FROM capitulo
+        WHERE clase_id = p_clase_id;
+    ELSE
+        v_orden := p_orden;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM capitulo WHERE clase_id = p_clase_id AND orden = v_orden) THEN
+        RAISE EXCEPTION 'CONFLICTO: ya existe un capitulo con ese orden';
+    END IF;
+
+    INSERT INTO capitulo (clase_id, titulo, inicio_segundos, fin_segundos, orden)
+    VALUES (p_clase_id, trim(p_titulo), p_inicio_segundos, p_fin_segundos, v_orden)
+    RETURNING id INTO p_capitulo_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_actualizar_capitulo(
+    p_capitulo_id UUID,
+    p_clase_id UUID,
+    p_titulo VARCHAR(200),
+    p_inicio_segundos INT,
+    p_fin_segundos INT,
+    p_orden INT DEFAULT NULL,
+    INOUT p_actualizado BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_clase_id UUID;
+    v_orden INT;
+BEGIN
+    LOCK TABLE capitulo IN SHARE ROW EXCLUSIVE MODE;
+    SELECT clase_id, orden INTO v_clase_id, v_orden
+    FROM capitulo
+    WHERE id = p_capitulo_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'CAPITULO_NO_ENCONTRADO: el capitulo no existe';
+    END IF;
+
+    IF p_clase_id IS NULL THEN
+        p_clase_id := v_clase_id;
+    ELSIF p_clase_id <> v_clase_id THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el capitulo no pertenece a la clase indicada';
+    END IF;
+
+    PERFORM fn_validar_rango_capitulo(p_clase_id, p_inicio_segundos, p_fin_segundos, p_capitulo_id);
+
+    IF p_titulo IS NULL OR length(trim(p_titulo)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: titulo es obligatorio';
+    END IF;
+
+    v_orden := CASE WHEN p_orden IS NULL OR p_orden < 1 THEN v_orden ELSE p_orden END;
+    IF EXISTS (
+        SELECT 1 FROM capitulo
+        WHERE clase_id = p_clase_id AND orden = v_orden AND id <> p_capitulo_id
+    ) THEN
+        RAISE EXCEPTION 'CONFLICTO: ya existe un capitulo con ese orden';
+    END IF;
+
+    UPDATE capitulo
+    SET clase_id = p_clase_id,
+        titulo = trim(p_titulo),
+        inicio_segundos = p_inicio_segundos,
+        fin_segundos = p_fin_segundos,
+        orden = v_orden
+    WHERE id = p_capitulo_id;
+    p_actualizado := TRUE;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_eliminar_capitulo(
+    p_capitulo_id UUID,
+    INOUT p_eliminado BOOLEAN DEFAULT FALSE,
+    INOUT p_clase_id UUID DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    SELECT clase_id INTO p_clase_id FROM capitulo WHERE id = p_capitulo_id;
+    IF p_clase_id IS NULL THEN
+        p_eliminado := FALSE;
+        RETURN;
+    END IF;
+
+    DELETE FROM capitulo WHERE id = p_capitulo_id;
+    p_eliminado := TRUE;
+END;
+$$;

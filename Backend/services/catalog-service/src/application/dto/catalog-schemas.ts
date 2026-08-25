@@ -144,3 +144,39 @@ export const agregarVersionMaterialSchema = z.object({
   urlArchivo: z.string().trim().min(1, 'urlArchivo es obligatorio').max(2000),
 });
 export type AgregarVersionMaterialInput = z.infer<typeof agregarVersionMaterialSchema>;
+
+// ---- Segmentación por capítulos/temas ----
+
+const rangoCapituloBaseSchema = z.object({
+  titulo: z.string().trim().min(1, 'titulo es obligatorio').max(200),
+  inicioSegundos: z.number().int().min(0, 'inicioSegundos no puede ser negativo'),
+  finSegundos: z.number().int().min(1, 'finSegundos debe ser positivo'),
+  orden: z.number().int().min(0, 'orden no puede ser negativo').default(0),
+});
+
+function validarRangoCapitulo<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
+  return schema.superRefine((value, ctx) => {
+    if (value.finSegundos <= value.inicioSegundos) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['finSegundos'],
+        message: 'finSegundos debe ser mayor que inicioSegundos',
+      });
+    }
+  });
+}
+
+export const crearCapituloSchema = validarRangoCapitulo(
+  rangoCapituloBaseSchema.extend({
+    claseId: z.string().uuid('claseId inválido'),
+  }),
+);
+export type CrearCapituloInputDto = z.infer<typeof crearCapituloSchema>;
+
+export const actualizarCapituloSchema = validarRangoCapitulo(
+  rangoCapituloBaseSchema.extend({
+    capituloId: z.string().uuid('capituloId inválido'),
+    claseId: z.string().uuid('claseId inválido'),
+  }),
+);
+export type ActualizarCapituloInputDto = z.infer<typeof actualizarCapituloSchema>;

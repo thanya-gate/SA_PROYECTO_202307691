@@ -18,8 +18,11 @@ import {
   RegistrarMaterialInput,
   AgregarVersionMaterialInput,
   EliminarMaterialResult,
+  CrearCapituloInput,
+  ActualizarCapituloInput,
 } from '../../../application/ports/catalog-repository';
 import {
+  Capitulo,
   ClaseDetalle,
   CursoAdmin,
   CursoCatalogo,
@@ -102,6 +105,17 @@ interface MaterialRow {
   url_archivo: string | null;
 }
 
+interface CapituloRow {
+  capitulo_id: string;
+  clase_id: string;
+  titulo: string;
+  inicio_segundos: number;
+  fin_segundos: number;
+  orden: number;
+  fecha_creacion: Date;
+  fecha_actualizacion: Date;
+}
+
 const PARTICIPANTE_REGEX = /^(.+) \((CATEDRATICO|AUXILIAR)\)$/;
 
 function parseParticipantes(raw: string[]): Participante[] {
@@ -128,6 +142,19 @@ function mapMaterial(r: MaterialRow): MaterialAdjunto {
     subidoPor: r.subido_por,
     fechaSubida: new Date(r.fecha_subida).toISOString(),
     urlArchivo: r.url_archivo,
+  };
+}
+
+function mapCapitulo(r: CapituloRow): Capitulo {
+  return {
+    capituloId: r.capitulo_id,
+    claseId: r.clase_id,
+    titulo: r.titulo,
+    inicioSegundos: Number(r.inicio_segundos),
+    finSegundos: Number(r.fin_segundos),
+    orden: Number(r.orden),
+    fechaCreacion: new Date(r.fecha_creacion).toISOString(),
+    fechaActualizacion: new Date(r.fecha_actualizacion).toISOString(),
   };
 }
 
@@ -210,6 +237,7 @@ export class PostgresCatalogRepository implements CatalogRepository {
       participantes: parseParticipantes(row.participantes ?? []),
       etiquetas: row.etiquetas ?? [],
       materiales: await this.listarMateriales(claseId),
+      capitulos: await this.listarCapitulos(claseId),
     };
   }
 
@@ -604,5 +632,77 @@ export class PostgresCatalogRepository implements CatalogRepository {
       throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
     }
     return Number(res.rows[0].p_total_descargas);
+  }
+
+  async listarCapitulos(claseId: string): Promise<Capitulo[]> {
+    const res = await query<CapituloRow>(
+      `SELECT capitulo_id, clase_id, titulo, inicio_segundos, fin_segundos,
+              orden, fecha_creacion, fecha_actualizacion
+       FROM vw_capitulos_clase
+       WHERE clase_id = $1
+       ORDER BY orden, inicio_segundos, capitulo_id`,
+      [claseId],
+    );
+    return res.rows.map(mapCapitulo);
+  }
+
+  async crearCapitulo(input: CrearCapituloInput): Promise<Capitulo> {
+    const res = await query<{ p_capitulo_id: string }>(
+      'CALL sp_crear_capitulo($1, $2, $3, $4, $5, NULL)',
+      [
+        input.claseId,
+        input.titulo,
+        input.inicioSegundos,
+        input.finSegundos,
+        input.orden && input.orden > 0 ? input.orden : null,
+      ],
+    );
+    const capituloId = res.rows[0]?.p_capitulo_id;
+    if (!capituloId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se pudo crear el capitulo', 400);
+    }
+    const capitulos = await query<CapituloRow>(
+      `SELECT capitulo_id, clase_id, titulo, inicio_segundos, fin_segundos,
+              orden, fecha_creacion, fecha_actualizacion
+       FROM vw_capitulos_clase WHERE capitulo_id = $1`,
+      [capituloId],
+    );
+    if (capitulos.rows.length === 0) {
+      throw new DomainError('CAPITULO_NO_ENCONTRADO', 'Capitulo no encontrado tras crearlo', 404);
+    }
+    return mapCapitulo(capitulos.rows[0]);
+  }
+
+  async actualizarCapitulo(input: ActualizarCapituloInput): Promise<Capitulo | null> {
+    const res = await query<{ p_actualizado: boolean }>(
+      'CALL sp_actualizar_capitulo($1, $2, $3, $4, $5, $6, NULL)',
+      [
+        input.capituloId,
+        input.claseId,
+        input.titulo,
+        input.inicioSegundos,
+        input.finSegundos,
+        input.orden && input.orden > 0 ? input.orden : null,
+      ],
+    );
+    if (!res.rows[0]?.p_actualizado) return null;
+    const capitulos = await query<CapituloRow>(
+      `SELECT capitulo_id, clase_id, titulo, inicio_segundos, fin_segundos,
+              orden, fecha_creacion, fecha_actualizacion
+       FROM vw_capitulos_clase WHERE capitulo_id = $1`,
+      [input.capituloId],
+    );
+    return capitulos.rows.length > 0 ? mapCapitulo(capitulos.rows[0]) : null;
+  }
+
+  async eliminarCapitulo(capituloId: string): Promise<{ eliminado: boolean; claseId: string | null }> {
+    const res = await query<{ p_eliminado: boolean; p_clase_id: string | null }>(
+      'CALL sp_eliminar_capitulo($1, NULL, NULL)',
+      [capituloId],
+    );
+    return {
+      eliminado: Boolean(res.rows[0]?.p_eliminado),
+      claseId: res.rows[0]?.p_clase_id ?? null,
+    };
   }
 }

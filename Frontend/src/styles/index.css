@@ -1491,6 +1491,316 @@ body {
   box-shadow: var(--shadow-card);
 }
 
+.clase__segmentacion,
+.clase__segmentacion-admin {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+}
+
+.clase__segmentacion-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.clase__segmentacion-kicker {
+  margin: 0 0 0.2rem;
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.clase__segmentacion .clase__ficha-titulo,
+.clase__segmentacion-admin .clase__ficha-titulo {
+  margin-bottom: 0;
+}
+
+.clase__segmentacion-tiempo,
+.clase__segmentacion-total {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.clase__segmentacion-barra {
+  position: relative;
+  height: 0.85rem;
+  margin: 1rem 0 1.1rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-primary-light);
+}
+
+.clase__segmentacion-barra-base,
+.clase__segmentacion-progreso,
+.clase__segmentacion-tramo,
+.clase__segmentacion-marcador {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.clase__segmentacion-barra-base {
+  inset: 0;
+  background: var(--color-primary-light);
+}
+
+.clase__segmentacion-progreso {
+  left: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  pointer-events: none;
+}
+
+.clase__segmentacion-tramo {
+  z-index: 2;
+  min-width: 0.15rem;
+  border: 0;
+  border-right: 2px solid var(--color-surface);
+  background: var(--color-primary);
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.clase__segmentacion-tramo:hover,
+.clase__segmentacion-tramo--activo {
+  opacity: 1;
+  transform: scaleY(1.45);
+}
+
+.clase__segmentacion-marcador {
+  z-index: 3;
+  width: 2px;
+  background: var(--color-text);
+  pointer-events: none;
+}
+
+.clase__segmentacion-lista,
+.clase__segmentacion-admin-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clase__segmentacion-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.clase__segmentacion-item:hover,
+.clase__segmentacion-item--activo {
+  border-color: var(--color-border);
+  background: var(--color-primary-light);
+}
+
+.clase__segmentacion-numero {
+  display: inline-flex;
+  min-width: 2.1rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.clase__segmentacion-item-info {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.clase__segmentacion-item-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clase__segmentacion-item-info span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.clase__segmentacion-ir {
+  color: var(--color-primary);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.clase__segmentacion-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.clase__segmentacion-admin .clase__subida-desc {
+  margin-bottom: 0;
+}
+
+.clase__segmentacion-form {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(90px, 0.8fr));
+  gap: 0.7rem;
+  align-items: end;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  background: var(--color-surface-muted);
+}
+
+.clase__segmentacion-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.clase__segmentacion-form input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.clase__segmentacion-form input:focus {
+  outline: 2px solid var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.clase__segmentacion-form-acciones {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.clase__segmentacion-admin-tabla {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+}
+
+.clase__segmentacion-admin-encabezado,
+.clase__segmentacion-admin-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem 5.5rem auto;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.clase__segmentacion-admin-encabezado {
+  padding: 0.55rem 0.7rem;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.clase__segmentacion-admin-item {
+  padding: 0.65rem 0.7rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.clase__segmentacion-admin-nombre {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.clase__segmentacion-admin-nombre strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clase__segmentacion-admin-tiempo {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.clase__segmentacion-admin-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .clase__segmentacion-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .clase__segmentacion-form label:first-child,
+  .clase__segmentacion-form-acciones {
+    grid-column: 1 / -1;
+  }
+
+  .clase__segmentacion-admin-encabezado {
+    display: none;
+  }
+
+  .clase__segmentacion-admin-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .clase__segmentacion-admin-nombre {
+    grid-column: 1 / -1;
+  }
+
+  .clase__segmentacion-admin-tiempo {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+  }
+
+  .clase__segmentacion-admin-tiempo::before {
+    content: attr(data-label);
+    color: var(--color-text-muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .clase__segmentacion-admin-acciones {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
 .clase__youtube-host {
   position: relative;
   width: 100%;

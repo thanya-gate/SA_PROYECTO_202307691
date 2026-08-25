@@ -840,6 +840,106 @@ export function createGateway(): Express {
 
   // Edición completa de una clase (CRUD: UPDATE). Admin, docente y auxiliar
   // pueden modificar los datos de la clase y reasignar etiquetas/participantes.
+  // Segmentación de la grabación en capítulos/temas. La lectura está
+  // disponible para cualquier usuario autenticado; la escritura conserva
+  // las mismas reglas de contenido que el resto del catálogo.
+  app.get('/catalog/classes/:claseId/chapters', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarCapitulos(req.params.claseId);
+      res.json({ capitulos: result.capitulos ?? [] });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post(
+    '/catalog/classes/:claseId/chapters',
+    authenticate,
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const body = req.body as Record<string, unknown>;
+        const inicioSegundos = Number(body.inicioSegundos);
+        const finSegundos = Number(body.finSegundos);
+        const orden = body.orden === undefined || body.orden === null ? 0 : Number(body.orden);
+        if (
+          typeof body.titulo !== 'string' ||
+          !Number.isInteger(inicioSegundos) ||
+          !Number.isInteger(finSegundos) ||
+          !Number.isInteger(orden)
+        ) {
+          throw new DomainError(
+            'ENTRADA_INVALIDA',
+            'titulo, inicioSegundos y finSegundos deben ser válidos',
+            400,
+          );
+        }
+        const result = await catalogGrpc.crearCapitulo({
+          claseId: req.params.claseId,
+          titulo: body.titulo,
+          inicioSegundos,
+          finSegundos,
+          orden,
+        });
+        res.status(201).json({ message: 'Capítulo creado', capitulo: result.capitulo });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  app.patch(
+    '/catalog/chapters/:capituloId',
+    authenticate,
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const body = req.body as Record<string, unknown>;
+        const inicioSegundos = Number(body.inicioSegundos);
+        const finSegundos = Number(body.finSegundos);
+        const orden = body.orden === undefined || body.orden === null ? 0 : Number(body.orden);
+        if (
+          typeof body.claseId !== 'string' ||
+          typeof body.titulo !== 'string' ||
+          !Number.isInteger(inicioSegundos) ||
+          !Number.isInteger(finSegundos) ||
+          !Number.isInteger(orden)
+        ) {
+          throw new DomainError(
+            'ENTRADA_INVALIDA',
+            'claseId, titulo, inicioSegundos y finSegundos deben ser válidos',
+            400,
+          );
+        }
+        const result = await catalogGrpc.actualizarCapitulo({
+          capituloId: req.params.capituloId,
+          claseId: body.claseId,
+          titulo: body.titulo,
+          inicioSegundos,
+          finSegundos,
+          orden,
+        });
+        res.json({ message: 'Capítulo actualizado', capitulo: result.capitulo });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  app.delete(
+    '/catalog/chapters/:capituloId',
+    authenticate,
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const result = await catalogGrpc.eliminarCapitulo(req.params.capituloId);
+        res.json({ message: 'Capítulo eliminado', claseId: result.claseId ?? '' });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
   app.patch('/catalog/classes/:claseId', authenticate, requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const body = req.body as Record<string, unknown>;

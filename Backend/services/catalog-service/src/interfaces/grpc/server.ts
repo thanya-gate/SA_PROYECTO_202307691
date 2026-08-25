@@ -5,6 +5,7 @@ import * as protoLoader from '@grpc/proto-loader';
 import { config } from '../../config/env';
 import { container } from '../../container';
 import {
+  Capitulo,
   ClaseDetalle,
   ClaseResumen,
   MaterialAdjunto,
@@ -56,6 +57,20 @@ function claseDetalleToProto(c: ClaseDetalle) {
     etiquetas: c.etiquetas,
     cursoId: c.cursoId,
     materiales: (c.materiales ?? []).map(materialToProto),
+    capitulos: (c.capitulos ?? []).map(capituloToProto),
+  };
+}
+
+function capituloToProto(c: Capitulo) {
+  return {
+    capituloId: c.capituloId,
+    claseId: c.claseId,
+    titulo: c.titulo,
+    inicioSegundos: c.inicioSegundos,
+    finSegundos: c.finSegundos,
+    orden: c.orden,
+    fechaCreacion: c.fechaCreacion,
+    fechaActualizacion: c.fechaActualizacion,
   };
 }
 
@@ -91,6 +106,7 @@ const domainErrorToGrpcCode: Record<string, number> = {
   ESCUELA_NO_ENCONTRADA: 5,
   DOCENTE_NO_ENCONTRADO: 5,
   MATERIAL_NO_ENCONTRADO: 5,
+  CAPITULO_NO_ENCONTRADO: 5,
   ENTRADA_INVALIDA: 3, 
   CONFLICTO: 6,
   CURSO_CODIGO_DUPLICADO: 6,
@@ -544,6 +560,55 @@ export function createGrpcServer(): grpc.Server {
           call.request.materialId,
         );
         callback(null, { totalDescargas });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarCapitulos: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const capitulos = await container.catalogService.listarCapitulos(call.request.claseId);
+        callback(null, { capitulos: capitulos.map(capituloToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    CrearCapitulo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const capitulo = await container.catalogService.crearCapitulo({
+          claseId: call.request.claseId,
+          titulo: call.request.titulo,
+          inicioSegundos: call.request.inicioSegundos,
+          finSegundos: call.request.finSegundos,
+          orden: call.request.orden,
+        });
+        callback(null, { capitulo: capituloToProto(capitulo) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ActualizarCapitulo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const capitulo = await container.catalogService.actualizarCapitulo({
+          capituloId: call.request.capituloId,
+          claseId: call.request.claseId,
+          titulo: call.request.titulo,
+          inicioSegundos: call.request.inicioSegundos,
+          finSegundos: call.request.finSegundos,
+          orden: call.request.orden,
+        });
+        callback(null, { capitulo: capituloToProto(capitulo) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarCapitulo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const result = await container.catalogService.eliminarCapitulo(call.request.capituloId);
+        callback(null, { claseId: result.claseId ?? '' });
       } catch (err: any) {
         callback(mapError(err));
       }
