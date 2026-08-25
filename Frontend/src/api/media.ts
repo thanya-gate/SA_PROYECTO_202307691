@@ -13,15 +13,6 @@ interface SubirVideoResponse {
   };
 }
 
-interface SubirMaterialResponse {
-  message: string;
-  urlMaterial: string;
-  clase: {
-    claseId: string;
-    urlMaterial: string;
-  };
-}
-
 interface EstablecerUrlResponse {
   message: string;
   urlVideo?: string;
@@ -72,36 +63,6 @@ export const mediaApi = {
       return data as SubirVideoResponse;
     });
   },
-
-  subirMaterial: (claseId: string, file: File, token: string): Promise<SubirMaterialResponse> =>
-    fetch(`${config.apiBaseUrl}/catalog/classes/${encodeURIComponent(claseId)}/material`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': file.type || 'application/octet-stream',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: file,
-      credentials: 'include',
-    }).then(async (response) => {
-      const text = await response.text();
-      let data: unknown = null;
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch {
-          data = text;
-        }
-      }
-      if (!response.ok) {
-        const envelope = data as ErrorEnvelope;
-        throw new ApiError(
-          response.status,
-          envelope?.error?.code ?? 'ERROR_DESCONOCIDO',
-          envelope?.error?.message ?? `Error del servidor (${response.status})`,
-        );
-      }
-      return data as SubirMaterialResponse;
-    }),
 
   establecerUrlVideo: (claseId: string, urlVideo: string, token: string): Promise<EstablecerUrlResponse> =>
     apiFetch<EstablecerUrlResponse>(`/catalog/classes/${encodeURIComponent(claseId)}/video-url`, {

@@ -39,7 +39,6 @@ export default function EditarClasePage() {
   const [semestre, setSemestre] = useState('');
   const [anio, setAnio] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
-  const [materialUrl, setMaterialUrl] = useState('');
   const [duracion, setDuracion] = useState('');
 
   const [etiquetaDraft, setEtiquetaDraft] = useState('');
@@ -61,7 +60,6 @@ export default function EditarClasePage() {
         setSemestre(res.clase.semestre ?? '');
         setAnio(res.clase.anio ? String(res.clase.anio) : '');
         setVideoUrl(res.clase.urlVideo ?? '');
-        setMaterialUrl(res.clase.urlMaterial ?? '');
         setDuracion(res.clase.duracion > 0 ? formatSegundos(res.clase.duracion) : '');
         setEtiquetas(res.clase.etiquetas ?? []);
         setParticipantes(
@@ -123,7 +121,6 @@ export default function EditarClasePage() {
       return;
     }
     const videoActual = videoUrl.trim();
-    const materialActual = materialUrl.trim();
     if (videoActual && !esVideoLocal(videoActual) && !YT_URL_REGEX.test(videoActual)) {
       setError('La URL del video debe ser una URL válida de YouTube (http/https).');
       return;
@@ -159,7 +156,7 @@ export default function EditarClasePage() {
           semestre: semestre.trim(),
           anio: Number(anio),
           urlVideo: videoActual,
-          urlMaterial: materialActual,
+          urlMaterial: clase.urlMaterial ?? '',
           duracion: duracionSegundos,
           etiquetas,
           participantes: participantesValidos,
@@ -273,10 +270,10 @@ export default function EditarClasePage() {
             </section>
 
             <section className="subirclase__seccion">
-              <h2 className="subirclase__seccion-titulo">Video y material</h2>
-              <p className="subirclase__seccion-desc">
-                Las grabaciones ya publicadas se conservan; puedes cambiar su enlace.
-              </p>
+                <h2 className="subirclase__seccion-titulo">Video</h2>
+                <p className="subirclase__seccion-desc">
+                  Los materiales se gestionan desde el repositorio en la página de la clase.
+                </p>
               <div className="subirclase__grid">
                 <label className="subirclase__campo">
                   <span className="subirclase__campo-label">URL del video (YouTube)</span>
@@ -289,15 +286,6 @@ export default function EditarClasePage() {
                   {esVideoLocal(videoUrl) && (
                     <p className="subirclase__ayuda">Video alojado en la plataforma (archivo MP4).</p>
                   )}
-                </label>
-                <label className="subirclase__campo">
-                  <span className="subirclase__campo-label">Enlace de material</span>
-                  <input
-                    className="subirclase__input"
-                    value={materialUrl}
-                    placeholder="https://drive.google.com/…"
-                    onChange={(e) => setMaterialUrl(e.target.value)}
-                  />
                 </label>
                 <label className="subirclase__campo">
                   <span className="subirclase__campo-label">Duración (mm:ss)</span>

@@ -1,4 +1,5 @@
 import { apiFetch } from './http';
+import type { MaterialAdjunto } from './materiales';
 
 export interface ClaseResumen {
   claseId: string;
@@ -32,6 +33,7 @@ export interface ClaseDetalle {
   fechaPublicacion: string;
   participantes: Participante[];
   etiquetas: string[];
+  materiales: MaterialAdjunto[];
 }
 
 export interface SemestreResumen {
