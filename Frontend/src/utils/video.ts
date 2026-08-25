@@ -113,3 +113,11 @@ export function formatFecha(iso: string | undefined): string {
   if (Number.isNaN(fecha.getTime())) return iso;
   return fecha.toLocaleDateString('es-GT', { year: 'numeric', month: 'long', day: 'numeric' });
 }
+
+export function formatTamanoBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const unidades = ['B', 'KB', 'MB', 'GB'];
+  const indice = Math.min(unidades.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  const valor = bytes / 1024 ** indice;
+  return `${indice === 0 ? valor : valor.toFixed(1)} ${unidades[indice]}`;
+}

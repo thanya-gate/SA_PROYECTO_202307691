@@ -36,7 +36,20 @@ const MATERIAL_EXTENSIONS: Record<string, string> = {
   'text/plain': '.txt',
   'image/png': '.png',
   'image/jpeg': '.jpg',
+  'application/zip': '.zip',
+  'application/x-zip-compressed': '.zip',
+  'text/x-python': '.py',
+  'text/x-go': '.go',
+  'application/sql': '.sql',
 };
+// El navegador envía application/octet-stream para .py/.go/.sql cuando el SO
+// no registra su MIME; en ese caso se acepta la subida si la extensión real
+// del archivo pertenece a este conjunto cerrado de código fuente permitido.
+const EXTENSIONES_CODIGO_FUENTE = new Set(['.py', '.go', '.sql']);
+const EXTENSIONES_PERMITIDAS_MATERIAL = new Set<string>([
+  ...Object.values(MATERIAL_EXTENSIONS),
+  ...EXTENSIONES_CODIGO_FUENTE,
+]);
 // Backend de almacenamiento multimedia según STORAGE_BACKEND: 'local' guarda
 // en disco (MEDIA_DIR) y 'gcs' sube a Cloud Storage y devuelve la URL del bucket.
 const storage = createStorageBackend(config.STORAGE_BACKEND, Object.values(MATERIAL_EXTENSIONS));
@@ -54,16 +67,22 @@ function normalizarMaterial(raw: any): Record<string, unknown> {
 }
 
 //Validacion del contenido que se sube (MIME)
-function extensionDesdeMime(contentType: string | undefined): string {
+function extensionDesdeNombre(nombre: string): string | undefined {
+  const base = sanitizarNombreArchivo(nombre);
+  const m = /\.([A-Za-z0-9]{1,9})$/.exec(base);
+  return m ? `.${m[1].toLowerCase()}` : undefined;
+}
+
+function resolverExtensionMaterial(contentType: string | undefined, nombreHeader: unknown): string {
   const ext = contentType ? MATERIAL_EXTENSIONS[contentType] : undefined;
-  if (!ext) {
-    throw new DomainError(
-      'TIPO_NO_PERMITIDO',
-      `Tipo de archivo no permitido. Tipos aceptados: ${Object.keys(MATERIAL_EXTENSIONS).join(', ')}`,
-      415,
-    );
-  }
-  return ext;
+  if (ext) return ext;
+  const porNombre = typeof nombreHeader === 'string' ? extensionDesdeNombre(nombreHeader) : undefined;
+  if (porNombre && EXTENSIONES_CODIGO_FUENTE.has(porNombre)) return porNombre;
+  throw new DomainError(
+    'TIPO_NO_PERMITIDO',
+    `Tipo de archivo no permitido. Aceptados: PDF, Word, PowerPoint, TXT, imágenes y código fuente (.zip, .py, .go, .sql)`,
+    415,
+  );
 }
 
 function resolverNombreArchivo(headerValor: unknown, ext: string): string {
@@ -72,7 +91,10 @@ function resolverNombreArchivo(headerValor: unknown, ext: string): string {
     : `material${ext}`;
   let nombre = sanitizarNombreArchivo(crudo);
   if (!nombre) nombre = `material${ext}`;
-  if (!nombre.toLowerCase().endsWith(ext)) {
+  // Solo se agrega la extensión deducida del MIME cuando el nombre no trae
+  // una ya permitida (evita dobles extensiones como "schema.sql.txt").
+  const actual = extensionDesdeNombre(nombre);
+  if (!actual || !(EXTENSIONES_PERMITIDAS_MATERIAL.has(actual))) {
     nombre = `${nombre}${ext}`;
   }
   return nombre;
@@ -1333,7 +1355,7 @@ export function createGateway(): Express {
     try {
       const tamano = validarTamanoMaterial(req);
       const mime = req.headers['content-type'] ?? '';
-      const ext = extensionDesdeMime(mime);
+      const ext = resolverExtensionMaterial(mime, req.headers['x-filename']);
       const nombreArchivo = resolverNombreArchivo(req.headers['x-filename'], ext);
 
       rutaTemp = path.join(config.MEDIA_DIR, 'materiales', '.tmp', `${materialId}.uploading`);
@@ -1373,7 +1395,7 @@ export function createGateway(): Express {
     try {
       const tamano = validarTamanoMaterial(req);
       const mime = req.headers['content-type'] ?? '';
-      const ext = extensionDesdeMime(mime);
+      const ext = resolverExtensionMaterial(mime, req.headers['x-filename']);
       const nombreArchivo = resolverNombreArchivo(req.headers['x-filename'], ext);
 
       const actual = await catalogGrpc.obtenerMaterial(req.params.materialId);

@@ -5,6 +5,7 @@ import { reproduccionApi, type Checkpoint, type HistorialItem } from '../api/rep
 import { mediaApi } from '../api/media';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
+import { MaterialesPanel } from '../components/MaterialesPanel';
 import { YT_STATE, YouTubePlayer } from '../components/YouTubePlayer';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { Alert } from '../components/ui/Alert';
@@ -53,7 +54,7 @@ export default function ClasePage() {
   const tokenActual = token ?? '';
   const videoId = clase ? youtubeVideoId(clase.urlVideo) : null;
   const videoLocal = clase ? esVideoLocal(clase.urlVideo) : false;
-  const puedeSubirVideo = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN' || rol === 'ROLE_AUXILIAR');
+  const puedeGestionarContenido = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN' || rol === 'ROLE_AUXILIAR');
 
   const guardarCheckpoint = useCallback(
     async (segundos: number, evento?: string) => {
@@ -293,7 +294,7 @@ export default function ClasePage() {
               )}
             </div>
 
-            {puedeSubirVideo && (
+            {puedeGestionarContenido && (
               <div className="clase__subida">
                 <h2 className="clase__ficha-titulo">Video de esta clase</h2>
 
@@ -413,7 +414,7 @@ export default function ClasePage() {
                 </div>
               </dl>
 
-              {puedeSubirVideo && (
+              {puedeGestionarContenido && (
                 <div className="clase__ficha-acciones">
                   <Button variant="secondary" onClick={() => navigate(`/catalogo/clase/${clase.claseId}/editar`)}>
                     Editar clase
@@ -426,19 +427,11 @@ export default function ClasePage() {
               )}
             </div>
 
-            {clase.urlMaterial && (
-              <div className="clase__material">
-                <h2 className="clase__ficha-titulo">Material adjunto</h2>
-                <a
-                  className="clase__material-link"
-                  href={clase.urlMaterial}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Abrir sílabo / material de la clase ↗
-                </a>
-              </div>
-            )}
+            <MaterialesPanel
+              claseId={clase.claseId}
+              materialesIniciales={clase.materiales ?? []}
+              puedeGestionar={puedeGestionarContenido}
+            />
 
             <div className="clase__participantes">
               <h2 className="clase__ficha-titulo">Docentes y auxiliares</h2>
