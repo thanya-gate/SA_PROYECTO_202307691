@@ -1492,7 +1492,7 @@ Muestra la estructura funcional del sistema, es decir, las clases, módulos, ser
 ### Vista de Procesos
 Representa cómo se comunican y coordinan los procesos o servicios del sistema durante la ejecución. Esta vista muestra las llamadas remotas entre servicios, el intercambio de datos y la concurrencia.
 
-![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_202307691.drawio.svg)
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_F2_G4.drawio.svg)
 
 ![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU1_202307691.drawio.svg)
 
@@ -1548,10 +1548,21 @@ Representa cómo se comunican y coordinan los procesos o servicios del sistema d
 
 ![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU27_202307691.drawio.svg)
 
+#### Funcionalidades Fase 2
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU7.1_F2_G4.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU7.2_F2_G4.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU7.3_F2_G4.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU7.4_F2_G4.drawio.svg)
+
+![DVista3](Vistas4+1/VistaProcesos_DiagramaActividades_CDU7.5_F2_G4.drawio.svg)
 ### Vista de Componentes
 Describe la organización del software en componentes o módulos, mostrando cómo se divide el sistema, sus dependencias y la función de cada parte.
 
-![DVista4](Vistas4+1/VistaComponentes_DiagramaDespliegue_202307691.drawio.svg)
+![DVista4](Vistas4+1/VistaComponentes_DiagramaDespliegue_F2_G4.drawio.svg)
 
 ### Vista de Despliegue
 Explica cómo se distribuye el sistema en la infraestructura física o virtual, indicando servidores, contenedores, dispositivos, redes y dónde se ejecuta cada componente.
@@ -1561,7 +1572,7 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 ## Diseño del Modelado de Datos (DER)
 
 ### Auth Service
-![D1](ER/DER_MicroservicioAuth_202307691.drawio.svg)
+![D1](ER/DER_MicroservicioAuth_F2_G4.drawio.svg)
 
 ### Objetos programables
 | Tipo | Nombre | Descripción |
@@ -1582,7 +1593,7 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 
 ### Inscripción Service
 
-![D2](ER/DER_MicroservicioInscripcion_202307691.drawio.svg)
+![D2](ER/DER_MicroservicioInscripcion_F2_G4.drawio.svg)
 
 ### Objetos programables
 
@@ -1598,7 +1609,7 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 | Trigger | trg_validar_auxiliar_unico_catedratico | BEFORE INSERT ON asignacion_auxiliar → evita asignaciones duplicadas del mismo auxiliar al mismo catedrático. |
 
 ### Catálogo Service
-![D3](ER/DER_MicroservicioCatalogo_202307691.drawio.svg)
+![D3](ER/DER_MicroservicioCatalogo_F2_G4.drawio.svg)
 
 ### Objetos programables
 
@@ -1613,7 +1624,7 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 
 
 ### Reproducción Service
-![D4](ER/DER_MicroservicioReproduccion_202307691.drawio.svg)
+![D4](ER/DER_MicroservicioReproduccion_F2_G4.drawio.svg)
 
 ### Objetos programables
 
@@ -1627,7 +1638,7 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 | Trigger | trg_validar_rango_puntuacion | BEFORE INSERT OR UPDATE ON calificacion → valida que puntuacion esté entre 1 y 5. |
 
 ### Analítica Service
-![D5](ER/DER_MicroservicioAnalitica_202307691.drawio.svg)
+![D5](ER/DER_MicroservicioAnalitica_F2_G4.drawio.svg)
 
 ### Objetos programables
 
@@ -1642,7 +1653,7 @@ Explica cómo se distribuye el sistema en la infraestructura física o virtual, 
 | Trigger | trg_invalidar_cache_ranking | AFTER INSERT OR UPDATE ON tendencia_semanal → marca bandera de control para invalidar (TTL forzado) la clave correspondiente en Redis. |
 
 ### Notificaciones Service
-![D6](ER/DER_MicroservicioNotificaciones_202307691.drawio.svg)
+![D6](ER/DER_MicroservicioNotificaciones_F2_G4.drawio.svg)
 
 ### Objetos programables
 
@@ -1687,7 +1698,25 @@ Corresponde a la interfaz exclusiva para administradores del sistema. Desde este
 
 ![M6](Mockups/Mockups_Admin_202307691.drawio.svg)
 
+### Panel Anotaciones
+Corresponde a la interfaz exclusiva para administradores del sistema. Desde este panel es posible gestionar usuarios, cursos, grabaciones, permisos y otros elementos administrativos necesarios para el funcionamiento de la plataforma.
 
+![M6](Mockups/MockupsF2_Anotaciones_G4.drawio.svg)
+
+### Panel Foro Dudas de estudiantes
+Corresponde a la interfaz exclusiva para administradores del sistema. Desde este panel es posible gestionar usuarios, cursos, grabaciones, permisos y otros elementos administrativos necesarios para el funcionamiento de la plataforma.
+
+![M6](Mockups/MockupsF2_ForoDudas_G4.drawio.svg)
+
+### Panel Gestion de Playlist
+Corresponde a la interfaz exclusiva para administradores del sistema. Desde este panel es posible gestionar usuarios, cursos, grabaciones, permisos y otros elementos administrativos necesarios para el funcionamiento de la plataforma.
+
+![M6](Mockups/MockupsF2_GestionPlaylists_G4.drawio.svg)
+
+### Panel Segmentación de Capitulos
+Corresponde a la interfaz exclusiva para administradores del sistema. Desde este panel es posible gestionar usuarios, cursos, grabaciones, permisos y otros elementos administrativos necesarios para el funcionamiento de la plataforma.
+
+![M6](Mockups/MockupsF2_SegmentacionCapitulos_G4.drawio.svg)
 
 
 ## Conclusión

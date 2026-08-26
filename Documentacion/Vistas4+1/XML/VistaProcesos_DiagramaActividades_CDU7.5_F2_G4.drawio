@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="Exy0a-3jaaUu-nNpXAw6">
+    <mxGraphModel dx="2036" dy="951" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-104" parent="1" style="text;html=1;fontStyle=1;fontSize=16;align=center;" value="CDU-05 Crear y Compartir Playlist de Repaso" vertex="1">
+          <mxGeometry height="30" width="900" x="55" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-105" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontStyle=1;strokeColor=none;" value="Estudiante" vertex="1">
+          <mxGeometry height="30" width="280" x="65" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-106" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontStyle=1;strokeColor=none;" value="Gestor de Playlists" vertex="1">
+          <mxGeometry height="30" width="280" x="365" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-107" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontStyle=1;strokeColor=none;" value="Microservicio de Inscripcion" vertex="1">
+          <mxGeometry height="30" width="280" x="665" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-108" parent="1" style="line;strokeWidth=4;direction=south;html=1;perimeter=backbonePerimeter;points=[];outlineConnect=0;" value="" vertex="1">
+          <mxGeometry height="1110" width="10" x="50" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-109" parent="1" style="line;strokeWidth=4;direction=south;html=1;perimeter=backbonePerimeter;points=[];outlineConnect=0;" value="" vertex="1">
+          <mxGeometry height="1110" width="10" x="350" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-110" parent="1" style="line;strokeWidth=4;direction=south;html=1;perimeter=backbonePerimeter;points=[];outlineConnect=0;" value="" vertex="1">
+          <mxGeometry height="1110" width="10" x="650" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-111" parent="1" style="line;strokeWidth=4;direction=south;html=1;perimeter=backbonePerimeter;points=[];outlineConnect=0;" value="" vertex="1">
+          <mxGeometry height="1110" width="10" x="950" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-112" parent="1" style="ellipse;html=1;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="190" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-113" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Crea una nueva playlist y asigna nombre" vertex="1">
+          <mxGeometry height="70" width="190" x="110" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-114" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Agrega grabaciones o fragmentos a la playlist" vertex="1">
+          <mxGeometry height="70" width="190" x="110" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-115" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Envia la playlist al backend" vertex="1">
+          <mxGeometry height="70" width="170" x="420" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-116" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Persiste la playlist asociada al perfil" vertex="1">
+          <mxGeometry height="70" width="180" x="715" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-117" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="¿Visibilidad = Publica?" vertex="1">
+          <mxGeometry height="100" width="170" x="720" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-118" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Genera enlace unico de acceso compartido" vertex="1">
+          <mxGeometry height="70" width="190" x="710" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-119" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Mantiene la playlist como privada" vertex="1">
+          <mxGeometry height="70" width="170" x="420" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-120" parent="1" style="ellipse;html=1;fillColor=light-dark(#0a0a0a,#121212);strokeColor=light-dark(#000000,#121212);" value="" vertex="1">
+          <mxGeometry height="34" width="34" x="488" y="1020" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-121" parent="1" style="ellipse;html=1;fillColor=#000000;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="495" y="1027" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-122" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-112" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-113">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-123" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-113" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-114">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-124" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-114" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-115">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-125" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-115" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-116">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-126" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-116" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-117">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-127" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-117" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-118" value="Si">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-128" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-118" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-120">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="805" y="980" />
+              <mxPoint x="505" y="980" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-129" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-117" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-119" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IxiRi3J8GqSQ0t5fZUq8-130" edge="1" parent="1" source="IxiRi3J8GqSQ0t5fZUq8-119" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;orthogonalLoop=1;jettySize=auto;" target="IxiRi3J8GqSQ0t5fZUq8-120">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
