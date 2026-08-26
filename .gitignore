@@ -7,3 +7,6 @@
 # Plantillas de variables de entorno (sí se suben)
 !.env.example
 !.env.cloud.example
+AGENTS.md
+context/
+coverage/
