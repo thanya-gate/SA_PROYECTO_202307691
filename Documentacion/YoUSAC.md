@@ -4,9 +4,11 @@
 1. [Introducción](#introducción)
 2. [Descripción del problema](#descripción-del-problema)
 3. [Alcance del sistema](#alcance-del-sistema)
+   - 3.1 [Alcance de Fase 2](#alcance-de-fase-2)
 4. [Requerimientos del sistema](#requerimientos-del-sistema)
    - 4.1 [Requerimientos Funcionales (RF)](#requerimientos-funcionales-rf)
    - 4.2 [Requerimientos No Funcionales (RNF)](#requerimientos-no-funcionales-rnf)
+   - 4.3 [Trazabilidad y estado de implementación](#trazabilidad-y-estado-de-implementación)
 5. [Modelo de Casos de Uso](#modelo-de-casos-de-uso)
    - 5.1 [Diagrama de alto nivel](#diagrama-de-alto-nivel)
    - 5.2 [Descomposición por módulo](#descomposición-por-módulo)
@@ -66,6 +68,34 @@ almacenados, vistas, funciones y triggers).
 5. Historial de Reproducción Reciente y Checkpoint de Avance
 6. Sistema de notificaciones por Correo
 
+### Alcance de Fase 2
+
+La Fase 2 documenta la evolución de YoUSAC hacia una plataforma de aprendizaje
+interactivo y una operación cloud-native. Sobre las capacidades de Fase 1, el
+alcance objetivo incorpora:
+
+1. Foro de dudas asociado al timestamp del video, con marcadores en la barra de
+   reproducción, respuestas y verificación de respuestas.
+2. Cuaderno de apuntes en Markdown, con referencias de tiempo, persistencia por
+   estudiante y exportación a `.md` o PDF.
+3. Segmentación de grabaciones por capítulos y temas, con gestión para
+   catedráticos/auxiliares y navegación desde el reproductor.
+4. Repositorio de materiales adjuntos y recursos de laboratorio, con carga,
+   consulta, descarga, versionado, métricas y validación de archivos.
+5. Playlists de repaso creadas por estudiantes, combinando clases o fragmentos y
+   con visibilidad privada o pública mediante un enlace compartible.
+6. Infraestructura de producción en Kubernetes/GKE con Ingress, servicios
+   internos `ClusterIP`, health checks, límites de recursos, persistencia,
+   Container Registry y pipeline CI/CD.
+
+El alcance funcional y técnico se toma del [enunciado oficial del Proyecto Fase
+2](../context/proyecto2.md). La [Práctica 4](../context/practica4.md) define el
+hito inicial de documentación, capítulos, materiales y pruebas base; las
+[aclaraciones de clase](../context/aclaraciones_practica4_fase2.md) complementan
+las restricciones de Kubernetes, secretos, persistencia, CI/CD y trabajo por
+Pull Request. Este alcance objetivo no implica que todas las capacidades estén
+implementadas en el baseline actual; su estado se detalla en la trazabilidad.
+
 ## Requerimientos del sistema
 ### Requerimientos Funcionales (RF)
 
@@ -86,20 +116,74 @@ almacenados, vistas, funciones y triggers).
 | RF-13 | Caché de consultas frecuentes (Redis) | El sistema debe cachear en Redis las consultas frecuentes de catálogo y tendencias | Media |
 | RF-14 | Notificaciones automáticas por correo | El sistema debe enviar correos automáticos de confirmación de registro y de nuevas clases publicadas | Alta |
 | RF-15 | Carga masiva de catálogo vía CSV | El sistema debe permitir la carga masiva de contenido/metadata del catálogo mediante archivos CSV | Media |
+| RF-16 | Foro de dudas anclado al timestamp | El sistema debe permitir crear preguntas asociadas al segundo actual del video, mostrar marcadores en la barra de reproducción, admitir respuestas y marcar una respuesta como correcta/verificada | Alta |
+| RF-17 | Cuaderno de apuntes Markdown sincronizado | El sistema debe permitir redactar y guardar apuntes Markdown ligados al estudiante, insertar marcas de tiempo que permitan saltar en el reproductor y exportar los apuntes a `.md` o PDF | Alta |
+| RF-18 | Gestión de capítulos y temas | El sistema debe permitir a catedráticos y auxiliares crear, editar, eliminar y ordenar capítulos, navegar por ellos desde el reproductor y validar timestamps enteros, no negativos, dentro de la duración, sin solapamientos ni órdenes duplicados | Alta |
+| RF-19 | Repositorio de material adjunto | El sistema debe permitir cargar, consultar, descargar y versionar materiales asociados a una clase, registrar sus métricas de descarga y validar MIME/extensión, nombre sanitizado y límite de 50 MB | Alta |
+| RF-20 | Playlists de repaso | El sistema debe permitir crear, nombrar y organizar playlists con grabaciones o fragmentos de distintos cursos/semestres, configurándolas como privadas o públicas mediante un enlace compartible | Media |
 
 ### Requerimientos No Funcionales (RNF)
 | ID | Atributo de calidad | Especificación cuantitativa | Prioridad |
 |---|---|---|---|
 | RNF-01 | Rendimiento | El 95% de las peticiones al API Gateway deben responder en menos de 300ms | Alta |
-| RNF-02 | Escalabilidad | El sistema debe soportar un número elevado de estudiantes, sobretodo en periodos de examenes | Alta |
-| RNF-03 | Disponibilidad | El sistema debe mantenerse activo el 99% del tiempo.| Media |
+| RNF-02 | Escalabilidad | La capacidad se validará con una prueba de carga de al menos 100 estudiantes concurrentes durante 10 minutos, conservando RNF-01 y una tasa de errores HTTP ≤ 1%; los servicios de producción deben poder escalar horizontalmente | Alta |
+| RNF-03 | Disponibilidad | El sistema debe mantener una disponibilidad mensual mínima de 99% en producción, excluyendo ventanas de mantenimiento anunciadas | Media |
 | RNF-04 | Seguridad | Toda comunicación cliente-servidor debe usar HTTPS/TLS | Alta |
 | RNF-05 | Seguridad | Las contraseñas/tokens no deben almacenarse en texto plano, debe usarse JWT con expiración ≤ 10 min | Alta |
 | RNF-06 | Comunicación interna | El 100% del tráfico east-west entre microservicios debe usar gRPC | Alta |
 | RNF-07 | Caché | Las consultas de catálogo/tendencias cacheadas deben tener TTL ≤ 10 minutos | Media |
-| RNF-08 | Mantenibilidad | Código debe seguir principios SOLID y cada microservicio debe mantener cobertura de pruebas bastante considerable | Media |
+| RNF-08 | Mantenibilidad | El código debe seguir principios SOLID y cada microservicio debe alcanzar una cobertura de líneas de pruebas automatizadas ≥ 80% reportada por CI | Media |
 | RNF-09 | Portabilidad | El sistema debe desplegarse mediante Docker Compose en entorno local y en la nube sin cambios de código | Alta |
 | RNF-10 | Despliegue | El despliegue se debe realizar de forma obligatoria en Google Cloud Platform | Alta |
+| RNF-11 | Exposición de servicios | En producción, el 100% del tráfico externo debe ingresar por Ingress; los servicios internos deben ser `ClusterIP` y deben existir 0 Services de tipo `NodePort` o `LoadBalancer` | Alta |
+| RNF-12 | Salud de los despliegues | El 100% de los Deployments debe declarar y superar probes de liveness y readiness antes de recibir tráfico | Alta |
+| RNF-13 | Recursos y persistencia | El 100% de los Deployments debe declarar requests y limits de CPU y memoria; PostgreSQL y Redis deben ejecutarse fuera de pods efímeros o contar con persistencia configurada | Alta |
+| RNF-14 | Integración y entrega continua | En cada Pull Request y push a ramas principales deben ejecutarse las pruebas automatizadas; una falla debe detener build, publicación y despliegue | Alta |
+| RNF-15 | Imágenes y Registry | El 100% de las imágenes debe ser construido por CI/CD, publicado en un Container Registry y etiquetado con una versión semántica; `latest` no debe ser la única referencia | Alta |
+| RNF-16 | Gestión de secretos | Debe existir 0 secretos en texto plano dentro del repositorio, Dockerfiles o manifiestos; las credenciales deben inyectarse mediante configuración segura | Alta |
+| RNF-17 | Carga segura de materiales | El 100% de las cargas debe pasar MIME/extensión permitidos, nombre sanitizado y tamaño entre 1 byte y 50 MB | Alta |
+| RNF-18 | Integridad de capítulos | El 100% de los capítulos debe usar timestamps enteros no negativos, con fin mayor que inicio, dentro de la duración, sin solapamientos ni órdenes duplicados por clase | Alta |
+
+### Trazabilidad y estado de implementación
+
+La siguiente matriz separa el alcance oficial de la evidencia disponible en el
+repositorio. **Integrado** significa que existe un flujo en código y pruebas
+asociadas; no equivale por sí solo a una demostración en producción cloud.
+**Pendiente/no evidenciado** significa que no se encontró implementación o
+evidencia suficiente para afirmar cumplimiento.
+
+| ID | Fuente oficial | Evidencia actual | Estado |
+|---|---|---|---|
+| RF-16 | [Proyecto Fase 2](../context/proyecto2.md), foro de dudas | No se encontraron entidades, rutas HTTP, RPC, componentes ni pruebas del foro de dudas anclado a timestamps | Pendiente/no evidenciado |
+| RF-17 | [Proyecto Fase 2](../context/proyecto2.md), cuaderno Markdown | No se encontraron editor, persistencia de apuntes, navegación por timestamps ni exportación implementados | Pendiente/no evidenciado |
+| RF-18 | [Proyecto Fase 2](../context/proyecto2.md) y [Práctica 4](../context/practica4.md), capítulos | [Contrato gRPC](../Backend/proto/catalogo.proto), [validadores](../Backend/services/catalog-service/src/application/dto/catalog-schemas.ts), [servicio](../Backend/services/catalog-service/src/application/services/catalog.service.ts), [SQL](../Backend/sql/catalogo.sql), [gestor](../Frontend/src/components/ChapterManager.tsx), [navegación](../Frontend/src/components/ChapterTimeline.tsx) y pruebas en [Catálogo](../Backend/services/catalog-service/tests/catalog-service.test.ts), [contrato SQL](../Backend/services/catalog-service/tests/catalogo-contract.sql) y [Frontend](../Frontend/tests/chapter-components.test.tsx) | Integrado en el baseline; respaldado por código y pruebas |
+| RF-19 | [Proyecto Fase 2](../context/proyecto2.md) y [Práctica 4](../context/practica4.md), materiales | [Rutas del Gateway](../Backend/api-gateway/src/server.ts), [validación MIME/extensión/tamaño](../Backend/api-gateway/src/validation/material.ts), [almacenamiento y versionado](../Backend/api-gateway/src/storage/storage.ts), [contrato gRPC](../Backend/proto/catalogo.proto), [persistencia SQL](../Backend/sql/catalogo.sql), [panel](../Frontend/src/components/MaterialesPanel.tsx) y pruebas de [Gateway](../Backend/api-gateway/tests/gateway-materials.test.ts), [validación](../Backend/api-gateway/tests/material-validation.test.ts), [storage](../Backend/api-gateway/tests/storage.test.ts), [GCS](../Backend/api-gateway/tests/gcs-storage.test.ts), [Catálogo](../Backend/services/catalog-service/tests/postgres-catalog-repository.test.ts) y [Frontend](../Frontend/tests/materiales-api.test.ts) | Integrado en el baseline; respaldado por código y pruebas |
+| RF-20 | [Proyecto Fase 2](../context/proyecto2.md), playlists | No se encontraron modelo de datos, endpoints, componentes ni pruebas de playlists privadas/públicas | Pendiente/no evidenciado |
+| RNF-11 | [Proyecto Fase 2](../context/proyecto2.md) y [aclaraciones](../context/aclaraciones_practica4_fase2.md), Kubernetes | No existe directorio `k8s/` ni manifiestos que evidencien Ingress, `ClusterIP` o ausencia de `NodePort`/`LoadBalancer` | Pendiente/no evidenciado |
+| RNF-12 | [Proyecto Fase 2](../context/proyecto2.md) y [aclaraciones](../context/aclaraciones_practica4_fase2.md), health checks | No existen Deployments Kubernetes con probes; los healthchecks de Docker Compose no sustituyen liveness/readiness de Kubernetes | Pendiente/no evidenciado |
+| RNF-13 | [Proyecto Fase 2](../context/proyecto2.md) y [aclaraciones](../context/aclaraciones_practica4_fase2.md), recursos/persistencia | No existen manifiestos Kubernetes con requests/limits ni configuración productiva de persistencia para PostgreSQL y Redis | Pendiente/no evidenciado |
+| RNF-14 | [Proyecto Fase 2](../context/proyecto2.md) y [aclaraciones](../context/aclaraciones_practica4_fase2.md), CI/CD | No existe `.github/workflows/` ni `.gitlab-ci.yml` que ejecute pruebas y bloquee las etapas posteriores | Pendiente/no evidenciado |
+| RNF-15 | [Proyecto Fase 2](../context/proyecto2.md), Container Registry | Existen Dockerfiles, pero no hay pipeline ni evidencia de publicación/versionado de imágenes en un Registry | Pendiente/no evidenciado |
+| RNF-16 | [Proyecto Fase 2](../context/proyecto2.md) y [aclaraciones](../context/aclaraciones_practica4_fase2.md), secretos | No hay auditoría de producción que demuestre cero secretos; los valores por defecto de desarrollo documentados en Compose/contexto no constituyen cumplimiento productivo | Pendiente/no evidenciado |
+| RNF-17 | [Proyecto Fase 2](../context/proyecto2.md) y [Práctica 4](../context/practica4.md), validación de materiales | [Gateway](../Backend/api-gateway/src/validation/material.ts), [API frontend](../Frontend/src/api/materiales.ts) y pruebas de MIME, extensión, nombres y 50 MB | Integrado en el flujo actual; la medición del 100% en producción aún no está evidenciada |
+| RNF-18 | [Proyecto Fase 2](../context/proyecto2.md) y [Práctica 4](../context/practica4.md), validación de capítulos | [DTO TypeScript](../Backend/services/catalog-service/src/application/dto/catalog-schemas.ts), [restricciones/procedimientos SQL](../Backend/sql/catalogo.sql), validación frontend y pruebas de [Catálogo](../Backend/services/catalog-service/tests/catalog-service.test.ts), [SQL](../Backend/services/catalog-service/tests/catalogo-contract.sql) y [Frontend](../Frontend/tests/chapter-components.test.tsx) | Integrado en el flujo actual; respaldado por código y pruebas |
+
+Existe una discrepancia con el [estado local de contexto](../context/ESTADO_FASE2_Y_ENTORNO_LOCAL.md), que conserva un diagnóstico anterior donde capítulos y repositorio de materiales aparecen como pendientes. Para este documento se prioriza la evidencia actual de código y pruebas: esas dos capacidades están integradas en el baseline, mientras que foro, apuntes, playlists y los entregables cloud-native siguen pendientes según la matriz.
+
+Los mockups y DER de Fase 2 son artefactos de diseño y no constituyen evidencia
+de implementación por sí mismos. Entre ellos se encuentran los mockups de
+[anotaciones](Mockups/MockupsF2_Anotaciones_G%234.drawio.svg), [foro de
+dudas](Mockups/MockupsF2_ForoDudas_G%234.drawio.svg), [playlists](Mockups/MockupsF2_GestionPlaylists_G%234.drawio.svg) y
+[segmentación](Mockups/MockupsF2_SegmentacionCapitulos_G%234.drawio.svg), además
+de los [DER Fase 2 del Catálogo](ER/DER_MicroservicioCatalogo_F2_G%234.drawio.svg),
+[Auth](ER/DER_MicroservicioAuth_F2_G%234.drawio.svg),
+[Inscripción](ER/DER_MicroservicioInscripcion_F2_G%234.drawio.svg),
+[Notificaciones](ER/DER_MicroservicioNotificaciones_F2_G%234.drawio.svg),
+[Reproducción](ER/DER_MicroservicioReproduccion_F2_G%234.drawio.svg) y
+[Analítica](ER/DER_MicroservicioAnalitica_F2_G%234.drawio.svg). La ejecución de
+las suites relacionadas está descrita en [TESTING.md](TESTING.md); para
+Kubernetes, CI/CD y Registry todavía no hay evidencia ejecutable en este
+repositorio.
 
 ## Modelo de Casos de Uso
  
