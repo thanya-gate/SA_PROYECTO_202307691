@@ -115,7 +115,7 @@ const domainErrorToGrpcCode: Record<string, number> = {
   CURSO_EN_USO: 9,
 };
 
-function mapError(err: any): grpc.ServiceError {
+export function mapError(err: any): grpc.ServiceError {
   const code =
     err?.code && domainErrorToGrpcCode[err.code] !== undefined
       ? domainErrorToGrpcCode[err.code]
