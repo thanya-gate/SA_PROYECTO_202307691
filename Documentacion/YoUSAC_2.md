@@ -15,6 +15,7 @@
    - 5.1 [Diagrama de alto nivel](#diagrama-de-alto-nivel)
    - 5.2 [Descomposición por módulo](#descomposición-por-módulo)
    - 5.3 [Casos de uso expandidos](#casos-de-uso-expandidos)
+      - 5.3.7 [Módulo 7: Aprendizaje interactivo y recursos](#módulo-7-aprendizaje-interactivo-y-recursos)
 6. [Vista de Arquitectura (Modelo 4+1)](#vista-de-arquitectura-modelo-41)
    - 6.1 [Vista de Escenarios](#vista-de-escenarios)
    - 6.2 [Vista Lógica](#vista-lógica)
@@ -1199,6 +1200,245 @@ Flujos de excepción:
 | FE-01 | El proveedor SMTP no responde o rechaza el envío | El sistema encola el correo para reintento posterior. |
 
 ---
+
+## Módulo 7: Aprendizaje interactivo y recursos
+
+![Diagrama expandido módulo 7](CDU/CDU_Expandido_M7_202307691.drawio.svg)
+
+Este módulo reúne las capacidades interactivas y de apoyo al repaso definidas
+para Fase 2. Los requisitos funcionales se mantienen como la fuente de
+trazabilidad; no se dibujan como casos de uso adicionales. Los RNF-F2-01 a
+RNF-F2-06, RNF-F2-09 y RNF-F2-10 se consideran restricciones de infraestructura,
+entrega, pruebas y escalabilidad, por lo que tampoco se representan como
+óvalos.
+
+| CDU | RF asociado | RNF específico | Estado documentado |
+|---|---|---|---|
+| CDU0007.1 | RF-F2-01 | RNF-01, RNF-04, RNF-05 y RNF-06 | Diseño objetivo; pendiente/no evidenciado |
+| CDU0007.2 | RF-F2-02 | RNF-01, RNF-04, RNF-05 y RNF-06 | Diseño objetivo; pendiente/no evidenciado |
+| CDU0007.3 | RF-F2-03 | RNF-F2-08 y RNF-01, RNF-04, RNF-05 y RNF-06 | Integrado; respaldado por código y pruebas |
+| CDU0007.4 | RF-F2-04 | RNF-F2-07 y RNF-01, RNF-04, RNF-05 y RNF-06 | Integrado localmente; respaldado por código y pruebas |
+| CDU0007.5 | RF-F2-05 | RNF-01, RNF-04, RNF-05 y RNF-06 | Diseño objetivo; pendiente/no evidenciado |
+
+### CDU0007.1: Foro de dudas ancladas
+
+![CDU28](CDU/CDU_Expandido_CDU28_202307691.drawio.svg)
+
+| Campo | Descripción |
+|---|---|
+| ID | CDU0007.1 |
+| RF asociado | RF-F2-01 |
+| RNF aplicables | RNF-01, RNF-04, RNF-05 y RNF-06. Los RNF-F2-01 a RNF-F2-06, RNF-F2-09 y RNF-F2-10 se mantienen como restricciones transversales de infraestructura, operación, pruebas y escalabilidad. |
+| Estado de implementación | Diseño objetivo; pendiente/no evidenciado. No se encontraron entidades, rutas HTTP, RPC, componentes ni pruebas del foro anclado a timestamps. |
+| Nombre | Foro de dudas ancladas |
+| Actores | Estudiante, Docente, Auxiliar y Microservicio de Reproducción |
+| Descripción | Permite publicar una duda asociada al segundo actual de una grabación, mostrar un marcador sobre la barra de progreso, consultar el hilo, responderlo y marcar una respuesta como verificada. |
+| Precondiciones | Existe una clase con duración conocida, el usuario tiene una sesión válida y el segundo seleccionado se encuentra dentro de la duración de la grabación. |
+| Postcondiciones | La duda conserva autor, timestamp y estado; el marcador abre el hilo correspondiente y las respuestas quedan asociadas a la duda. |
+
+Flujo principal:
+
+| Paso | Actor | Acción |
+|---|---|---|
+| 1 | Estudiante | Pausa la grabación y selecciona la opción para publicar una duda. |
+| 2 | Sistema | Captura el segundo actual y valida que sea entero, no negativo y menor o igual a la duración de la clase. |
+| 3 | Estudiante | Escribe la pregunta y confirma su publicación. |
+| 4 | Sistema | Persiste la duda con el autor, la grabación y el timestamp, y muestra el marcador en la barra de progreso. |
+| 5 | Estudiante, Docente o Auxiliar | Selecciona el marcador y consulta el hilo de la duda. |
+| 6 | Estudiante, Docente o Auxiliar | Publica una respuesta dentro del hilo. |
+| 7 | Docente o Auxiliar | Marca una respuesta como correcta o verificada. |
+
+Flujos alternativos:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | Hay varias dudas en el mismo segundo | El sistema agrupa los marcadores o presenta la cantidad y permite abrir cada hilo. |
+| FA-02 | La respuesta no requiere verificación | El hilo permanece abierto sin marcar una respuesta como correcta. |
+| FA-03 | El usuario reanuda la reproducción desde el marcador | El Microservicio de Reproducción salta al timestamp asociado antes de mostrar el hilo. |
+
+Flujos de excepción:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | El timestamp está fuera de la duración de la clase | El sistema rechaza la duda y solicita seleccionar un segundo válido. |
+| FE-02 | La sesión expiró o el usuario no tiene permisos | El sistema solicita autenticarse nuevamente y no guarda la pregunta. |
+| FE-03 | Falla la persistencia del hilo | El sistema informa que no pudo publicar la duda, conserva el texto localmente si es posible y permite reintentar. |
+
+### CDU0007.2: Cuaderno de apuntes Markdown
+
+![CDU29](CDU/CDU_Expandido_CDU29_202307691.drawio.svg)
+
+| Campo | Descripción |
+|---|---|
+| ID | CDU0007.2 |
+| RF asociado | RF-F2-02 |
+| RNF aplicables | RNF-01, RNF-04, RNF-05 y RNF-06. La disponibilidad, la exportación y la cobertura de pruebas permanecen sujetas a los RNF-F2 correspondientes. |
+| Estado de implementación | Diseño objetivo; pendiente/no evidenciado. No se encontraron editor, persistencia de apuntes, navegación por timestamps ni exportación implementados. |
+| Nombre | Cuaderno de apuntes Markdown |
+| Actores | Estudiante y Microservicio de Reproducción |
+| Descripción | Ofrece un cuaderno asociado al perfil del estudiante para redactar apuntes con encabezados, listas, bloques de código y fórmulas LaTeX, insertar referencias como `[18:45]` y exportar el contenido a Markdown o PDF. |
+| Precondiciones | El estudiante tiene una sesión activa, una clase disponible y un cuaderno asociado a su perfil. |
+| Postcondiciones | La nota queda guardada con su contenido Markdown y las referencias de tiempo permiten volver al segundo correspondiente de la grabación. |
+
+Flujo principal:
+
+| Paso | Actor | Acción |
+|---|---|---|
+| 1 | Estudiante | Abre el cuaderno desde la clase o desde su perfil. |
+| 2 | Estudiante | Escribe o edita la nota usando Markdown, listas, código o fórmulas LaTeX. |
+| 3 | Estudiante | Inserta una referencia al segundo actual o escribe una referencia con formato `[mm:ss]`. |
+| 4 | Sistema | Valida y representa la referencia de tiempo como un enlace navegable. |
+| 5 | Estudiante | Guarda el cuaderno. |
+| 6 | Sistema | Persiste el contenido asociado al estudiante y a la clase. |
+| 7 | Estudiante | Selecciona una referencia para regresar a la reproducción o solicita la exportación. |
+| 8 | Sistema | Navega al timestamp o genera el archivo `.md` o PDF solicitado. |
+
+Flujos alternativos:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | El estudiante trabaja sin una clase abierta | El sistema guarda la nota en el cuaderno general y deja las referencias sin grabación hasta que se asocien a una clase. |
+| FA-02 | Se solicita exportación Markdown | El sistema entrega el contenido fuente `.md` conservando las referencias de tiempo. |
+| FA-03 | Se solicita exportación PDF | El sistema transforma el Markdown a PDF y mantiene los enlaces cuando el formato de salida lo permite. |
+
+Flujos de excepción:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | La referencia `[mm:ss]` no tiene formato válido | El sistema la muestra como texto y solicita corregirla antes de convertirla en enlace. |
+| FE-02 | El timestamp supera la duración de la clase | El sistema no crea el enlace y señala el segundo inválido. |
+| FE-03 | Falla el guardado o la exportación | El sistema informa el problema, conserva el borrador local cuando sea posible y permite reintentar. |
+
+### CDU0007.3: Gestión y navegación de capítulos
+
+![CDU30](CDU/CDU_Expandido_CDU30_202307691.drawio.svg)
+
+| Campo | Descripción |
+|---|---|
+| ID | CDU0007.3 |
+| RF asociado | RF-F2-03 |
+| RNF aplicables | RNF-F2-08, además de RNF-01, RNF-04, RNF-05 y RNF-06. |
+| Estado de implementación | Integrado; respaldado por el [contrato gRPC](../Backend/proto/catalogo.proto), [validadores](../Backend/services/catalog-service/src/application/dto/catalog-schemas.ts), [SQL](../Backend/sql/catalogo.sql), [gestor](../Frontend/src/components/ChapterManager.tsx), [navegación](../Frontend/src/components/ChapterTimeline.tsx) y pruebas de [Catálogo](../Backend/services/catalog-service/tests/catalog-service.test.ts), [SQL](../Backend/services/catalog-service/tests/catalogo-contract.sql) y [Frontend](../Frontend/tests/chapter-components.test.tsx). |
+| Nombre | Gestión y navegación de capítulos |
+| Actores | Estudiante, Docente, Auxiliar y Microservicio de Reproducción |
+| Descripción | Permite a docentes y auxiliares crear, editar, eliminar y ordenar capítulos temáticos de una grabación. El estudiante consulta el índice y salta al inicio de un capítulo desde el reproductor. |
+| Precondiciones | Existe una grabación con duración conocida; el docente o auxiliar tiene permisos de gestión y el estudiante tiene acceso a la clase para navegar sus capítulos. |
+| Postcondiciones | Los capítulos se almacenan con inicio y fin enteros, orden único, sin solapamientos y dentro de la duración; la barra y el índice permiten saltar al inicio de cada capítulo. |
+
+Flujo principal:
+
+| Paso | Actor | Acción |
+|---|---|---|
+| 1 | Docente o Auxiliar | Abre el gestor de capítulos de una grabación. |
+| 2 | Docente o Auxiliar | Crea un capítulo o selecciona uno existente para editarlo, eliminarlo u ordenarlo. |
+| 3 | Sistema | Ejecuta la validación de timestamps: valores enteros y no negativos, fin mayor que inicio, fin dentro de la duración y ausencia de solapamientos. |
+| 4 | Sistema | Verifica que el orden sea único para la grabación y persiste el cambio. |
+| 5 | Estudiante | Abre el índice o la barra segmentada durante la reproducción. |
+| 6 | Estudiante | Selecciona un capítulo. |
+| 7 | Microservicio de Reproducción | Lleva la reproducción al inicio del capítulo seleccionado. |
+
+Flujos alternativos:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | El docente cambia el orden de varios capítulos | El sistema recalcula la secuencia y conserva un único valor de orden por grabación. |
+| FA-02 | El estudiante selecciona un capítulo mientras el video está pausado | El reproductor cambia al inicio del capítulo y conserva el estado pausado. |
+| FA-03 | Se elimina un capítulo | El sistema actualiza el índice y renumera o valida el orden restante según la regla de la grabación. |
+
+Flujos de excepción:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | El fin no es mayor que el inicio o excede la duración | El sistema rechaza el capítulo y muestra la regla incumplida. |
+| FE-02 | El rango se solapa con otro capítulo o duplica el orden | El sistema rechaza la operación e identifica el capítulo en conflicto. |
+| FE-03 | Falla la persistencia o no se puede obtener la duración | El sistema no confirma el cambio y permite reintentar después de recuperar la dependencia. |
+
+### CDU0007.4: Materiales adjuntos y versionado
+
+![CDU31](CDU/CDU_Expandido_CDU31_202307691.drawio.svg)
+
+| Campo | Descripción |
+|---|---|
+| ID | CDU0007.4 |
+| RF asociado | RF-F2-04 |
+| RNF aplicables | RNF-F2-07, además de RNF-01, RNF-04, RNF-05 y RNF-06. |
+| Estado de implementación | Integrado localmente; respaldado por las [rutas del Gateway](../Backend/api-gateway/src/server.ts), [validación](../Backend/api-gateway/src/validation/material.ts), [almacenamiento y versionado](../Backend/api-gateway/src/storage/storage.ts), [contrato](../Backend/proto/catalogo.proto), [SQL](../Backend/sql/catalogo.sql), [panel](../Frontend/src/components/MaterialesPanel.tsx) y pruebas de [Gateway](../Backend/api-gateway/tests/gateway-materials.test.ts), [validación](../Backend/api-gateway/tests/material-validation.test.ts), [storage](../Backend/api-gateway/tests/storage.test.ts), [GCS](../Backend/api-gateway/tests/gcs-storage.test.ts), [Catálogo](../Backend/services/catalog-service/tests/postgres-catalog-repository.test.ts) y [Frontend](../Frontend/tests/materiales-api.test.ts). |
+| Nombre | Materiales adjuntos y versionado |
+| Actores | Estudiante, Docente, Auxiliar y Microservicio de Catálogo |
+| Descripción | Permite asociar presentaciones, guías y código fuente a una clase, consultar la versión vigente, descargar materiales, cargar nuevas versiones y registrar el conteo de descargas. |
+| Precondiciones | Existe una clase; el docente o auxiliar tiene permisos para cargar materiales; el estudiante tiene permiso de lectura; el almacenamiento está disponible. |
+| Postcondiciones | El material aceptado queda asociado a la clase con nombre sanitizado, versión vigente y contador de descargas; los archivos rechazados no se almacenan. |
+
+Flujo principal:
+
+| Paso | Actor | Acción |
+|---|---|---|
+| 1 | Docente o Auxiliar | Selecciona una clase y elige cargar un material. |
+| 2 | Sistema | Sanitiza el nombre y valida la combinación MIME/extensión y el tamaño, con un máximo de 50 MB. |
+| 3 | Sistema | Almacena el archivo y crea o incrementa su versión asociada a la clase. |
+| 4 | Estudiante, Docente o Auxiliar | Consulta la lista de materiales y la versión vigente. |
+| 5 | Usuario autorizado | Solicita descargar un material. |
+| 6 | Microservicio de Catálogo | Entrega el archivo y registra el evento de descarga. |
+
+Flujos alternativos:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | Se carga un archivo con el mismo material lógico | El sistema conserva las versiones anteriores y marca la nueva como vigente. |
+| FA-02 | El estudiante solo necesita consultar | El sistema muestra metadatos, versión y contador sin habilitar acciones de gestión. |
+| FA-03 | El usuario descarga una versión anterior permitida | El sistema entrega la versión solicitada y registra la descarga con su identificador. |
+
+Flujos de excepción:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | MIME o extensión no pertenece a la allowlist | El sistema rechaza la carga e informa los tipos permitidos. |
+| FE-02 | El archivo está vacío o supera 50 MB | El sistema rechaza la carga antes de persistirla. |
+| FE-03 | Falla el almacenamiento o la descarga | El sistema no cambia la versión vigente, registra el error y permite reintentar. |
+
+### CDU0007.5: Playlists de repaso
+
+![CDU32](CDU/CDU_Expandido_CDU32_202307691.drawio.svg)
+
+| Campo | Descripción |
+|---|---|
+| ID | CDU0007.5 |
+| RF asociado | RF-F2-05 |
+| RNF aplicables | RNF-01, RNF-04, RNF-05 y RNF-06. La privacidad, el enlace público, las pruebas y la escalabilidad quedan sujetos a los RNF-F2 de infraestructura y operación. |
+| Estado de implementación | Diseño objetivo; pendiente/no evidenciado. No se encontraron modelo de datos, endpoints, componentes ni pruebas de playlists privadas o públicas. |
+| Nombre | Playlists de repaso |
+| Actores | Estudiante, Microservicio de Catálogo y Microservicio de Reproducción |
+| Descripción | Permite crear una ruta personal de repaso con grabaciones o fragmentos de distintos cursos y semestres, ordenar sus elementos, definir privacidad y compartir una playlist pública mediante un enlace. |
+| Precondiciones | El estudiante tiene una sesión activa y las grabaciones o fragmentos seleccionados están disponibles en el catálogo y pueden ser reproducidos. |
+| Postcondiciones | La playlist queda guardada con nombre, orden y configuración de privacidad; si es pública, el enlace permite consultarla sin revelar playlists privadas. |
+
+Flujo principal:
+
+| Paso | Actor | Acción |
+|---|---|---|
+| 1 | Estudiante | Crea una playlist y define su nombre. |
+| 2 | Estudiante | Agrega grabaciones o fragmentos provenientes de cursos y semestres distintos. |
+| 3 | Sistema | Consulta el catálogo y valida que cada elemento sea accesible y reproducible. |
+| 4 | Estudiante | Ordena los elementos y guarda la playlist. |
+| 5 | Estudiante | Configura la playlist como privada o pública. |
+| 6 | Sistema | Persiste la configuración y, cuando corresponde, genera un enlace público. |
+| 7 | Usuario con el enlace | Abre la playlist pública y reproduce sus elementos mediante el Microservicio de Reproducción. |
+
+Flujos alternativos:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | La playlist es privada | Solo el propietario puede verla y modificarla desde su perfil. |
+| FA-02 | El estudiante reordena o elimina un elemento | El sistema actualiza la secuencia sin modificar la grabación original. |
+| FA-03 | La playlist pública se comparte nuevamente | El sistema reutiliza el enlace vigente o permite regenerarlo según la política definida. |
+
+Flujos de excepción:
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | Una grabación dejó de estar disponible | El sistema marca el elemento como no disponible y permite retirarlo de la playlist. |
+| FE-02 | Un visitante intenta acceder a una playlist privada | El sistema deniega el acceso y no expone sus elementos. |
+| FE-03 | Falla el catálogo o la persistencia de la playlist | El sistema informa el error, no confirma el cambio parcial y permite reintentar. |
 
 ## Vista de Arquitectura (Modelo 4+1)
 
