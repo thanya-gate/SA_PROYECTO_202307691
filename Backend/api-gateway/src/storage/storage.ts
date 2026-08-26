@@ -46,6 +46,7 @@ export function sanitizarNombreArchivo(nombre: string): string {
   const base = nombre.split(/[\\/]/).pop() ?? '';
   const limpio = base
     .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[\u0000-\u001f\u007f]/g, '')
     .replace(/[^A-Za-z0-9._-]+/g, '_')
     .replace(/^\.+/, '')

@@ -62,13 +62,15 @@ export function parseDuracionInput(valor: string): number | null {
   if (!limpio) return null;
   const partes = limpio.split(':');
   if (partes.length > 3) return null;
-  let segundos = 0;
+  const valores: number[] = [];
   for (const parte of partes) {
     const p = parte.trim();
     if (!/^\d{1,2}$/.test(p)) return null;
-    segundos = segundos * 60 + Number(p);
+    valores.push(Number(p));
   }
-  return segundos;
+  if (valores.length >= 2 && valores[valores.length - 1] >= 60) return null;
+  if (valores.length === 3 && valores[1] >= 60) return null;
+  return valores.reduce((total, parte) => total * 60 + parte, 0);
 }
 
 /**

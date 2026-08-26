@@ -9,7 +9,9 @@ function resolveProtoPath(): string {
   const candidates = [
     path.resolve(process.cwd(), 'proto', 'notificaciones.proto'),
     path.resolve(process.cwd(), '..', 'proto', 'notificaciones.proto'),
+    path.resolve(process.cwd(), '..', '..', 'proto', 'notificaciones.proto'),
     path.resolve(__dirname, '../../../proto/notificaciones.proto'),
+    path.resolve(__dirname, '../../../../proto/notificaciones.proto'),
   ];
   const found = candidates.find((p) => fs.existsSync(p));
   if (!found) {

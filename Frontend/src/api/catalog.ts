@@ -195,14 +195,14 @@ export const catalogApi = {
     }),
 
   listarCapitulos: (claseId: string, token: string): Promise<{ capitulos: Capitulo[] }> =>
-    apiFetch<{ capitulos: Capitulo[] }>(`/catalog/classes/${claseId}/chapters`, { token }),
+    apiFetch<{ capitulos: Capitulo[] }>(`/catalog/classes/${encodeURIComponent(claseId)}/chapters`, { token }),
 
   crearCapitulo: (
     claseId: string,
     input: CrearCapituloInput,
     token: string,
   ): Promise<{ message: string; capitulo: Capitulo }> =>
-    apiFetch<{ message: string; capitulo: Capitulo }>(`/catalog/classes/${claseId}/chapters`, {
+    apiFetch<{ message: string; capitulo: Capitulo }>(`/catalog/classes/${encodeURIComponent(claseId)}/chapters`, {
       method: 'POST',
       body: input,
       token,
