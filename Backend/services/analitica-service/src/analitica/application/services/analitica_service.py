@@ -86,15 +86,19 @@ class AnaliticaService:
         return semana_real, items
 
     def tendencias_examenes(self, limite: int, desde: Optional[str] = None, hasta: Optional[str] = None) -> tuple[str, list[RankingItem]]:
+        desde_validada = _validar_semana(desde) or None
+        hasta_validada = _validar_semana(hasta) or None
+        if desde_validada and hasta_validada and hasta_validada < desde_validada:
+            raise SemanaInvalidaError("SEMANA_INVALIDA: el final del rango no puede ser anterior al inicio")
         limite_efectivo = _limitar(limite, LIMITE_DEFECTO_TENDENCIAS)
-        clave = f"{PREFIJO_TENDENCIAS}{limite_efectivo}:{desde or 'auto'}:{hasta or 'auto'}"
+        clave = f"{PREFIJO_TENDENCIAS}{limite_efectivo}:{desde_validada or 'auto'}:{hasta_validada or 'auto'}"
 
         cacheado = self._cache.get(clave)
         if cacheado is not None:
             data = json.loads(cacheado)
             return data.get('semana', ''), [RankingItem(**item) for item in data.get('items', [])]
 
-        semana, items = self._repo.tendencias_examenes(limite_efectivo, desde, hasta)
+        semana, items = self._repo.tendencias_examenes(limite_efectivo, desde_validada, hasta_validada)
         self._cache.set(clave, json.dumps({"semana": semana, "items": [item.__dict__ for item in items]}), self._ttl.tendencias)
         return semana, items
 

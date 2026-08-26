@@ -3,7 +3,7 @@ import fs from 'fs';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { config } from '../../config/env';
-import { container } from '../../container';
+import { container, Container } from '../../container';
 
 function resolveProtoPath(): string {
   const candidates = [
@@ -40,8 +40,14 @@ function mapError(err: any): grpc.ServiceError {
 type GrpcCall<T, U> = grpc.ServerUnaryCall<T, U>;
 type GrpcCallback<U> = grpc.sendUnaryData<U>;
 
-export function createGrpcServer(): grpc.Server {
+/** Servicio reemplazable para probar el adaptador sin PostgreSQL ni SMTP. */
+export interface NotificacionesGrpcDependencies {
+  notificacionService?: Container['notificacionService'];
+}
+
+export function createGrpcServer(dependencies: NotificacionesGrpcDependencies = {}): grpc.Server {
   const server = new grpc.Server();
+  const notificacionService = dependencies.notificacionService ?? container.notificacionService;
 
   const packageDefinition = protoLoader.loadSync(resolveProtoPath(), {
     keepCase: false,
@@ -56,7 +62,7 @@ export function createGrpcServer(): grpc.Server {
   const handlers = {
     RegistrarNotificacion: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.notificacionService.registrarNotificacion({
+        const result = await notificacionService.registrarNotificacion({
           usuarioId: call.request.usuarioId,
           correoDestino: call.request.correoDestino,
           plantilla: call.request.plantilla,
@@ -71,7 +77,7 @@ export function createGrpcServer(): grpc.Server {
 
     NotificarNuevaClase: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.notificacionService.notificarNuevaClase({
+        const result = await notificacionService.notificarNuevaClase({
           cursoId: call.request.cursoId,
           codigo: call.request.codigo,
           curso: call.request.curso,
@@ -90,7 +96,7 @@ export function createGrpcServer(): grpc.Server {
 
     NotificarVideoSubido: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.notificacionService.notificarVideoSubido({
+        const result = await notificacionService.notificarVideoSubido({
           cursoId: call.request.cursoId,
           codigo: call.request.codigo,
           curso: call.request.curso,
@@ -109,7 +115,7 @@ export function createGrpcServer(): grpc.Server {
 
     RegistrarAvisoGeneral: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.notificacionService.registrarAvisoGeneral({
+        const result = await notificacionService.registrarAvisoGeneral({
           mensaje: call.request.mensaje,
           destinatarioIds: call.request.destinatarioIds ?? [],
         });
@@ -124,7 +130,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarNotificaciones: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const items = await container.notificacionService.listarNotificaciones(
+        const items = await notificacionService.listarNotificaciones(
           call.request.usuarioId,
           call.request.limite > 0 ? call.request.limite : 50,
         );
@@ -146,7 +152,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarPlantillas: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const plantillas = await container.notificacionService.listarPlantillas();
+        const plantillas = await notificacionService.listarPlantillas();
         callback(null, {
           items: plantillas.map((p) => ({
             id: p.id,
@@ -163,7 +169,7 @@ export function createGrpcServer(): grpc.Server {
 
     ConsultarCola: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const items = await container.notificacionService.consultarCola(
+        const items = await notificacionService.consultarCola(
           call.request.limite > 0 ? call.request.limite : 100,
         );
         callback(null, {

@@ -2,6 +2,11 @@ import { config } from '../../config/env';
 import { NotificacionService } from '../../application/services/notificacion.service';
 import { EmailSender } from '../../application/ports/email-sender';
 
+export type EmailQueueService = Pick<
+  NotificacionService,
+  'obtenerPendientes' | 'marcarEnviada' | 'registrarIntentoFallido' | 'marcarFallidaDefinitiva'
+>;
+
 function separarContenido(contenido: string): { asunto: string; cuerpo: string } {
   const salto = contenido.indexOf('\n');
   if (salto === -1) {
@@ -24,7 +29,7 @@ export class EmailWorker {
   private procesando = false;
 
   constructor(
-    private readonly notificacionService: NotificacionService,
+    private readonly notificacionService: EmailQueueService,
     private readonly emailSender: EmailSender,
   ) {}
 

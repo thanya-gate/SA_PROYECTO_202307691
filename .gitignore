@@ -10,3 +10,5 @@
 AGENTS.md
 context/
 coverage/
+.coverage
+coverage.out
