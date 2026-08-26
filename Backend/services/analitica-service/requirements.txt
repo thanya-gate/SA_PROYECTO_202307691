@@ -1,6 +1,14 @@
-grpcio==1.71.0
-grpcio-tools==1.71.0
-protobuf==5.29.3
-psycopg2-binary==2.9.10
+# Las versiones base se conservan para Python 3.11/3.12. Python 3.14
+# requiere wheels publicadas más recientes para evitar compilación local.
+grpcio==1.71.0; python_version < "3.14"
+grpcio==1.75.1; python_version >= "3.14"
+grpcio-tools==1.71.0; python_version < "3.14"
+grpcio-tools==1.75.1; python_version >= "3.14"
+protobuf==5.29.3; python_version < "3.14"
+protobuf==6.31.1; python_version >= "3.14"
+psycopg2-binary==2.9.10; python_version < "3.14"
+psycopg2-binary==2.9.12; python_version >= "3.14"
 redis==5.2.1
 python-dotenv==1.0.1
+pytest==8.3.5
+pytest-cov==6.0.0

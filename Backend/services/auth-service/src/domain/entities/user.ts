@@ -49,7 +49,10 @@ export function createUser(params: {
     email: params.email.toLowerCase(),
     passwordHash: params.passwordHash,
     emailVerified: params.emailVerified ?? false,
-    roles: params.roles && params.roles.length > 0 ? params.roles : [DEFAULT_ROLE],
+    // Un arreglo vacío es válido para cuentas que esperan autorización de un
+    // administrador (por ejemplo, el registro público de catedráticos).
+    // Solo se aplica el rol por defecto cuando el parámetro no fue enviado.
+    roles: params.roles !== undefined ? params.roles : [DEFAULT_ROLE],
     oauthProviders: [],
     nombres: params.nombres ?? null,
     apellidos: params.apellidos ?? null,
