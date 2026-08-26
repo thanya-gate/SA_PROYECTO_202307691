@@ -5,54 +5,40 @@ import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { randomUUID } from 'crypto';
+import { Transform } from 'stream';
+import { pipeline } from 'stream/promises';
 import { config } from './config/env';
-import { authGrpc } from './grpc/auth-client';
-import { catalogGrpc } from './grpc/catalog-client';
-import { reproductionGrpc } from './grpc/reproduction-client';
-import { analiticaGrpc } from './grpc/analitica-client';
-import { inscripcionGrpc } from './grpc/inscripcion-client';
-import { notificacionesGrpc } from './grpc/notificaciones-client';
+import { authGrpc as defaultAuthGrpc } from './grpc/auth-client';
+import { catalogGrpc as defaultCatalogGrpc } from './grpc/catalog-client';
+import { reproductionGrpc as defaultReproductionGrpc } from './grpc/reproduction-client';
+import { analiticaGrpc as defaultAnaliticaGrpc } from './grpc/analitica-client';
+import { inscripcionGrpc as defaultInscripcionGrpc } from './grpc/inscripcion-client';
+import { notificacionesGrpc as defaultNotificacionesGrpc } from './grpc/notificaciones-client';
 import { GrpcError } from './grpc/auth-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
 import { parseClasesCsv, CsvParseError } from './utils/csv';
-import { authenticate } from './middleware/authenticate';
+import { createAuthenticate } from './middleware/authenticate';
 import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
 import { errorHandler } from './middleware/error-handler';
 import { createIdpRouter, buildIdpLoginUri } from './mock-idp';
-import { createStorageBackend, sanitizarNombreArchivo } from './storage/storage';
+import { createStorageBackend, StorageBackend } from './storage/storage';
+import {
+  MATERIAL_EXTENSIONS,
+  MAX_MATERIAL_BYTES,
+  resolverExtensionMaterial,
+  resolverNombreArchivo,
+  normalizarContentType,
+  validarTamanoMaterial,
+} from './validation/material';
 
 const cookieMaxAge = config.SESSION_TTL_MS;
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 const MAX_VIDEO_DURATION_SECONDS = 24 * 60 * 60;
-const MAX_MATERIAL_BYTES = 50 * 1024 * 1024;
-const MATERIAL_EXTENSIONS: Record<string, string> = {
-  'application/pdf': '.pdf',
-  'application/msword': '.doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
-  'application/vnd.ms-powerpoint': '.ppt',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
-  'text/plain': '.txt',
-  'image/png': '.png',
-  'image/jpeg': '.jpg',
-  'application/zip': '.zip',
-  'application/x-zip-compressed': '.zip',
-  'text/x-python': '.py',
-  'text/x-go': '.go',
-  'application/sql': '.sql',
-};
-// El navegador envía application/octet-stream para .py/.go/.sql cuando el SO
-// no registra su MIME; en ese caso se acepta la subida si la extensión real
-// del archivo pertenece a este conjunto cerrado de código fuente permitido.
-const EXTENSIONES_CODIGO_FUENTE = new Set(['.py', '.go', '.sql']);
-const EXTENSIONES_PERMITIDAS_MATERIAL = new Set<string>([
-  ...Object.values(MATERIAL_EXTENSIONS),
-  ...EXTENSIONES_CODIGO_FUENTE,
-]);
 // Backend de almacenamiento multimedia según STORAGE_BACKEND: 'local' guarda
 // en disco (MEDIA_DIR) y 'gcs' sube a Cloud Storage y devuelve la URL del bucket.
-const storage = createStorageBackend(config.STORAGE_BACKEND, Object.values(MATERIAL_EXTENSIONS));
+const defaultStorage = createStorageBackend(config.STORAGE_BACKEND, Object.values(MATERIAL_EXTENSIONS));
 const execFileAsync = promisify(execFile);
 
 // Normaliza un MaterialAdjunto que llega por gRPC
@@ -66,57 +52,43 @@ function normalizarMaterial(raw: any): Record<string, unknown> {
   };
 }
 
-//Validacion del contenido que se sube (MIME)
-function extensionDesdeNombre(nombre: string): string | undefined {
-  const base = sanitizarNombreArchivo(nombre);
-  const m = /\.([A-Za-z0-9]{1,9})$/.exec(base);
-  return m ? `.${m[1].toLowerCase()}` : undefined;
-}
+class LimiterBytes extends Transform {
+  bytes = 0;
 
-function resolverExtensionMaterial(contentType: string | undefined, nombreHeader: unknown): string {
-  const ext = contentType ? MATERIAL_EXTENSIONS[contentType] : undefined;
-  if (ext) return ext;
-  const porNombre = typeof nombreHeader === 'string' ? extensionDesdeNombre(nombreHeader) : undefined;
-  if (porNombre && EXTENSIONES_CODIGO_FUENTE.has(porNombre)) return porNombre;
-  throw new DomainError(
-    'TIPO_NO_PERMITIDO',
-    `Tipo de archivo no permitido. Aceptados: PDF, Word, PowerPoint, TXT, imágenes y código fuente (.zip, .py, .go, .sql)`,
-    415,
-  );
-}
-
-function resolverNombreArchivo(headerValor: unknown, ext: string): string {
-  const crudo = typeof headerValor === 'string' && headerValor.trim().length > 0
-    ? headerValor.trim()
-    : `material${ext}`;
-  let nombre = sanitizarNombreArchivo(crudo);
-  if (!nombre) nombre = `material${ext}`;
-  // Solo se agrega la extensión deducida del MIME cuando el nombre no trae
-  // una ya permitida (evita dobles extensiones como "schema.sql.txt").
-  const actual = extensionDesdeNombre(nombre);
-  if (!actual || !(EXTENSIONES_PERMITIDAS_MATERIAL.has(actual))) {
-    nombre = `${nombre}${ext}`;
+  constructor(private readonly limite: number) {
+    super();
   }
-  return nombre;
+
+  override _transform(chunk: Buffer | string, _encoding: BufferEncoding, callback: Function): void {
+    const bytes = Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(chunk);
+    this.bytes += bytes;
+    if (this.bytes > this.limite) {
+      callback(new DomainError('ENTRADA_INVALIDA', 'El cuerpo real supera el límite de 50 MB', 400));
+      return;
+    }
+    callback(null, chunk);
+  }
 }
 
-async function escribirTemporal(rutaTemp: string, req: express.Request): Promise<void> {
+export async function escribirTemporal(
+  rutaTemp: string,
+  req: express.Request,
+  tamanoDeclarado: number,
+  limite = MAX_MATERIAL_BYTES,
+): Promise<number> {
   await fs.promises.mkdir(path.dirname(rutaTemp), { recursive: true });
-  await new Promise<void>((resolve, reject) => {
-    const out = fs.createWriteStream(rutaTemp);
-    out.on('error', reject);
-    out.on('close', resolve);
-    req.on('error', reject);
-    req.pipe(out);
-  });
-}
-
-function validarTamanoMaterial(req: express.Request): number {
-  const contentLength = Number(req.headers['content-length'] ?? 0);
-  if (!contentLength || contentLength > MAX_MATERIAL_BYTES) {
-    throw new DomainError('ENTRADA_INVALIDA', 'El archivo debe pesar entre 1 byte y 50 MB', 400);
+  const contador = new LimiterBytes(limite);
+  try {
+    await pipeline(req, contador, fs.createWriteStream(rutaTemp));
+  } catch (err) {
+    await fs.promises.rm(rutaTemp, { force: true }).catch(() => {});
+    throw err;
   }
-  return contentLength;
+  if (contador.bytes !== tamanoDeclarado) {
+    await fs.promises.rm(rutaTemp, { force: true }).catch(() => {});
+    throw new DomainError('ENTRADA_INVALIDA', 'El tamaño real del archivo no coincide con Content-Length', 400);
+  }
+  return contador.bytes;
 }
 
 /**
@@ -272,9 +244,9 @@ function toOptionalString(value: unknown): string | undefined {
  * autorización (registro público de docentes). El gateway lo expone como
  * `docentePendiente` para que la UI muestre el aviso al docente.
  */
-async function tieneDocentePendiente(userId: string): Promise<boolean> {
+async function tieneDocentePendiente(userId: string, client = defaultAuthGrpc): Promise<boolean> {
   try {
-    const res = await authGrpc.listarSolicitudesRol('SOLICITUD_ESTADO_PENDIENTE', userId);
+    const res = await client.listarSolicitudesRol('SOLICITUD_ESTADO_PENDIENTE', userId);
     return (res.solicitudes ?? []).some(
       (s: { usuarioId: string; rolSolicitado: string }) =>
         s.usuarioId === userId && s.rolSolicitado === 'ROLE_CATEDRATICO',
@@ -297,7 +269,25 @@ function toPositiveInt(value: unknown, defaultValue: number): number {
   return defaultValue;
 }
 
-export function createGateway(): Express {
+export interface GatewayDependencies {
+  authGrpc?: typeof defaultAuthGrpc;
+  catalogGrpc?: typeof defaultCatalogGrpc;
+  reproductionGrpc?: typeof defaultReproductionGrpc;
+  analiticaGrpc?: typeof defaultAnaliticaGrpc;
+  inscripcionGrpc?: typeof defaultInscripcionGrpc;
+  notificacionesGrpc?: typeof defaultNotificacionesGrpc;
+  storage?: StorageBackend;
+}
+
+export function createGateway(dependencies: GatewayDependencies = {}): Express {
+  const authGrpc = dependencies.authGrpc ?? defaultAuthGrpc;
+  const catalogGrpc = dependencies.catalogGrpc ?? defaultCatalogGrpc;
+  const reproductionGrpc = dependencies.reproductionGrpc ?? defaultReproductionGrpc;
+  const analiticaGrpc = dependencies.analiticaGrpc ?? defaultAnaliticaGrpc;
+  const inscripcionGrpc = dependencies.inscripcionGrpc ?? defaultInscripcionGrpc;
+  const notificacionesGrpc = dependencies.notificacionesGrpc ?? defaultNotificacionesGrpc;
+  const storage = dependencies.storage ?? defaultStorage;
+  const authenticate = createAuthenticate(authGrpc);
   const app = express();
 
   app.disable('x-powered-by');
@@ -412,7 +402,7 @@ export function createGateway(): Express {
         userAgent: req.headers['user-agent'],
       });
       setSessionCookie(res, result.accessToken, cookieMaxAge);
-      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId) };
+      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId, authGrpc) };
       res.json({
         message: 'Sesión iniciada',
         user,
@@ -437,7 +427,7 @@ export function createGateway(): Express {
   app.get('/auth/me', authenticate, async (req, res, next) => {
     try {
       const result = await authGrpc.getCurrentUser(req.context!.sessionId);
-      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId) };
+      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId, authGrpc) };
       res.json({ user, sessionId: result.sessionId });
     } catch (err) {
       next(err);
@@ -1405,27 +1395,20 @@ export function createGateway(): Express {
 
   app.post('/catalog/classes/:claseId/material', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     const claseId = req.params.claseId;
-    const contentLength = Number(req.headers['content-length'] ?? 0);
-    if (!contentLength || contentLength > MAX_MATERIAL_BYTES) {
-      return next(new DomainError('ENTRADA_INVALIDA', 'El archivo debe pesar entre 1 byte y 50 MB', 400));
-    }
-    const ext = MATERIAL_EXTENSIONS[req.headers['content-type'] ?? ''] ?? '.bin';
-    const targetPath = path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`);
+    let targetPath = '';
     try {
+      const tamano = validarTamanoMaterial(req.headers['content-length']);
+      const mime = normalizarContentType(req.headers['content-type']);
+      const ext = resolverExtensionMaterial(mime, req.headers['x-filename']);
+      targetPath = path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`);
       await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
 
       const tempPath = `${targetPath}.uploading`;
-      await new Promise<void>((resolve, reject) => {
-        const out = fs.createWriteStream(tempPath);
-        out.on('error', reject);
-        out.on('close', resolve);
-        req.on('error', reject);
-        req.pipe(out);
-      });
+      await escribirTemporal(tempPath, req, tamano);
 
       // El backend se encarga de limpiar el material previo con otra
       // extensión, hacer el commit del archivo y devolver la URL pública.
-      const urlMaterial = await storage.guardarMaterial(claseId, tempPath, ext, req.headers['content-type'] ?? 'application/octet-stream');
+      const urlMaterial = await storage.guardarMaterial(claseId, tempPath, ext, mime);
       const result = await catalogGrpc.actualizarUrlMaterial(claseId, urlMaterial);
       res.status(201).json({
         message: 'Material subido a la plataforma',
@@ -1433,7 +1416,7 @@ export function createGateway(): Express {
         clase: result.clase,
       });
     } catch (err) {
-      await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
+      if (targetPath) await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
       next(err);
     }
   });
@@ -1453,13 +1436,13 @@ export function createGateway(): Express {
     const materialId = randomUUID();
     let rutaTemp = '';
     try {
-      const tamano = validarTamanoMaterial(req);
-      const mime = req.headers['content-type'] ?? '';
+      const tamanoDeclarado = validarTamanoMaterial(req.headers['content-length']);
+      const mime = normalizarContentType(req.headers['content-type']);
       const ext = resolverExtensionMaterial(mime, req.headers['x-filename']);
       const nombreArchivo = resolverNombreArchivo(req.headers['x-filename'], ext);
 
       rutaTemp = path.join(config.MEDIA_DIR, 'materiales', '.tmp', `${materialId}.uploading`);
-      await escribirTemporal(rutaTemp, req);
+      const tamano = await escribirTemporal(rutaTemp, req, tamanoDeclarado);
 
       // El binario se persiste primero (mismo flujo que los videos) y luego
       // se registra la metadata en el catálogo vía gRPC.
@@ -1493,8 +1476,8 @@ export function createGateway(): Express {
   app.post('/catalog/materials/:materialId/versiones', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     let rutaTemp = '';
     try {
-      const tamano = validarTamanoMaterial(req);
-      const mime = req.headers['content-type'] ?? '';
+      const tamanoDeclarado = validarTamanoMaterial(req.headers['content-length']);
+      const mime = normalizarContentType(req.headers['content-type']);
       const ext = resolverExtensionMaterial(mime, req.headers['x-filename']);
       const nombreArchivo = resolverNombreArchivo(req.headers['x-filename'], ext);
 
@@ -1505,7 +1488,7 @@ export function createGateway(): Express {
       }
 
       rutaTemp = path.join(config.MEDIA_DIR, 'materiales', '.tmp', `${req.params.materialId}.uploading`);
-      await escribirTemporal(rutaTemp, req);
+      const tamano = await escribirTemporal(rutaTemp, req, tamanoDeclarado);
 
       const urlArchivo = await storage.guardarMaterialVersion(claseId, req.params.materialId, nombreArchivo, rutaTemp, mime);
       rutaTemp = '';
@@ -1714,12 +1697,18 @@ export function createGateway(): Express {
       const items = result.items ?? [];
       if (items.length === 0) { res.json({ items: [] }); return; }
 
-      const etiquetasPreferidas = await _obtenerEtiquetasPreferidas(userId);
+      const etiquetasPreferidas = await _obtenerEtiquetasPreferidas(userId, {
+        reproductionGrpc,
+        catalogGrpc,
+      });
       if (etiquetasPreferidas.size === 0) {
         res.json({ items }); return;
       }
 
-      const etiquetasPorClase = await _obtenerEtiquetasClases(items.map((i: any) => String(i.claseId)));
+      const etiquetasPorClase = await _obtenerEtiquetasClases(
+        items.map((i: any) => String(i.claseId)),
+        catalogGrpc,
+      );
 
       const boostMax = 30;
       const itemsEnriquecidos = items.map((item: any) => {
@@ -2103,15 +2092,21 @@ export function createGateway(): Express {
   return app;
 }
 
-async function _obtenerEtiquetasPreferidas(userId: string): Promise<Set<string>> {
+async function _obtenerEtiquetasPreferidas(
+  userId: string,
+  clients: {
+    reproductionGrpc: typeof defaultReproductionGrpc;
+    catalogGrpc: typeof defaultCatalogGrpc;
+  } = { reproductionGrpc: defaultReproductionGrpc, catalogGrpc: defaultCatalogGrpc },
+): Promise<Set<string>> {
   const preferidas = new Set<string>();
   try {
-    const historial = await reproductionGrpc.historialReciente({ estudianteId: userId });
+    const historial = await clients.reproductionGrpc.historialReciente({ estudianteId: userId });
     const items = historial.items ?? [];
     const clasesIds = [...new Set<string>(items.map((i: any) => String(i.claseId)))];
     const consultas = clasesIds.map(async (claseId: string) => {
       try {
-        const clase = await catalogGrpc.getClase(claseId);
+        const clase = await clients.catalogGrpc.getClase(claseId);
         const etiquetas: string[] = clase.clase?.etiquetas ?? [];
         for (const e of etiquetas) preferidas.add(e.toLowerCase());
       } catch {}
@@ -2121,11 +2116,14 @@ async function _obtenerEtiquetasPreferidas(userId: string): Promise<Set<string>>
   return preferidas;
 }
 
-async function _obtenerEtiquetasClases(claseIds: string[]): Promise<Record<string, string[]>> {
+async function _obtenerEtiquetasClases(
+  claseIds: string[],
+  client: typeof defaultCatalogGrpc = defaultCatalogGrpc,
+): Promise<Record<string, string[]>> {
   const resultado: Record<string, string[]> = {};
   const consultas = claseIds.map(async (claseId) => {
     try {
-      const clase = await catalogGrpc.getClase(claseId);
+      const clase = await client.getClase(claseId);
       resultado[claseId] = (clase.clase?.etiquetas ?? []).map((e: string) => e.toLowerCase());
     } catch {
       resultado[claseId] = [];
