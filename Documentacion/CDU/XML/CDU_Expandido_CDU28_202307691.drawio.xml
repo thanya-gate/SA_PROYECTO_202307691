@@ -6,7 +6,7 @@
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="cdu28-boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeWidth=2;" value="" vertex="1"><mxGeometry height="900" width="1230" x="300" y="70" as="geometry" /></mxCell>
-        <mxCell id="cdu28-title" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=16;" value="CDU0007.1: Foro de dudas ancladas" vertex="1"><mxGeometry height="30" width="720" x="560" y="20" as="geometry" /></mxCell>
+        <mxCell id="cdu28-title" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=16;" value="Foro de dudas ancladas" vertex="1"><mxGeometry height="30" width="720" x="560" y="20" as="geometry" /></mxCell>
         <mxCell id="cdu28-student" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Estudiante" vertex="1"><mxGeometry height="60" width="30" x="110" y="280" as="geometry" /></mxCell>
         <mxCell id="cdu28-teacher" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Docente" vertex="1"><mxGeometry height="60" width="30" x="110" y="470" as="geometry" /></mxCell>
         <mxCell id="cdu28-assistant" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Auxiliar" vertex="1"><mxGeometry height="60" width="30" x="110" y="660" as="geometry" /></mxCell>

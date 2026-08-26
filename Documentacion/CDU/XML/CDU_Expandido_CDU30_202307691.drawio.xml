@@ -5,7 +5,7 @@
       <root>
         <mxCell id="0" /><mxCell id="1" parent="0" />
         <mxCell id="cdu30-boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeWidth=2;" value="" vertex="1"><mxGeometry height="1020" width="1450" x="290" y="70" as="geometry" /></mxCell>
-        <mxCell id="cdu30-title" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=16;" value="CDU0007.3: Gestión y navegación de capítulos" vertex="1"><mxGeometry height="30" width="820" x="610" y="20" as="geometry" /></mxCell>
+        <mxCell id="cdu30-title" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=16;" value="Gestión y navegación de capítulos" vertex="1"><mxGeometry height="30" width="820" x="610" y="20" as="geometry" /></mxCell>
         <mxCell id="cdu30-student" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Estudiante" vertex="1"><mxGeometry height="60" width="30" x="90" y="280" as="geometry" /></mxCell>
         <mxCell id="cdu30-teacher" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Docente" vertex="1"><mxGeometry height="60" width="30" x="90" y="500" as="geometry" /></mxCell>
         <mxCell id="cdu30-assistant" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Auxiliar" vertex="1"><mxGeometry height="60" width="30" x="90" y="720" as="geometry" /></mxCell>
