@@ -22,9 +22,10 @@
    - 6.3 [Vista de Procesos](#vista-de-procesos)
    - 6.4 [Vista de Componentes](#vista-de-componentes)
    - 6.5 [Vista de Despliegue](#vista-de-despliegue)
-7. [Diseño del Modelado de Datos (DER)](#diseño-del-modelado-de-datos-der)
-8. [Diseño UI/UX (Mockups)](#diseño-uiux-mockups)
-9. [Conclusión](#conclusion)
+7. [Diagrama de flujo del pipeline CI/CD](#diagrama-de-flujo-del-pipeline-cicd)
+8. [Diseño del Modelado de Datos (DER)](#diseño-del-modelado-de-datos-der)
+9. [Diseño UI/UX (Mockups)](#diseño-uiux-mockups)
+10. [Conclusión](#conclusion)
 ---
 
 ## Introducción
@@ -1483,6 +1484,32 @@ Muestra la estructura funcional del sistema, es decir, las clases, módulos, ser
 ![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU26_202307691.drawio.svg)
 ![DVista2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU27_202307691.drawio.svg)
 
+#### Vista lógica actualizada de Fase 2
+
+La vista lógica de Fase 2 extiende la separación de presentación, API Gateway,
+Catálogo, Reproducción y persistencia para los cinco casos de uso más recientes
+del módulo 7. La vista consolidada resume las interacciones y cada caso cuenta
+con su secuencia detallada.
+
+![Vista lógica Fase 2](Vistas4+1/VistaLogica_DiagramaSecuencia_F2_G4.drawio.svg)
+
+[Fuente editable de la vista consolidada](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_F2_G4.drawio)
+
+![CDU0007.1](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU7.1_F2_G4.drawio.svg)
+[Fuente editable CDU0007.1](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CDU7.1_F2_G4.drawio)
+
+![CDU0007.2](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU7.2_F2_G4.drawio.svg)
+[Fuente editable CDU0007.2](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CDU7.2_F2_G4.drawio)
+
+![CDU0007.3](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU7.3_F2_G4.drawio.svg)
+[Fuente editable CDU0007.3](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CDU7.3_F2_G4.drawio)
+
+![CDU0007.4](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU7.4_F2_G4.drawio.svg)
+[Fuente editable CDU0007.4](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CDU7.4_F2_G4.drawio)
+
+![CDU0007.5](Vistas4+1/VistaLogica_DiagramaSecuencia_CDU7.5_F2_G4.drawio.svg)
+[Fuente editable CDU0007.5](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CDU7.5_F2_G4.drawio)
+
 
 
 
@@ -1562,12 +1589,27 @@ Representa cómo se comunican y coordinan los procesos o servicios del sistema d
 ### Vista de Componentes
 Describe la organización del software en componentes o módulos, mostrando cómo se divide el sistema, sus dependencias y la función de cada parte.
 
-![DVista4](Vistas4+1/VistaComponentes_DiagramaDespliegue_F2_G4.drawio.svg)
+![DVista4](Vistas4+1/VistaComponentes_DiagramaComponentes_F2_G4.drawio.svg)
+
+[Fuente editable de la vista de componentes Fase 2](Vistas4+1/XML/VistaComponentes_DiagramaComponentes_F2_G4.drawio)
 
 ### Vista de Despliegue
 Explica cómo se distribuye el sistema en la infraestructura física o virtual, indicando servidores, contenedores, dispositivos, redes y dónde se ejecuta cada componente.
 
 ![DVista5](Vistas4+1/VistaDespliegue_DiagramaComponentes_202307691.drawio.svg)
+
+## Diagrama de flujo del pipeline CI/CD
+
+El flujo parte de los eventos de push o Pull Request hacia `main` o `develop`. El
+[workflow actual](../.github/workflows/unit-tests.yml) ejecuta en paralelo las
+pruebas de TypeScript, Go y Python, y habilita los builds únicamente cuando todas
+las suites terminan correctamente. La continuación del flujo representa las
+etapas requeridas por Fase 2 para construir y versionar las imágenes, publicarlas
+en Artifact Registry y desplegarlas en GKE con verificación de salud y rollback.
+
+![Pipeline CI/CD](Vistas4+1/DiagramaFlujoPipeline_CI_CD_F2_G4.drawio.svg)
+
+[Archivo editable del diagrama (.drawio)](Vistas4+1/XML/DiagramaFlujoPipeline_CI_CD_F2_G4.drawio)
 
 ## Diseño del Modelado de Datos (DER)
 

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-08-26T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="vista-componentes-f2-g4" name="Vista de Componentes F2">
+    <mxGraphModel dx="2200" dy="1250" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1250" math="0" shadow="0" background="#101010">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="background" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="1960" height="1210" as="geometry"/>
+        </mxCell>
+        <mxCell id="diagramTitle" value="VISTA DE COMPONENTES · FASE 2" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#FFFFFF;fontSize=23;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="38" width="520" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Boundaries -->
+        <mxCell id="webAppBoundary" value="Web App" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;dashed=1;dashPattern=8 6;fontColor=#FFFFFF;fontSize=15;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="70" y="120" width="360" height="1040" as="geometry"/>
+        </mxCell>
+        <mxCell id="kubernetesBoundary" value="Clúster Kubernetes (GKE)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;dashed=1;dashPattern=8 6;fontColor=#FFFFFF;fontSize=15;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="430" y="120" width="970" height="1040" as="geometry"/>
+        </mxCell>
+        <mxCell id="namespaceLabel" value="Namespace: yousac" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#BDBDBD;fontSize=11;align=right;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="125" width="160" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="persistenceBoundary" value="Persistencia" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;dashed=1;dashPattern=8 6;fontColor=#FFFFFF;fontSize=15;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1460" y="285" width="450" height="725" as="geometry"/>
+        </mxCell>
+        <mxCell id="ingressBoundary" value="Ingress / entrada al backend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#BDBDBD;dashed=1;dashPattern=6 5;fontColor=#BDBDBD;fontSize=12;align=left;verticalAlign=top;spacingTop=8;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="500" y="190" width="850" height="155" as="geometry"/>
+        </mxCell>
+        <mxCell id="podsBoundary" value="Deployments / Pods · microservicios" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#BDBDBD;dashed=1;dashPattern=6 5;fontColor=#BDBDBD;fontSize=12;align=left;verticalAlign=top;spacingTop=8;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="500" y="365" width="850" height="750" as="geometry"/>
+        </mxCell>
+        <mxCell id="uiBoundary" value="Componentes UI · Fase 2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#BDBDBD;dashed=1;dashPattern=6 5;fontColor=#BDBDBD;fontSize=12;align=left;verticalAlign=top;spacingTop=8;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="100" y="345" width="300" height="720" as="geometry"/>
+        </mxCell>
+        <mxCell id="externalBoundary" value="Integraciones externas" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;dashed=1;dashPattern=8 6;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1460" y="1040" width="450" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Client and UI -->
+        <mxCell id="user" value="Usuario" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="83" y="185" width="70" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="frontend" value="&lt;&lt;component&gt;&gt;&#xa;Frontend&#xa;navegador" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="205" y="185" width="185" height="74" as="geometry"/>
+        </mxCell>
+        <mxCell id="uiChapters" value="&lt;&lt;component&gt;&gt;&#xa;Reproductor con capítulos&#xa;índice y navegación por temas" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="405" width="260" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="uiMaterials" value="&lt;&lt;component&gt;&gt;&#xa;Gestor de materiales&#xa;archivos y versiones" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="525" width="260" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="uiForum" value="&lt;&lt;component&gt;&gt;&#xa;Foro de dudas&#xa;preguntas, respuestas y timestamps" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="645" width="260" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="uiNotes" value="&lt;&lt;component&gt;&gt;&#xa;Apuntes Markdown&#xa;notas vinculadas al capítulo" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="765" width="260" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="uiPlaylists" value="&lt;&lt;component&gt;&gt;&#xa;Playlists de repaso&#xa;reproducción personalizada" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="885" width="260" height="82" as="geometry"/>
+        </mxCell>
+
+        <!-- Kubernetes ingress and service components -->
+        <mxCell id="ingress" value="&lt;&lt;component&gt;&gt;&#xa;Ingress Controller" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="555" y="245" width="175" height="62" as="geometry"/>
+        </mxCell>
+        <mxCell id="gateway" value="&lt;&lt;component&gt;&gt;&#xa;API Gateway&#xa;REST / BFF" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="800" y="238" width="220" height="76" as="geometry"/>
+        </mxCell>
+        <mxCell id="authModule" value="&lt;&lt;component&gt;&gt;&#xa;Módulo de Autenticación&#xa;Auth Service · sesiones y roles" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="550" y="410" width="260" height="78" as="geometry"/>
+        </mxCell>
+        <mxCell id="inscriptionModule" value="&lt;&lt;component&gt;&gt;&#xa;Módulo de Inscripción&#xa;Inscripción Service · cursos asignados" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="550" y="520" width="260" height="78" as="geometry"/>
+        </mxCell>
+        <mxCell id="catalogModule" value="&lt;&lt;component&gt;&gt;&#xa;Módulo de Catálogo&#xa;cursos · capítulos · materiales · dudas&#xa;segmentación por temas · F2" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="550" y="630" width="260" height="96" as="geometry"/>
+        </mxCell>
+        <mxCell id="reproductionModule" value="&lt;&lt;component&gt;&gt;&#xa;Módulo de Reproducción&#xa;playback · capítulos · timestamps&#xa;apuntes Markdown · playlists · F2" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="550" y="760" width="260" height="96" as="geometry"/>
+        </mxCell>
+        <mxCell id="analyticsModule" value="&lt;&lt;component&gt;&gt;&#xa;Módulo de Analítica&#xa;progreso y eventos" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="550" y="890" width="260" height="78" as="geometry"/>
+        </mxCell>
+        <mxCell id="notificationsModule" value="&lt;&lt;component&gt;&gt;&#xa;Módulo de Notificaciones&#xa;correo y avisos" style="shape=component;rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1000" width="260" height="78" as="geometry"/>
+        </mxCell>
+
+        <!-- Persistence and external components -->
+        <mxCell id="databases" value="&lt;&lt;database&gt;&gt;&#xa;Bases de Datos&#xa;PostgreSQL · por microservicio" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="400" width="280" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="redis" value="&lt;&lt;cache&gt;&gt;&#xa;Redis Caché" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="627" width="200" height="111" as="geometry"/>
+        </mxCell>
+        <mxCell id="objectStorage" value="&lt;&lt;object storage&gt;&gt;&#xa;Object Storage&#xa;materiales y archivos" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="845" width="240" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="googleOAuth" value="&lt;&lt;external system&gt;&gt;&#xa;Google OAuth" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="1085" width="160" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="smtp" value="&lt;&lt;external system&gt;&gt;&#xa;SMTP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#101010;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="1085" width="160" height="52" as="geometry"/>
+        </mxCell>
+
+        <!-- Connected relationships -->
+        <mxCell id="edgeUserFrontend" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="user" target="frontend">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edgeFrontendIngress" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="frontend" target="ingress">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="222"/>
+              <mxPoint x="480" y="276"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edgeFrontendUi" value="UI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="frontend" target="uiBoundary">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edgeIngressGateway" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="ingress" target="gateway">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edgeGatewayAuth" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="gateway" target="authModule">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="900" y="385"/><mxPoint x="850" y="449"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeGatewayInscription" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="gateway" target="inscriptionModule">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="900" y="385"/><mxPoint x="850" y="559"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeGatewayCatalog" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="gateway" target="catalogModule">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="900" y="385"/><mxPoint x="850" y="678"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeGatewayReproduction" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="gateway" target="reproductionModule">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="900" y="385"/><mxPoint x="850" y="808"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeGatewayAnalytics" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="gateway" target="analyticsModule">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="900" y="385"/><mxPoint x="850" y="929"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeGatewayNotifications" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="gateway" target="notificationsModule">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="900" y="385"/><mxPoint x="850" y="1039"/></Array></mxGeometry>
+        </mxCell>
+
+        <mxCell id="edgeCatalogDatabase" value="SQL / PostgreSQL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="catalogModule" target="databases">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1180" y="678"/><mxPoint x="1180" y="470"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeReproductionRedis" value="caché" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="reproductionModule" target="redis">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1230" y="808"/><mxPoint x="1230" y="685"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeCatalogStorage" value="S3 / archivos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="catalogModule" target="objectStorage">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1280" y="678"/><mxPoint x="1280" y="880"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeAuthOAuth" value="OAuth2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="authModule" target="googleOAuth">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1320" y="449"/><mxPoint x="1320" y="1111"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeNotificationsSMTP" value="SMTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=11;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="notificationsModule" target="smtp">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1360" y="1039"/><mxPoint x="1360" y="1111"/></Array></mxGeometry>
+        </mxCell>
+
+        <mxCell id="edgeCatalogNotifications" value="evento catálogo → notificaciones" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#BDBDBD;fontColor=#BDBDBD;fontSize=10;fontStyle=2;dashed=1;dashPattern=6 5;endArrow=block;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="catalogModule" target="notificationsModule">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="840" y="678"/><mxPoint x="840" y="1039"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edgeReproductionAnalytics" value="evento reproducción → analítica" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#BDBDBD;fontColor=#BDBDBD;fontSize=10;fontStyle=2;dashed=1;dashPattern=6 5;endArrow=block;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="reproductionModule" target="analyticsModule">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="825" y="808"/><mxPoint x="825" y="929"/></Array></mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
