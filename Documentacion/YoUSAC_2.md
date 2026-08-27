@@ -1589,7 +1589,9 @@ Representa cómo se comunican y coordinan los procesos o servicios del sistema d
 ### Vista de Componentes
 Describe la organización del software en componentes o módulos, mostrando cómo se divide el sistema, sus dependencias y la función de cada parte.
 
-![DVista4](Vistas4+1/VistaComponentes_DiagramaDespliegue_F2_G4.drawio.svg)
+![DVista4](Vistas4+1/VistaComponentes_DiagramaComponentes_F2_G4.drawio.svg)
+
+[Fuente editable de la vista de componentes Fase 2](Vistas4+1/XML/VistaComponentes_DiagramaComponentes_F2_G4.drawio)
 
 ### Vista de Despliegue
 Explica cómo se distribuye el sistema en la infraestructura física o virtual, indicando servidores, contenedores, dispositivos, redes y dónde se ejecuta cada componente.
