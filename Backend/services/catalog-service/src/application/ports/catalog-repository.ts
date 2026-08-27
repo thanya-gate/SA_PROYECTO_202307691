@@ -1,9 +1,11 @@
 import {
   ClaseDetalle,
   ClaseResumen,
+  Capitulo,
   CursoAdmin,
   CursoCatalogo,
   EscuelaAdmin,
+  MaterialAdjunto,
   Participante,
   SemestreAdmin,
   SemestreResumen,
@@ -100,6 +102,40 @@ export interface ActualizarCursoInput {
   escuela: string;
 }
 
+export interface RegistrarMaterialInput {
+  materialId?: string;
+  claseId: string;
+  nombreArchivo: string;
+  mimeType: string;
+  extension: string;
+  tamanoBytes?: number;
+  urlArchivo: string;
+  subidoPor?: string;
+}
+
+export interface AgregarVersionMaterialInput {
+  materialId: string;
+  tamanoBytes?: number;
+  urlArchivo: string;
+}
+
+export interface EliminarMaterialResult {
+  eliminado: boolean;
+  claseId: string | null;
+}
+
+export interface CrearCapituloInput {
+  claseId: string;
+  titulo: string;
+  inicioSegundos: number;
+  finSegundos: number;
+  orden?: number;
+}
+
+export interface ActualizarCapituloInput extends CrearCapituloInput {
+  capituloId: string;
+}
+
 export interface CatalogRepository {
   buscar(criteria: SearchCriteria): Promise<BuscarResult>;
   getClase(claseId: string): Promise<ClaseDetalle | null>;
@@ -130,4 +166,16 @@ export interface CatalogRepository {
   listarCursos(): Promise<CursoAdmin[]>;
   actualizarCurso(input: ActualizarCursoInput): Promise<void>;
   eliminarCurso(cursoId: string): Promise<void>;
+
+  registrarMaterial(input: RegistrarMaterialInput): Promise<MaterialAdjunto>;
+  obtenerMaterial(materialId: string): Promise<MaterialAdjunto | null>;
+  agregarVersionMaterial(input: AgregarVersionMaterialInput): Promise<MaterialAdjunto>;
+  listarMateriales(claseId: string): Promise<MaterialAdjunto[]>;
+  eliminarMaterial(materialId: string): Promise<EliminarMaterialResult>;
+  registrarDescargaMaterial(materialId: string): Promise<number>;
+
+  listarCapitulos(claseId: string): Promise<Capitulo[]>;
+  crearCapitulo(input: CrearCapituloInput): Promise<Capitulo>;
+  actualizarCapitulo(input: ActualizarCapituloInput): Promise<Capitulo | null>;
+  eliminarCapitulo(capituloId: string): Promise<{ eliminado: boolean; claseId: string | null }>;
 }

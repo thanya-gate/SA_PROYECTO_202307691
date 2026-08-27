@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Render companion for DiagramaFlujoPipeline_CI_CD_F2_G4.drawio -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="2100" height="1000" viewBox="0 0 2100 1000" role="img" aria-labelledby="title desc">
+  <title id="title">PIPELINE CI/CD</title>
+  <desc id="desc">Diagrama de actividad del pipeline CI/CD con los carriles de desarrollador y automatización.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffffff"/>
+    </marker>
+    <style>
+      .edge { fill: none; stroke: #ffffff; stroke-width: 1.8; marker-end: url(#arrow); }
+      .edge-dashed { fill: none; stroke: #ffffff; stroke-width: 1.6; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .task { fill: #121212; stroke: #ffffff; stroke-width: 1.5; }
+      .decision { fill: #121212; stroke: #ffffff; stroke-width: 1.5; }
+      .artifact { fill: #121212; stroke: #ffffff; stroke-width: 1.5; }
+      .text { fill: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 14px; text-anchor: middle; dominant-baseline: middle; }
+      .text-bold { fill: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+      .small { fill: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 12px; text-anchor: middle; }
+      .lane-label { fill: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 14px; text-anchor: middle; dominant-baseline: middle; }
+      .title { fill: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 24px; font-weight: 700; text-anchor: middle; }
+      .edge-label { fill: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+      .edge-label-bg { fill: #121212; opacity: .96; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="2100" height="1000" fill="#121212"/>
+  <rect x="20" y="20" width="2060" height="940" fill="#121212" stroke="#ffffff" stroke-width="1"/>
+  <rect x="21" y="21" width="69" height="218" fill="#121212" stroke="#ffffff" stroke-width="1"/>
+  <rect x="21" y="241" width="69" height="718" fill="#121212" stroke="#ffffff" stroke-width="1"/>
+  <line x1="20" y1="240" x2="2080" y2="240" stroke="#ffffff" stroke-width="1"/>
+
+  <text class="title" x="1140" y="60">PIPELINE CI/CD</text>
+  <text class="lane-label" x="56" y="130" transform="rotate(-90 56 130)">Desarrollador</text>
+  <text class="lane-label" x="56" y="600" transform="rotate(-90 56 600)">PIPELINE CI/CD</text>
+
+  <!-- Flow edges -->
+  <path class="edge" d="M 140 135 L 170 135"/>
+  <path class="edge" d="M 390 132 L 450 132"/>
+  <path class="edge-dashed" d="M 640 132 L 710 126"/>
+  <path class="edge" d="M 545 170 L 545 230 L 200 230 L 200 410"/>
+  <path class="edge" d="M 290 441 L 340 441"/>
+  <path class="edge-dashed" d="M 472 343 L 472 395"/>
+  <path class="edge" d="M 580 441 L 630 441"/>
+  <path class="edge" d="M 735 441 L 790 441"/>
+  <path class="edge" d="M 682 487 L 682 580 L 940 580 L 940 630"/>
+  <path class="edge" d="M 1030 441 L 1080 441"/>
+  <path class="edge" d="M 1185 441 L 1230 441"/>
+  <path class="edge" d="M 1132 487 L 1132 590 L 1060 590 L 1060 661"/>
+  <path class="edge" d="M 1450 441 L 1500 441"/>
+  <path class="edge-dashed" d="M 1342 343 L 1342 410"/>
+  <path class="edge" d="M 1690 441 L 1740 441"/>
+  <path class="edge" d="M 1850 472 L 1850 575"/>
+  <path class="edge" d="M 1850 637 L 1850 680"/>
+  <path class="edge" d="M 1850 742 L 1850 785"/>
+  <path class="edge" d="M 1850 831 L 1730 831 L 1730 925"/>
+  <path class="edge" d="M 1850 831 L 1955 831 L 1955 925 L 1870 925"/>
+  <path class="edge" d="M 940 692 L 940 755"/>
+
+  <!-- Edge labels -->
+  <rect class="edge-label-bg" x="748" y="421" width="26" height="20" rx="3"/>
+  <text class="edge-label" x="761" y="431">Sí</text>
+  <rect class="edge-label-bg" x="695" y="557" width="28" height="20" rx="3"/>
+  <text class="edge-label" x="709" y="567">No</text>
+  <rect class="edge-label-bg" x="1194" y="421" width="26" height="20" rx="3"/>
+  <text class="edge-label" x="1207" y="431">Sí</text>
+  <rect class="edge-label-bg" x="1144" y="568" width="28" height="20" rx="3"/>
+  <text class="edge-label" x="1158" y="578">No</text>
+  <rect class="edge-label-bg" x="1750" y="861" width="26" height="20" rx="3"/>
+  <text class="edge-label" x="1763" y="871">Sí</text>
+  <rect class="edge-label-bg" x="1922" y="861" width="28" height="20" rx="3"/>
+  <text class="edge-label" x="1936" y="871">No</text>
+
+  <!-- Developer lane -->
+  <circle cx="125" cy="135" r="15" fill="#ffffff" stroke="#ffffff" stroke-width="1.5"/>
+  <rect class="task" x="170" y="95" width="220" height="75" rx="13"/>
+  <text class="text" x="280" y="133">Modificación de fuentes</text>
+  <rect class="task" x="450" y="95" width="190" height="75" rx="13"/>
+  <text class="text" x="545" y="133">Commit / Push</text>
+  <path class="artifact" d="M 710 92 H 750 L 765 107 V 160 H 710 Z"/>
+  <path d="M 750 92 V 107 H 765" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <text class="small" x="737" y="181">Repositorio Git</text>
+
+  <!-- CI/CD lane -->
+  <rect class="task" x="110" y="410" width="180" height="62" rx="13"/>
+  <text class="text" x="200" y="441">Checkout del código</text>
+  <rect class="task" x="340" y="395" width="240" height="92" rx="13"/>
+  <text class="text" x="460" y="418"><tspan x="460" dy="0">Ejecución automática de</tspan><tspan x="460" dy="19">tests unitarios</tspan><tspan x="460" dy="19">TypeScript / Go / Python</tspan></text>
+  <polygon class="decision" points="682,395 735,441 682,487 630,441"/>
+  <text class="text-bold" x="682" y="433"><tspan x="682" dy="0">¿Pruebas</tspan><tspan x="682" dy="18">superadas?</tspan></text>
+  <rect class="task" x="790" y="410" width="240" height="62" rx="13"/>
+  <text class="text" x="910" y="441"><tspan x="910" dy="0">Compilación de servicios</tspan><tspan x="910" dy="18">y frontend</tspan></text>
+  <polygon class="decision" points="1132,395 1185,441 1132,487 1080,441"/>
+  <text class="text-bold" x="1132" y="433"><tspan x="1132" dy="0">¿Build</tspan><tspan x="1132" dy="18">correcto?</tspan></text>
+  <rect class="task" x="1230" y="410" width="220" height="62" rx="13"/>
+  <text class="text" x="1340" y="441"><tspan x="1340" dy="0">Construcción de</tspan><tspan x="1340" dy="18">imágenes Docker</tspan></text>
+  <rect class="task" x="1500" y="410" width="190" height="62" rx="13"/>
+  <text class="text" x="1595" y="441">Etiquetado semántico</text>
+  <rect class="task" x="1740" y="410" width="220" height="62" rx="13"/>
+  <text class="text" x="1850" y="441"><tspan x="1850" dy="0">Publicación en</tspan><tspan x="1850" dy="18">Artifact Registry</tspan></text>
+
+  <path class="artifact" d="M 445 275 H 485 L 500 290 V 343 H 445 Z"/>
+  <path d="M 485 275 V 290 H 500" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <text class="small" x="472" y="362">unit-tests.yml</text>
+  <path class="artifact" d="M 1315 275 H 1355 L 1370 290 V 343 H 1315 Z"/>
+  <path d="M 1355 275 V 290 H 1370" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <text class="small" x="1342" y="362">Dockerfiles</text>
+
+  <rect class="task" x="820" y="630" width="240" height="62" rx="13"/>
+  <text class="text" x="940" y="661">Notificar error y detener</text>
+  <ellipse class="artifact" cx="940" cy="774" rx="19" ry="19"/>
+  <text class="small" x="940" y="818">Pipeline detenido</text>
+
+  <rect class="task" x="1740" y="575" width="220" height="62" rx="13"/>
+  <text class="text" x="1850" y="606">Despliegue en GKE</text>
+  <rect class="task" x="1740" y="680" width="220" height="62" rx="13"/>
+  <text class="text" x="1850" y="704"><tspan x="1850" dy="0">Aplicar probes y</tspan><tspan x="1850" dy="18">smoke test</tspan></text>
+  <polygon class="decision" points="1850,785 1903,831 1850,877 1797,831"/>
+  <text class="text-bold" x="1850" y="823"><tspan x="1850" dy="0">¿Servicio</tspan><tspan x="1850" dy="18">saludable?</tspan></text>
+  <ellipse class="artifact" cx="1630" cy="925" rx="100" ry="25"/>
+  <text class="text-bold" x="1630" y="925">Release disponible</text>
+  <rect class="task" x="1870" y="900" width="170" height="50" rx="13"/>
+  <text class="text-bold" x="1955" y="925">Rollback y notificar</text>
+</svg>

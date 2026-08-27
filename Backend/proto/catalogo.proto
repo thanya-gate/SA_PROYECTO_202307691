@@ -46,6 +46,60 @@ message ClaseDetalle {
   repeated Participante participantes = 14;
   repeated string etiquetas = 15;
   string curso_id = 16;
+  repeated MaterialAdjunto materiales = 17;
+  repeated Capitulo capitulos = 18;
+}
+
+message Capitulo {
+  string capitulo_id = 1;
+  string clase_id = 2;
+  string titulo = 3;
+  int32 inicio_segundos = 4;
+  int32 fin_segundos = 5;
+  int32 orden = 6;
+  string fecha_creacion = 7;
+  string fecha_actualizacion = 8;
+}
+
+message ListarCapitulosRequest {
+  string clase_id = 1;
+}
+
+message ListarCapitulosResponse {
+  repeated Capitulo capitulos = 1;
+}
+
+message CrearCapituloRequest {
+  string clase_id = 1;
+  string titulo = 2;
+  int32 inicio_segundos = 3;
+  int32 fin_segundos = 4;
+  int32 orden = 5;
+}
+
+message CrearCapituloResponse {
+  Capitulo capitulo = 1;
+}
+
+message ActualizarCapituloRequest {
+  string capitulo_id = 1;
+  string clase_id = 2;
+  string titulo = 3;
+  int32 inicio_segundos = 4;
+  int32 fin_segundos = 5;
+  int32 orden = 6;
+}
+
+message ActualizarCapituloResponse {
+  Capitulo capitulo = 1;
+}
+
+message EliminarCapituloRequest {
+  string capitulo_id = 1;
+}
+
+message EliminarCapituloResponse {
+  string clase_id = 1;
 }
 
 message SemestreResumen {
@@ -53,6 +107,76 @@ message SemestreResumen {
   int32 anio = 2;
   string escuela = 3;
   int32 total_clases = 4;
+}
+// Para el repositorio de materiales
+
+message MaterialAdjunto {
+  string material_id = 1;
+  string clase_id = 2;
+  string nombre_archivo = 3;
+  string mime_type = 4;
+  string extension = 5;
+  int64 tamano_bytes = 6;
+  int32 version_actual = 7;
+  int64 total_descargas = 8;
+  string subido_por = 9;
+  string fecha_subida = 10;
+  string url_archivo = 11; // URL pública de la versión vigente
+}
+
+message RegistrarMaterialRequest {
+  string material_id = 1; // opcional: id generado por el gateway
+  string clase_id = 2;
+  string nombre_archivo = 3;
+  string mime_type = 4;
+  string extension = 5;
+  int64 tamano_bytes = 6;
+  string url_archivo = 7;
+  string subido_por = 8;
+}
+
+message RegistrarMaterialResponse {
+  MaterialAdjunto material = 1;
+}
+
+message ObtenerMaterialRequest {
+  string material_id = 1;
+}
+
+message ObtenerMaterialResponse {
+  MaterialAdjunto material = 1;
+}
+
+message AgregarVersionMaterialRequest {
+  string material_id = 1;
+  int64 tamano_bytes = 2;
+  string url_archivo = 3;
+}
+
+message AgregarVersionMaterialResponse {
+  MaterialAdjunto material = 1;
+}
+
+message ListarMaterialesRequest {
+  string clase_id = 1;
+}
+
+message ListarMaterialesResponse {
+  repeated MaterialAdjunto materiales = 1;
+}
+
+message EliminarMaterialRequest {
+  string material_id = 1;
+}
+
+message EliminarMaterialResponse {}
+
+message RegistrarDescargaMaterialRequest {
+  string material_id = 1;
+}
+
+message RegistrarDescargaMaterialResponse {
+  int64 total_descargas = 1;
 }
 
 
@@ -335,6 +459,20 @@ service CatalogoService {
   rpc ListarCursos(ListarCursosRequest) returns (ListarCursosResponse);
   rpc ActualizarCurso(ActualizarCursoRequest) returns (ActualizarCursoResponse);
   rpc EliminarCurso(EliminarCursoRequest) returns (EliminarCursoResponse);
+
+  // --- Materiales adjuntos (Fase 2) ---
+  rpc RegistrarMaterial(RegistrarMaterialRequest) returns (RegistrarMaterialResponse);
+  rpc ObtenerMaterial(ObtenerMaterialRequest) returns (ObtenerMaterialResponse);
+  rpc AgregarVersionMaterial(AgregarVersionMaterialRequest) returns (AgregarVersionMaterialResponse);
+  rpc ListarMateriales(ListarMaterialesRequest) returns (ListarMaterialesResponse);
+  rpc EliminarMaterial(EliminarMaterialRequest) returns (EliminarMaterialResponse);
+  rpc RegistrarDescargaMaterial(RegistrarDescargaMaterialRequest) returns (RegistrarDescargaMaterialResponse);
+
+  // --- Segmentación por capítulos y temas (Práctica 4) ---
+  rpc ListarCapitulos(ListarCapitulosRequest) returns (ListarCapitulosResponse);
+  rpc CrearCapitulo(CrearCapituloRequest) returns (CrearCapituloResponse);
+  rpc ActualizarCapitulo(ActualizarCapituloRequest) returns (ActualizarCapituloResponse);
+  rpc EliminarCapitulo(EliminarCapituloRequest) returns (EliminarCapituloResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
 }

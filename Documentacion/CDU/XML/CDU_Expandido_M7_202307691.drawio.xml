@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="m7-general-202307691">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0" background="#000000">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="m7-boundary" parent="1" style="html=1;whiteSpace=wrap;" value="" vertex="1"><mxGeometry height="520" width="800" x="180" y="80" as="geometry" /></mxCell>
+        <mxCell id="m7-title" parent="1" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="CDU0007: Aprendizaje interactivo y recursos" vertex="1"><mxGeometry height="26" width="360" x="400" y="96" as="geometry" /></mxCell>
+        <mxCell id="m7-student" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Estudiante" vertex="1"><mxGeometry height="60" width="30" x="40" y="145" as="geometry" /></mxCell>
+        <mxCell id="m7-teacher" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Docente" vertex="1"><mxGeometry height="60" width="30" x="40" y="315" as="geometry" /></mxCell>
+        <mxCell id="m7-assistant" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Auxiliar" vertex="1"><mxGeometry height="60" width="30" x="40" y="485" as="geometry" /></mxCell>
+        <mxCell id="m7-playback" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Microservicio de&lt;div&gt;Reproducción&lt;/div&gt;" vertex="1"><mxGeometry height="60" width="30" x="1000" y="145" as="geometry" /></mxCell>
+        <mxCell id="m7-catalog" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Microservicio de&lt;div&gt;Catálogo&lt;/div&gt;" vertex="1"><mxGeometry height="60" width="30" x="1000" y="390" as="geometry" /></mxCell>
+        <mxCell id="m7-cdu1" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;CDU0007.1&lt;/div&gt;&lt;div&gt;Foro de dudas ancladas&lt;/div&gt;" vertex="1"><mxGeometry height="70" width="250" x="250" y="160" as="geometry" /></mxCell>
+        <mxCell id="m7-cdu3" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;CDU0007.3&lt;/div&gt;&lt;div&gt;Gestión y navegación de capítulos&lt;/div&gt;" vertex="1"><mxGeometry height="70" width="250" x="250" y="330" as="geometry" /></mxCell>
+        <mxCell id="m7-cdu2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;CDU0007.2&lt;/div&gt;&lt;div&gt;Cuaderno de apuntes Markdown&lt;/div&gt;" vertex="1"><mxGeometry height="70" width="250" x="560" y="160" as="geometry" /></mxCell>
+        <mxCell id="m7-cdu4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;CDU0007.4&lt;/div&gt;&lt;div&gt;Materiales adjuntos y versionado&lt;/div&gt;" vertex="1"><mxGeometry height="70" width="250" x="560" y="330" as="geometry" /></mxCell>
+        <mxCell id="m7-cdu5" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;div&gt;CDU0007.5&lt;/div&gt;&lt;div&gt;Playlists de repaso&lt;/div&gt;" vertex="1"><mxGeometry height="70" width="250" x="560" y="470" as="geometry" /></mxCell>
+        <mxCell id="m7-e1" edge="1" parent="1" source="m7-student" target="m7-cdu1" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e2" edge="1" parent="1" source="m7-student" target="m7-cdu3" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e3" edge="1" parent="1" source="m7-teacher" target="m7-cdu1" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e4" edge="1" parent="1" source="m7-teacher" target="m7-cdu3" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e5" edge="1" parent="1" source="m7-assistant" target="m7-cdu1" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e6" edge="1" parent="1" source="m7-assistant" target="m7-cdu3" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e7" edge="1" parent="1" source="m7-playback" target="m7-cdu2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e8" edge="1" parent="1" source="m7-playback" target="m7-cdu5" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e9" edge="1" parent="1" source="m7-catalog" target="m7-cdu4" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m7-e10" edge="1" parent="1" source="m7-catalog" target="m7-cdu5" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

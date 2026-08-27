@@ -21,6 +21,31 @@ export interface Participante {
   rol: string; 
 }
 
+export interface MaterialAdjunto {
+  materialId: string;
+  claseId: string;
+  nombreArchivo: string;
+  mimeType: string;
+  extension: string;
+  tamanoBytes: number;
+  versionActual: number;
+  totalDescargas: number;
+  subidoPor: string | null;
+  fechaSubida: string;
+  urlArchivo: string | null;
+}
+
+export interface Capitulo {
+  capituloId: string;
+  claseId: string;
+  titulo: string;
+  inicioSegundos: number;
+  finSegundos: number;
+  orden: number;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+}
+
 export interface ClaseDetalle {
   claseId: string;
   cursoId: string;
@@ -38,6 +63,8 @@ export interface ClaseDetalle {
   fechaPublicacion: string; 
   participantes: Participante[];
   etiquetas: string[];
+  materiales: MaterialAdjunto[];
+  capitulos: Capitulo[];
 }
 
 export interface SemestreResumen {

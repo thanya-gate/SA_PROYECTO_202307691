@@ -60,6 +60,7 @@ export async function closeDb(): Promise<void> {
 
 const SP_ERROR_CODES: Record<string, { code: DomainErrorCode; httpStatus: number }> = {
   CLASE_NO_ENCONTRADA: { code: 'CLASE_NO_ENCONTRADA', httpStatus: 404 },
+  CAPITULO_NO_ENCONTRADO: { code: 'CAPITULO_NO_ENCONTRADO', httpStatus: 404 },
   CURSO_NO_ENCONTRADO: { code: 'CURSO_NO_ENCONTRADO', httpStatus: 404 },
   SEMESTRE_NO_ENCONTRADO: { code: 'SEMESTRE_NO_ENCONTRADO', httpStatus: 404 },
   ESCUELA_NO_ENCONTRADA: { code: 'ESCUELA_NO_ENCONTRADA', httpStatus: 404 },

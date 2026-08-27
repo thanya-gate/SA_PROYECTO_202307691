@@ -4,53 +4,200 @@ import fs from 'fs';
 import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { randomUUID } from 'crypto';
+import { Transform } from 'stream';
+import { pipeline } from 'stream/promises';
 import { config } from './config/env';
-import { authGrpc } from './grpc/auth-client';
-import { catalogGrpc } from './grpc/catalog-client';
-import { reproductionGrpc } from './grpc/reproduction-client';
-import { analiticaGrpc } from './grpc/analitica-client';
-import { inscripcionGrpc } from './grpc/inscripcion-client';
-import { notificacionesGrpc } from './grpc/notificaciones-client';
+import { authGrpc as defaultAuthGrpc } from './grpc/auth-client';
+import { catalogGrpc as defaultCatalogGrpc } from './grpc/catalog-client';
+import { reproductionGrpc as defaultReproductionGrpc } from './grpc/reproduction-client';
+import { analiticaGrpc as defaultAnaliticaGrpc } from './grpc/analitica-client';
+import { inscripcionGrpc as defaultInscripcionGrpc } from './grpc/inscripcion-client';
+import { notificacionesGrpc as defaultNotificacionesGrpc } from './grpc/notificaciones-client';
 import { GrpcError } from './grpc/auth-client';
 import { DomainError } from './domain/domain-error';
 import { setSessionCookie, clearSessionCookie } from './utils/cookies';
 import { parseClasesCsv, CsvParseError } from './utils/csv';
-import { authenticate } from './middleware/authenticate';
+import { createAuthenticate } from './middleware/authenticate';
 import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
 import { errorHandler } from './middleware/error-handler';
 import { createIdpRouter, buildIdpLoginUri } from './mock-idp';
+import { createStorageBackend, StorageBackend } from './storage/storage';
+import {
+  MATERIAL_EXTENSIONS,
+  MAX_MATERIAL_BYTES,
+  resolverExtensionMaterial,
+  resolverNombreArchivo,
+  normalizarContentType,
+  validarTamanoMaterial,
+} from './validation/material';
 
 const cookieMaxAge = config.SESSION_TTL_MS;
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
-const MAX_MATERIAL_BYTES = 50 * 1024 * 1024;
-const MATERIAL_EXTENSIONS: Record<string, string> = {
-  'application/pdf': '.pdf',
-  'application/msword': '.doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
-  'application/vnd.ms-powerpoint': '.ppt',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
-  'text/plain': '.txt',
-  'image/png': '.png',
-  'image/jpeg': '.jpg',
-};
+const MAX_VIDEO_DURATION_SECONDS = 24 * 60 * 60;
+// Backend de almacenamiento multimedia según STORAGE_BACKEND: 'local' guarda
+// en disco (MEDIA_DIR) y 'gcs' sube a Cloud Storage y devuelve la URL del bucket.
+const defaultStorage = createStorageBackend(config.STORAGE_BACKEND, Object.values(MATERIAL_EXTENSIONS));
 const execFileAsync = promisify(execFile);
+
+// Normaliza un MaterialAdjunto que llega por gRPC
+
+function normalizarMaterial(raw: any): Record<string, unknown> {
+  if (!raw) return {};
+  return {
+    ...raw,
+    tamanoBytes: Number(raw.tamanoBytes ?? 0),
+    totalDescargas: Number(raw.totalDescargas ?? 0),
+  };
+}
+
+class LimiterBytes extends Transform {
+  bytes = 0;
+
+  constructor(private readonly limite: number) {
+    super();
+  }
+
+  override _transform(chunk: Buffer | string, _encoding: BufferEncoding, callback: Function): void {
+    const bytes = Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(chunk);
+    this.bytes += bytes;
+    if (this.bytes > this.limite) {
+      callback(new DomainError('ENTRADA_INVALIDA', 'El cuerpo real supera el límite de 50 MB', 400));
+      return;
+    }
+    callback(null, chunk);
+  }
+}
+
+export async function escribirTemporal(
+  rutaTemp: string,
+  req: express.Request,
+  tamanoDeclarado: number,
+  limite = MAX_MATERIAL_BYTES,
+): Promise<number> {
+  await fs.promises.mkdir(path.dirname(rutaTemp), { recursive: true });
+  const contador = new LimiterBytes(limite);
+  try {
+    await pipeline(req, contador, fs.createWriteStream(rutaTemp));
+  } catch (err) {
+    await fs.promises.rm(rutaTemp, { force: true }).catch(() => {});
+    throw err;
+  }
+  if (contador.bytes !== tamanoDeclarado) {
+    await fs.promises.rm(rutaTemp, { force: true }).catch(() => {});
+    throw new DomainError('ENTRADA_INVALIDA', 'El tamaño real del archivo no coincide con Content-Length', 400);
+  }
+  return contador.bytes;
+}
 
 /**
  * Detecta la duración real de un archivo de video (segundos) leyendo sus
- * metadatos con ffprobe. Reemplaza la duración que se fija manualmente al
- * publicar la clase.
+ * metadatos con ffprobe. Se consultan la duración del contenedor (format) y la
+ * de cada stream: en algunos archivos (p. ej. WebM grabados en navegador o MP4
+ * fragmentados) el formato reporta N/A pero los streams sí tienen duración.
  */
 async function detectVideoDuration(filePath: string): Promise<number | null> {
   try {
     const { stdout } = await execFileAsync(
       'ffprobe',
-      ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filePath],
+      [
+        '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-show_entries', 'stream=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        filePath,
+      ],
       { timeout: 60_000, maxBuffer: 1024 * 1024 },
     );
-    const seconds = Number.parseFloat(stdout.trim());
-    if (!Number.isFinite(seconds) || seconds <= 0) return null;
-    return Math.round(seconds);
+    for (const line of stdout.split(/\r?\n/)) {
+      const seconds = Number.parseFloat(line.trim());
+      if (Number.isFinite(seconds) && seconds > 0) return Math.round(seconds);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Genera una miniatura (JPEG) del video extrayendo un fotograma con ffmpeg.
+ * El fotograma se toma aproximadamente al 10% de la duración (mínimo 1s,
+ * máximo 60s) para mostrar contenido representativo y evitar la pantalla
+ * negra inicial. Es mejor esfuerzo: si ffmpeg falla devuelve false y la
+ * subida del video continúa sin miniatura.
+ */
+async function generarThumbnail(videoPath: string, thumbPath: string, duracionSegundos: number): Promise<boolean> {
+  const segundo = Math.min(60, Math.max(1, Math.floor(duracionSegundos / 10)));
+  try {
+    await execFileAsync(
+      'ffmpeg',
+      [
+        '-y',
+        '-ss', String(segundo),
+        '-i', videoPath,
+        '-frames:v', '1',
+        '-vf', 'scale=640:-2',
+        '-q:v', '4',
+        thumbPath,
+      ],
+      { timeout: 30_000, maxBuffer: 1024 * 1024 },
+    );
+    return true;
+  } catch {
+    // Limpieza ante fallo parcial: no debe quedar un JPEG corrupto.
+    await fs.promises.rm(thumbPath, { force: true }).catch(() => {});
+    return false;
+  }
+}
+
+/**
+ * Extrae el ID de video de una URL de YouTube y usa la YouTube Data API v3
+ * para obtener la duración en segundos. Devuelve null si no se puede
+ * determinar (por ejemplo, si YOUTUBE_API_KEY no está configurada).
+ */
+async function detectYoutubeDuration(urlVideo: string): Promise<number | null> {
+  if (!config.YOUTUBE_API_KEY) return null;
+
+  // Extrae el video ID de YouTube de varias formas de URL conocidas
+  let videoId: string | null = null;
+  try {
+    const parsed = new URL(urlVideo);
+    if (parsed.hostname.includes('youtu.be')) {
+      videoId = parsed.pathname.slice(1) || null;
+    } else if (parsed.hostname.includes('youtube.com')) {
+      videoId = parsed.searchParams.get('v');
+      if (!videoId && parsed.pathname.includes('/embed/')) {
+        videoId = parsed.pathname.split('/embed/')[1]?.split(/[?#]/)[0] ?? null;
+      }
+    }
+  } catch {
+    return null;
+  }
+  if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return null;
+
+  try {
+    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${config.YOUTUBE_API_KEY}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch(apiUrl, { signal: controller.signal });
+      if (!res.ok) return null;
+      const data = await res.json() as { items?: Array<{ contentDetails?: { duration?: string } }> };
+      const isoDuration = data.items?.[0]?.contentDetails?.duration;
+      if (!isoDuration) return null;
+      // ISO 8601 duration format: PT#M#S or PT#S or PT#H#M#S
+      const match = isoDuration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+      if (!match) return null;
+      const hours = parseInt(match[1] ?? '0', 10);
+      const minutes = parseInt(match[2] ?? '0', 10);
+      const seconds = parseInt(match[3] ?? '0', 10);
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      if (totalSeconds <= 0) return null;
+      return totalSeconds;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   } catch {
     return null;
   }
@@ -97,9 +244,9 @@ function toOptionalString(value: unknown): string | undefined {
  * autorización (registro público de docentes). El gateway lo expone como
  * `docentePendiente` para que la UI muestre el aviso al docente.
  */
-async function tieneDocentePendiente(userId: string): Promise<boolean> {
+async function tieneDocentePendiente(userId: string, client = defaultAuthGrpc): Promise<boolean> {
   try {
-    const res = await authGrpc.listarSolicitudesRol('SOLICITUD_ESTADO_PENDIENTE', userId);
+    const res = await client.listarSolicitudesRol('SOLICITUD_ESTADO_PENDIENTE', userId);
     return (res.solicitudes ?? []).some(
       (s: { usuarioId: string; rolSolicitado: string }) =>
         s.usuarioId === userId && s.rolSolicitado === 'ROLE_CATEDRATICO',
@@ -122,7 +269,25 @@ function toPositiveInt(value: unknown, defaultValue: number): number {
   return defaultValue;
 }
 
-export function createGateway(): Express {
+export interface GatewayDependencies {
+  authGrpc?: typeof defaultAuthGrpc;
+  catalogGrpc?: typeof defaultCatalogGrpc;
+  reproductionGrpc?: typeof defaultReproductionGrpc;
+  analiticaGrpc?: typeof defaultAnaliticaGrpc;
+  inscripcionGrpc?: typeof defaultInscripcionGrpc;
+  notificacionesGrpc?: typeof defaultNotificacionesGrpc;
+  storage?: StorageBackend;
+}
+
+export function createGateway(dependencies: GatewayDependencies = {}): Express {
+  const authGrpc = dependencies.authGrpc ?? defaultAuthGrpc;
+  const catalogGrpc = dependencies.catalogGrpc ?? defaultCatalogGrpc;
+  const reproductionGrpc = dependencies.reproductionGrpc ?? defaultReproductionGrpc;
+  const analiticaGrpc = dependencies.analiticaGrpc ?? defaultAnaliticaGrpc;
+  const inscripcionGrpc = dependencies.inscripcionGrpc ?? defaultInscripcionGrpc;
+  const notificacionesGrpc = dependencies.notificacionesGrpc ?? defaultNotificacionesGrpc;
+  const storage = dependencies.storage ?? defaultStorage;
+  const authenticate = createAuthenticate(authGrpc);
   const app = express();
 
   app.disable('x-powered-by');
@@ -237,7 +402,7 @@ export function createGateway(): Express {
         userAgent: req.headers['user-agent'],
       });
       setSessionCookie(res, result.accessToken, cookieMaxAge);
-      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId) };
+      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId, authGrpc) };
       res.json({
         message: 'Sesión iniciada',
         user,
@@ -262,7 +427,7 @@ export function createGateway(): Express {
   app.get('/auth/me', authenticate, async (req, res, next) => {
     try {
       const result = await authGrpc.getCurrentUser(req.context!.sessionId);
-      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId) };
+      const user = { ...publicUser(result.user), docentePendiente: await tieneDocentePendiente(result.user.userId, authGrpc) };
       res.json({ user, sessionId: result.sessionId });
     } catch (err) {
       next(err);
@@ -665,6 +830,106 @@ export function createGateway(): Express {
 
   // Edición completa de una clase (CRUD: UPDATE). Admin, docente y auxiliar
   // pueden modificar los datos de la clase y reasignar etiquetas/participantes.
+  // Segmentación de la grabación en capítulos/temas. La lectura está
+  // disponible para cualquier usuario autenticado; la escritura conserva
+  // las mismas reglas de contenido que el resto del catálogo.
+  app.get('/catalog/classes/:claseId/chapters', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarCapitulos(req.params.claseId);
+      res.json({ capitulos: result.capitulos ?? [] });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post(
+    '/catalog/classes/:claseId/chapters',
+    authenticate,
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const body = req.body as Record<string, unknown>;
+        const inicioSegundos = Number(body.inicioSegundos);
+        const finSegundos = Number(body.finSegundos);
+        const orden = body.orden === undefined || body.orden === null ? 0 : Number(body.orden);
+        if (
+          typeof body.titulo !== 'string' ||
+          !Number.isInteger(inicioSegundos) ||
+          !Number.isInteger(finSegundos) ||
+          !Number.isInteger(orden)
+        ) {
+          throw new DomainError(
+            'ENTRADA_INVALIDA',
+            'titulo, inicioSegundos y finSegundos deben ser válidos',
+            400,
+          );
+        }
+        const result = await catalogGrpc.crearCapitulo({
+          claseId: req.params.claseId,
+          titulo: body.titulo,
+          inicioSegundos,
+          finSegundos,
+          orden,
+        });
+        res.status(201).json({ message: 'Capítulo creado', capitulo: result.capitulo });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  app.patch(
+    '/catalog/chapters/:capituloId',
+    authenticate,
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const body = req.body as Record<string, unknown>;
+        const inicioSegundos = Number(body.inicioSegundos);
+        const finSegundos = Number(body.finSegundos);
+        const orden = body.orden === undefined || body.orden === null ? 0 : Number(body.orden);
+        if (
+          typeof body.claseId !== 'string' ||
+          typeof body.titulo !== 'string' ||
+          !Number.isInteger(inicioSegundos) ||
+          !Number.isInteger(finSegundos) ||
+          !Number.isInteger(orden)
+        ) {
+          throw new DomainError(
+            'ENTRADA_INVALIDA',
+            'claseId, titulo, inicioSegundos y finSegundos deben ser válidos',
+            400,
+          );
+        }
+        const result = await catalogGrpc.actualizarCapitulo({
+          capituloId: req.params.capituloId,
+          claseId: body.claseId,
+          titulo: body.titulo,
+          inicioSegundos,
+          finSegundos,
+          orden,
+        });
+        res.json({ message: 'Capítulo actualizado', capitulo: result.capitulo });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  app.delete(
+    '/catalog/chapters/:capituloId',
+    authenticate,
+    requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const result = await catalogGrpc.eliminarCapitulo(req.params.capituloId);
+        res.json({ message: 'Capítulo eliminado', claseId: result.claseId ?? '' });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
   app.patch('/catalog/classes/:claseId', authenticate, requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const body = req.body as Record<string, unknown>;
@@ -704,10 +969,8 @@ export function createGateway(): Express {
     const claseId = req.params.claseId;
     try {
       await catalogGrpc.eliminarClase(claseId);
-      await fs.promises.rm(path.join(config.MEDIA_DIR, 'clases', `${claseId}.mp4`), { force: true }).catch(() => {});
-      for (const ext of Object.values(MATERIAL_EXTENSIONS)) {
-        await fs.promises.rm(path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`), { force: true }).catch(() => {});
-      }
+      // Limpieza best-effort de los archivos multimedia (disco o bucket).
+      await storage.eliminarArchivosClase(claseId).catch(() => {});
       res.json({ message: 'Clase eliminada' });
     } catch (err) {
       next(err);
@@ -1037,7 +1300,15 @@ export function createGateway(): Express {
 
       // Se detecta la duración real del video a partir de sus metadatos
       // (ffprobe) y se actualiza la clase, ignorando la duración manual.
-      const duracion = await detectVideoDuration(tempPath);
+      // Si ffprobe no puede leerla (códec exótico), se respeta la duración
+      // que detectó el navegador (header x-video-duracion-segundos).
+      let duracion = await detectVideoDuration(tempPath);
+      if (duracion === null || duracion <= 0) {
+        const cliente = Number.parseInt(String(req.headers['x-video-duracion-segundos'] ?? ''), 10);
+        if (Number.isFinite(cliente) && cliente > 0 && cliente <= MAX_VIDEO_DURATION_SECONDS) {
+          duracion = cliente;
+        }
+      }
       if (duracion === null || duracion === 0) {
         await fs.promises.rm(tempPath, { force: true }).catch(() => {});
         return next(
@@ -1049,8 +1320,18 @@ export function createGateway(): Express {
         );
       }
 
-      await fs.promises.rename(tempPath, targetPath);
-      const urlVideo = `/media/videos/clases/${claseId}.mp4`;
+      // Miniatura del video: se extrae un fotograma con ffmpeg mientras el
+      // archivo aún está en el temporal. Es mejor esfuerzo: si falla, la clase
+      // simplemente no tendrá miniatura y las tarjetas mostrarán el marcador.
+      const thumbTempPath = `${tempPath}.thumb.jpg`;
+      const thumbnailGenerada = await generarThumbnail(tempPath, thumbTempPath, duracion);
+
+      // El backend decide dónde vive el archivo final (disco o bucket) y
+      // devuelve la URL pública que se persiste en el catálogo.
+      const urlVideo = await storage.guardarVideo(claseId, tempPath, req.headers['content-type'] ?? 'video/mp4');
+      if (thumbnailGenerada) {
+        await storage.guardarThumbnail(claseId, thumbTempPath).catch(() => {});
+      }
       await catalogGrpc.actualizarUrlVideo(claseId, urlVideo);
       const result = await catalogGrpc.actualizarDuracion(claseId, duracion);
       const clase = result.clase;
@@ -1072,6 +1353,7 @@ export function createGateway(): Express {
       });
     } catch (err) {
       await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
+      await fs.promises.rm(`${targetPath}.uploading.thumb.jpg`, { force: true }).catch(() => {});
       await fs.promises.rm(targetPath, { force: true }).catch(() => {});
       next(err);
     }
@@ -1084,7 +1366,15 @@ export function createGateway(): Express {
         throw new DomainError('ENTRADA_INVALIDA', 'urlVideo debe ser una URL de YouTube válida (http/https)', 400);
       }
       const result = await catalogGrpc.actualizarUrlVideo(req.params.claseId, urlVideo);
-      res.json({ message: 'URL de video actualizada', clase: result.clase });
+      // Detecta la duración del video de YouTube usando la YouTube Data API v3.
+      // Si no está configurada la API key, la duración se deja como está (0 o manual).
+      const duracion = await detectYoutubeDuration(urlVideo);
+      let clase = result.clase;
+      if (duracion !== null && duracion > 0) {
+        const duracionResult = await catalogGrpc.actualizarDuracion(req.params.claseId, duracion);
+        clase = duracionResult.clase;
+      }
+      res.json({ message: 'URL de video actualizada', urlVideo, duracion: clase.duracion, clase });
     } catch (err) {
       next(err);
     }
@@ -1105,32 +1395,20 @@ export function createGateway(): Express {
 
   app.post('/catalog/classes/:claseId/material', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     const claseId = req.params.claseId;
-    const contentLength = Number(req.headers['content-length'] ?? 0);
-    if (!contentLength || contentLength > MAX_MATERIAL_BYTES) {
-      return next(new DomainError('ENTRADA_INVALIDA', 'El archivo debe pesar entre 1 byte y 50 MB', 400));
-    }
-    const ext = MATERIAL_EXTENSIONS[req.headers['content-type'] ?? ''] ?? '.bin';
-    const targetPath = path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`);
+    let targetPath = '';
     try {
+      const tamano = validarTamanoMaterial(req.headers['content-length']);
+      const mime = normalizarContentType(req.headers['content-type']);
+      const ext = resolverExtensionMaterial(mime, req.headers['x-filename']);
+      targetPath = path.join(config.MEDIA_DIR, 'materiales', `${claseId}${ext}`);
       await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
 
       const tempPath = `${targetPath}.uploading`;
-      await new Promise<void>((resolve, reject) => {
-        const out = fs.createWriteStream(tempPath);
-        out.on('error', reject);
-        out.on('close', resolve);
-        req.on('error', reject);
-        req.pipe(out);
-      });
+      await escribirTemporal(tempPath, req, tamano);
 
-      // Se elimina el material anterior de la misma clase para no dejar huérfanos.
-      for (const prevExt of Object.values(MATERIAL_EXTENSIONS)) {
-        if (prevExt === ext) continue;
-        await fs.promises.rm(path.join(path.dirname(targetPath), `${claseId}${prevExt}`), { force: true }).catch(() => {});
-      }
-
-      await fs.promises.rename(tempPath, targetPath);
-      const urlMaterial = `/media/materiales/${claseId}${ext}`;
+      // El backend se encarga de limpiar el material previo con otra
+      // extensión, hacer el commit del archivo y devolver la URL pública.
+      const urlMaterial = await storage.guardarMaterial(claseId, tempPath, ext, mime);
       const result = await catalogGrpc.actualizarUrlMaterial(claseId, urlMaterial);
       res.status(201).json({
         message: 'Material subido a la plataforma',
@@ -1138,7 +1416,133 @@ export function createGateway(): Express {
         clase: result.clase,
       });
     } catch (err) {
-      await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
+      if (targetPath) await fs.promises.rm(`${targetPath}.uploading`, { force: true }).catch(() => {});
+      next(err);
+    }
+  });
+
+//Rerpositorio de material
+  app.get('/catalog/classes/:claseId/materials', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarMateriales(req.params.claseId);
+      res.json({ materiales: (result.materiales ?? []).map(normalizarMaterial) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Sube un nuevo material a la clase (catedrático / auxiliar / admin).
+  app.post('/catalog/classes/:claseId/materials', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    const materialId = randomUUID();
+    let rutaTemp = '';
+    try {
+      const tamanoDeclarado = validarTamanoMaterial(req.headers['content-length']);
+      const mime = normalizarContentType(req.headers['content-type']);
+      const ext = resolverExtensionMaterial(mime, req.headers['x-filename']);
+      const nombreArchivo = resolverNombreArchivo(req.headers['x-filename'], ext);
+
+      rutaTemp = path.join(config.MEDIA_DIR, 'materiales', '.tmp', `${materialId}.uploading`);
+      const tamano = await escribirTemporal(rutaTemp, req, tamanoDeclarado);
+
+      // El binario se persiste primero (mismo flujo que los videos) y luego
+      // se registra la metadata en el catálogo vía gRPC.
+      const urlArchivo = await storage.guardarMaterialVersion(req.params.claseId, materialId, nombreArchivo, rutaTemp, mime);
+      rutaTemp = '';
+      try {
+        const result = await catalogGrpc.registrarMaterial({
+          materialId,
+          claseId: req.params.claseId,
+          nombreArchivo,
+          mimeType: mime,
+          extension: ext,
+          tamanoBytes: tamano,
+          urlArchivo,
+        });
+        res.status(201).json({
+          message: 'Material publicado',
+          material: normalizarMaterial(result.material),
+        });
+      } catch (grpcErr) {
+        await storage.eliminarMaterial(req.params.claseId, materialId).catch(() => {});
+        throw grpcErr;
+      }
+    } catch (err) {
+      if (rutaTemp) await fs.promises.rm(rutaTemp, { force: true }).catch(() => {});
+      next(err);
+    }
+  });
+
+  // Publica una nueva versión de un material existente.
+  app.post('/catalog/materials/:materialId/versiones', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    let rutaTemp = '';
+    try {
+      const tamanoDeclarado = validarTamanoMaterial(req.headers['content-length']);
+      const mime = normalizarContentType(req.headers['content-type']);
+      const ext = resolverExtensionMaterial(mime, req.headers['x-filename']);
+      const nombreArchivo = resolverNombreArchivo(req.headers['x-filename'], ext);
+
+      const actual = await catalogGrpc.obtenerMaterial(req.params.materialId);
+      const claseId = String(actual?.material?.claseId ?? '');
+      if (!claseId) {
+        throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+      }
+
+      rutaTemp = path.join(config.MEDIA_DIR, 'materiales', '.tmp', `${req.params.materialId}.uploading`);
+      const tamano = await escribirTemporal(rutaTemp, req, tamanoDeclarado);
+
+      const urlArchivo = await storage.guardarMaterialVersion(claseId, req.params.materialId, nombreArchivo, rutaTemp, mime);
+      rutaTemp = '';
+      try {
+        const result = await catalogGrpc.agregarVersionMaterial({
+          materialId: req.params.materialId,
+          tamanoBytes: tamano,
+          urlArchivo,
+        });
+        res.status(201).json({
+          message: `Versión ${result.material?.versionActual ?? '?'} publicada`,
+          material: normalizarMaterial(result.material),
+        });
+      } catch (grpcErr) {
+        await storage.eliminarMaterial(claseId, req.params.materialId).catch(() => {});
+        throw grpcErr;
+      }
+    } catch (err) {
+      if (rutaTemp) await fs.promises.rm(rutaTemp, { force: true }).catch(() => {});
+      next(err);
+    }
+  });
+
+  // Detalle de un material.
+  app.get('/catalog/materials/:materialId', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.obtenerMaterial(req.params.materialId);
+      res.json({ material: normalizarMaterial(result.material) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Elimina un material (metadata + todas sus versiones físicas).
+  app.delete('/catalog/materials/:materialId', authenticate, requireAnyRole('ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const detalle = await catalogGrpc.obtenerMaterial(req.params.materialId);
+      await catalogGrpc.eliminarMaterial(req.params.materialId);
+      const claseId = String(detalle?.material?.claseId ?? '');
+      if (claseId) {
+        await storage.eliminarMaterial(claseId, req.params.materialId).catch(() => {});
+      }
+      res.json({ message: 'Material eliminado' });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Métricas: registra una descarga y devuelve el total acumulado del archivo.
+  app.post('/catalog/materials/:materialId/descarga', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.registrarDescargaMaterial(req.params.materialId);
+      res.json({ message: 'Descarga registrada', totalDescargas: Number(result.totalDescargas ?? 0) });
+    } catch (err) {
       next(err);
     }
   });
@@ -1293,12 +1697,18 @@ export function createGateway(): Express {
       const items = result.items ?? [];
       if (items.length === 0) { res.json({ items: [] }); return; }
 
-      const etiquetasPreferidas = await _obtenerEtiquetasPreferidas(userId);
+      const etiquetasPreferidas = await _obtenerEtiquetasPreferidas(userId, {
+        reproductionGrpc,
+        catalogGrpc,
+      });
       if (etiquetasPreferidas.size === 0) {
         res.json({ items }); return;
       }
 
-      const etiquetasPorClase = await _obtenerEtiquetasClases(items.map((i: any) => String(i.claseId)));
+      const etiquetasPorClase = await _obtenerEtiquetasClases(
+        items.map((i: any) => String(i.claseId)),
+        catalogGrpc,
+      );
 
       const boostMax = 30;
       const itemsEnriquecidos = items.map((item: any) => {
@@ -1682,15 +2092,21 @@ export function createGateway(): Express {
   return app;
 }
 
-async function _obtenerEtiquetasPreferidas(userId: string): Promise<Set<string>> {
+async function _obtenerEtiquetasPreferidas(
+  userId: string,
+  clients: {
+    reproductionGrpc: typeof defaultReproductionGrpc;
+    catalogGrpc: typeof defaultCatalogGrpc;
+  } = { reproductionGrpc: defaultReproductionGrpc, catalogGrpc: defaultCatalogGrpc },
+): Promise<Set<string>> {
   const preferidas = new Set<string>();
   try {
-    const historial = await reproductionGrpc.historialReciente({ estudianteId: userId });
+    const historial = await clients.reproductionGrpc.historialReciente({ estudianteId: userId });
     const items = historial.items ?? [];
     const clasesIds = [...new Set<string>(items.map((i: any) => String(i.claseId)))];
     const consultas = clasesIds.map(async (claseId: string) => {
       try {
-        const clase = await catalogGrpc.getClase(claseId);
+        const clase = await clients.catalogGrpc.getClase(claseId);
         const etiquetas: string[] = clase.clase?.etiquetas ?? [];
         for (const e of etiquetas) preferidas.add(e.toLowerCase());
       } catch {}
@@ -1700,11 +2116,14 @@ async function _obtenerEtiquetasPreferidas(userId: string): Promise<Set<string>>
   return preferidas;
 }
 
-async function _obtenerEtiquetasClases(claseIds: string[]): Promise<Record<string, string[]>> {
+async function _obtenerEtiquetasClases(
+  claseIds: string[],
+  client: typeof defaultCatalogGrpc = defaultCatalogGrpc,
+): Promise<Record<string, string[]>> {
   const resultado: Record<string, string[]> = {};
   const consultas = claseIds.map(async (claseId) => {
     try {
-      const clase = await catalogGrpc.getClase(claseId);
+      const clase = await client.getClase(claseId);
       resultado[claseId] = (clase.clase?.etiquetas ?? []).map((e: string) => e.toLowerCase());
     } catch {
       resultado[claseId] = [];

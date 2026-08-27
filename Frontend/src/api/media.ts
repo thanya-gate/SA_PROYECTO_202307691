@@ -1,29 +1,26 @@
 import { config } from '../config/env';
 import { apiFetch, ApiError } from './http';
+import { detectarDuracionArchivo } from '../utils/video';
 
 interface SubirVideoResponse {
   message: string;
   urlVideo: string;
+  duracion: number;
   clase: {
     claseId: string;
     urlVideo: string;
-  };
-}
-
-interface SubirMaterialResponse {
-  message: string;
-  urlMaterial: string;
-  clase: {
-    claseId: string;
-    urlMaterial: string;
+    duracion: number;
   };
 }
 
 interface EstablecerUrlResponse {
   message: string;
+  urlVideo?: string;
+  duracion?: number;
   clase: {
     claseId: string;
     urlVideo: string;
+    duracion: number;
   };
 }
 
@@ -32,11 +29,15 @@ interface ErrorEnvelope {
 }
 
 export const mediaApi = {
-  subirVideo: (claseId: string, file: File, token: string): Promise<SubirVideoResponse> =>
-    fetch(`${config.apiBaseUrl}/catalog/classes/${encodeURIComponent(claseId)}/video`, {
+  subirVideo: async (claseId: string, file: File, token: string): Promise<SubirVideoResponse> => {
+    // El navegador pre-detecta la duración; el servidor la usa como respaldo
+    // cuando ffprobe no puede leer los metadatos del archivo.
+    const duracionCliente = await detectarDuracionArchivo(file).catch(() => null);
+    return fetch(`${config.apiBaseUrl}/catalog/classes/${encodeURIComponent(claseId)}/video`, {
       method: 'POST',
       headers: {
         'Content-Type': file.type || 'application/octet-stream',
+        ...(duracionCliente ? { 'x-video-duracion-segundos': String(duracionCliente) } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: file,
@@ -60,37 +61,8 @@ export const mediaApi = {
         );
       }
       return data as SubirVideoResponse;
-    }),
-
-  subirMaterial: (claseId: string, file: File, token: string): Promise<SubirMaterialResponse> =>
-    fetch(`${config.apiBaseUrl}/catalog/classes/${encodeURIComponent(claseId)}/material`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': file.type || 'application/octet-stream',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: file,
-      credentials: 'include',
-    }).then(async (response) => {
-      const text = await response.text();
-      let data: unknown = null;
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch {
-          data = text;
-        }
-      }
-      if (!response.ok) {
-        const envelope = data as ErrorEnvelope;
-        throw new ApiError(
-          response.status,
-          envelope?.error?.code ?? 'ERROR_DESCONOCIDO',
-          envelope?.error?.message ?? `Error del servidor (${response.status})`,
-        );
-      }
-      return data as SubirMaterialResponse;
-    }),
+    });
+  },
 
   establecerUrlVideo: (claseId: string, urlVideo: string, token: string): Promise<EstablecerUrlResponse> =>
     apiFetch<EstablecerUrlResponse>(`/catalog/classes/${encodeURIComponent(claseId)}/video-url`, {

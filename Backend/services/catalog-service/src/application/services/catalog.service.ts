@@ -14,12 +14,19 @@ import {
   ActualizarEscuelaInput,
   ActualizarCursoInput,
   SearchCriteria,
+  RegistrarMaterialInput,
+  AgregarVersionMaterialInput,
+  EliminarMaterialResult,
+  CrearCapituloInput,
+  ActualizarCapituloInput,
 } from '../ports/catalog-repository';
 import {
+  Capitulo,
   ClaseDetalle,
   CursoAdmin,
   CursoCatalogo,
   EscuelaAdmin,
+  MaterialAdjunto,
   SemestreAdmin,
   SemestreResumen,
 } from '../../domain/entities/clase';
@@ -34,6 +41,10 @@ import {
   registrarEscuelaSchema,
   actualizarEscuelaSchema,
   actualizarCursoSchema,
+  registrarMaterialSchema,
+  agregarVersionMaterialSchema,
+  crearCapituloSchema,
+  actualizarCapituloSchema,
 } from '../dto/catalog-schemas';
 
 function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
@@ -45,6 +56,26 @@ function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
     }
     throw err;
   }
+}
+
+function traducirErrorCapitulo(err: any): never {
+  if (err instanceof DomainError) {
+    throw err;
+  }
+  const message = String(err?.message ?? '');
+  if (message.includes('CAPITULO_NO_ENCONTRADO')) {
+    throw new DomainError('CAPITULO_NO_ENCONTRADO', 'Capitulo no encontrado', 404);
+  }
+  if (message.includes('CLASE_NO_ENCONTRADA')) {
+    throw new DomainError('CLASE_NO_ENCONTRADA', 'Clase no encontrada', 404);
+  }
+  if (message.includes('CONFLICTO') || message.includes('duplicate key')) {
+    throw new DomainError('CONFLICTO', 'El rango u orden del capitulo entra en conflicto con otro capitulo', 409);
+  }
+  if (message.includes('ENTRADA_INVALIDA')) {
+    throw new DomainError('ENTRADA_INVALIDA', message.replace(/^.*ENTRADA_INVALIDA:\s*/, ''), 400);
+  }
+  throw err;
 }
 
 
@@ -202,5 +233,119 @@ export class CatalogService {
       throw new DomainError('ENTRADA_INVALIDA', 'cursoId es obligatorio', 400);
     }
     return this.repository.eliminarCurso(cursoId);
+  }
+
+  // ---- Materiales adjuntos (Fase 2) ----
+
+  async registrarMaterial(raw: RegistrarMaterialInput): Promise<MaterialAdjunto> {
+    const input = parse(registrarMaterialSchema, raw);
+    const material = await this.repository.registrarMaterial(input);
+    if (!material) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se pudo registrar el material', 400);
+    }
+    return material;
+  }
+
+  async obtenerMaterial(materialId: string): Promise<MaterialAdjunto> {
+    if (!materialId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'materialId es obligatorio', 400);
+    }
+    const material = await this.repository.obtenerMaterial(materialId);
+    if (!material) {
+      throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+    }
+    return material;
+  }
+
+  async agregarVersionMaterial(raw: AgregarVersionMaterialInput): Promise<MaterialAdjunto> {
+    const input = parse(agregarVersionMaterialSchema, raw);
+    try {
+      return await this.repository.agregarVersionMaterial(input);
+    } catch (err: any) {
+      if (String(err?.message ?? '').includes('MATERIAL_NO_ENCONTRADO')) {
+        throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+      }
+      throw err;
+    }
+  }
+
+  async listarMateriales(claseId: string): Promise<MaterialAdjunto[]> {
+    if (!claseId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'claseId es obligatorio', 400);
+    }
+    return this.repository.listarMateriales(claseId);
+  }
+
+  async eliminarMaterial(materialId: string): Promise<EliminarMaterialResult> {
+    if (!materialId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'materialId es obligatorio', 400);
+    }
+    const result = await this.repository.eliminarMaterial(materialId);
+    if (!result.eliminado) {
+      throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+    }
+    return result;
+  }
+
+  async registrarDescargaMaterial(materialId: string): Promise<number> {
+    if (!materialId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'materialId es obligatorio', 400);
+    }
+    try {
+      return await this.repository.registrarDescargaMaterial(materialId);
+    } catch (err: any) {
+      if (String(err?.message ?? '').includes('MATERIAL_NO_ENCONTRADO')) {
+        throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+      }
+      throw err;
+    }
+  }
+
+  // ---- Segmentación por capítulos y temas ----
+
+  async listarCapitulos(claseId: string): Promise<Capitulo[]> {
+    if (!claseId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'claseId es obligatorio', 400);
+    }
+    return this.repository.listarCapitulos(claseId);
+  }
+
+  async crearCapitulo(raw: CrearCapituloInput): Promise<Capitulo> {
+    const input = parse(crearCapituloSchema, raw);
+    try {
+      return await this.repository.crearCapitulo(input);
+    } catch (err: any) {
+      traducirErrorCapitulo(err);
+    }
+  }
+
+  async actualizarCapitulo(raw: ActualizarCapituloInput): Promise<Capitulo> {
+    const input = parse(actualizarCapituloSchema, raw);
+    try {
+      const capitulo = await this.repository.actualizarCapitulo(input);
+      if (!capitulo) {
+        throw new DomainError('CAPITULO_NO_ENCONTRADO', 'Capitulo no encontrado', 404);
+      }
+      return capitulo;
+    } catch (err: any) {
+      if (err instanceof DomainError) throw err;
+      traducirErrorCapitulo(err);
+    }
+  }
+
+  async eliminarCapitulo(capituloId: string): Promise<{ eliminado: boolean; claseId: string | null }> {
+    if (!capituloId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'capituloId es obligatorio', 400);
+    }
+    try {
+      const result = await this.repository.eliminarCapitulo(capituloId);
+      if (!result.eliminado) {
+        throw new DomainError('CAPITULO_NO_ENCONTRADO', 'Capitulo no encontrado', 404);
+      }
+      return result;
+    } catch (err: any) {
+      if (err instanceof DomainError) throw err;
+      traducirErrorCapitulo(err);
+    }
   }
 }

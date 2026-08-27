@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Render companion for VistaLogica_DiagramaSecuencia_CDU7.2_F2_G4.drawio -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
+  <title id="title">CDU0007.2 · Cuaderno de apuntes Markdown</title>
+  <desc id="desc">Secuencia lógica para guardar notas Markdown, validar referencias de tiempo y exportarlas.</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#FFFFFF"/></marker></defs>
+  <style>
+    .canvas{fill:#121212;stroke:#FFFFFF;stroke-width:1}.box{fill:#121212;stroke:#FFFFFF;stroke-width:1.5}.text{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px}.title{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700}.subtitle{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px}.line{stroke:#FFFFFF;stroke-width:1;stroke-dasharray:6 6}.activation{fill:#121212;stroke:#FFFFFF;stroke-width:1.2}.message{stroke:#FFFFFF;stroke-width:1.4;marker-end:url(#arrow)}.return{stroke:#FFFFFF;stroke-width:1.2;stroke-dasharray:6 6;marker-end:url(#arrow)}.labelText{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px;text-anchor:middle}
+  </style>
+  <rect class="canvas" x="20" y="20" width="1560" height="1080"/>
+  <text class="title" x="800" y="59" text-anchor="middle">CDU0007.2 · Cuaderno de apuntes Markdown</text>
+  <text class="subtitle" x="800" y="91" text-anchor="middle">Guardar notas, validar referencias [mm:ss], navegar y exportar Markdown o PDF</text>
+  <g class="box"><rect x="45" y="112" width="190" height="48"/><rect x="295" y="112" width="210" height="48"/><rect x="555" y="112" width="210" height="48"/><rect x="815" y="112" width="210" height="48"/><rect x="1075" y="112" width="210" height="48"/><rect x="1335" y="112" width="210" height="48"/></g>
+  <g class="text" text-anchor="middle" font-weight="700"><text x="140" y="141">Estudiante</text><text x="400" y="141">Frontend</text><text x="660" y="141">API Gateway</text><text x="920" y="141">Reproducción</text><text x="1180" y="141">BD de Reproducción</text><text x="1440" y="141">Exportador</text></g>
+  <g class="line"><line x1="140" y1="160" x2="140" y2="1060"/><line x1="400" y1="160" x2="400" y2="1060"/><line x1="660" y1="160" x2="660" y2="1060"/><line x1="920" y1="160" x2="920" y2="1060"/><line x1="1180" y1="160" x2="1180" y2="1060"/><line x1="1440" y1="160" x2="1440" y2="1060"/></g>
+  <g class="activation"><rect x="394" y="200" width="12" height="820"/><rect x="654" y="280" width="12" height="670"/><rect x="914" y="320" width="12" height="650"/><rect x="1174" y="400" width="12" height="48"/><rect x="1434" y="930" width="12" height="48"/></g>
+  <g class="message"><line x1="140" y1="210" x2="400" y2="210"/><line x1="400" y1="250" x2="660" y2="250"/><line x1="660" y1="290" x2="920" y2="290"/><line x1="920" y1="330" x2="1180" y2="330"/><line x1="140" y1="520" x2="400" y2="520"/><line x1="400" y1="560" x2="660" y2="560"/><line x1="660" y1="600" x2="920" y2="600"/><line x1="920" y1="640" x2="1180" y2="640"/><line x1="140" y1="830" x2="400" y2="830"/><line x1="400" y1="870" x2="920" y2="870"/><line x1="920" y1="910" x2="1440" y2="910"/></g>
+  <g class="return"><line x1="1180" y1="370" x2="920" y2="370"/><line x1="660" y1="410" x2="400" y2="410"/><line x1="400" y1="450" x2="140" y2="450"/><line x1="1180" y1="680" x2="920" y2="680"/><line x1="660" y1="720" x2="400" y2="720"/><line x1="400" y1="760" x2="140" y2="760"/><line x1="920" y1="950" x2="400" y2="950"/><line x1="400" y1="990" x2="140" y2="990"/></g>
+  <g class="labelText">
+    <text x="270" y="203">1. Abre el cuaderno</text><text x="530" y="243">2. Solicita cargar nota</text><text x="790" y="283">3. Obtiene cuaderno</text><text x="1050" y="323">4. Consulta contenido</text><text x="1050" y="363">5. Nota existente</text><text x="530" y="403">6. Renderiza editor</text><text x="270" y="443">7. Muestra cuaderno</text>
+    <text x="270" y="513">8. Edita Markdown y [mm:ss]</text><text x="530" y="553">9. Guarda nota</text><text x="790" y="593">10. Valida referencias</text><text x="1050" y="633">11. Persiste contenido</text><text x="1050" y="673">12. Guardado confirmado</text><text x="530" y="713">13. Resultado de guardado</text><text x="270" y="753">14. Nota guardada</text>
+    <text x="270" y="823">15. Solicita navegar o exportar</text><text x="660" y="863">16. Ejecuta navegación / exportación</text><text x="1180" y="903">17. Genera archivo solicitado</text><text x="660" y="943">18. Enlace o archivo listo</text><text x="270" y="983">19. Presenta resultado</text>
+  </g>
+</svg>

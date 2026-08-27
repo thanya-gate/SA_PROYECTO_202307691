@@ -849,3 +849,400 @@ BEGIN
     END LOOP;
 END;
 $$;
+-- Para el repositorio de materail adjunto
+CREATE TABLE material (
+    id              UUID PRIMARY KEY,
+    clase_id        UUID NOT NULL REFERENCES clase_grabada(id) ON DELETE CASCADE,
+    nombre_archivo  VARCHAR(255) NOT NULL,
+    mime_type       VARCHAR(100) NOT NULL,
+    extension       VARCHAR(10) NOT NULL,
+    tamano_bytes    BIGINT NOT NULL DEFAULT 0 CHECK (tamano_bytes >= 0),
+    version_actual  INT NOT NULL DEFAULT 1 CHECK (version_actual >= 1),
+    total_descargas BIGINT NOT NULL DEFAULT 0,
+    subido_por      UUID,
+    fecha_subida    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE material_version (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    material_id         UUID NOT NULL REFERENCES material(id) ON DELETE CASCADE,
+    numero_version      INT NOT NULL CHECK (numero_version >= 1),
+    url_almacenamiento  TEXT NOT NULL,
+    tamano_bytes        BIGINT NOT NULL DEFAULT 0 CHECK (tamano_bytes >= 0),
+    fecha_publicacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (material_id, numero_version)
+);
+
+CREATE INDEX idx_material_clase ON material (clase_id);
+CREATE INDEX idx_material_version_material ON material_version (material_id);
+
+-- Ficha de cada material junto a su versión actual.
+CREATE OR REPLACE VIEW vw_materiales_clase AS
+SELECT
+    m.id               AS material_id,
+    m.clase_id,
+    m.nombre_archivo,
+    m.mime_type,
+    m.extension,
+    m.tamano_bytes,
+    m.version_actual,
+    m.total_descargas,
+    m.subido_por,
+    m.fecha_subida,
+    mv.url_almacenamiento AS url_archivo
+FROM material m
+LEFT JOIN material_version mv
+    ON mv.material_id = m.id AND mv.numero_version = m.version_actual;
+
+-- Registra un nuevo material inicializando su version
+CREATE OR REPLACE PROCEDURE sp_registrar_material(
+    p_clase_id           UUID,
+    p_nombre_archivo     VARCHAR,
+    p_mime_type          VARCHAR,
+    p_extension          VARCHAR,
+    p_tamano_bytes       BIGINT,
+    p_url_almacenamiento TEXT,
+    INOUT p_material_id  UUID DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id UUID := COALESCE(p_material_id, gen_random_uuid());
+BEGIN
+    IF trim(p_nombre_archivo) IS NULL OR length(trim(p_nombre_archivo)) NOT BETWEEN 1 AND 255 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el nombre del archivo es obligatorio (max 255)';
+    END IF;
+
+    IF trim(p_mime_type) IS NULL OR length(trim(p_mime_type)) NOT BETWEEN 1 AND 100 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el tipo MIME es obligatorio';
+    END IF;
+
+    IF trim(p_extension) IS NULL OR length(trim(p_extension)) NOT BETWEEN 1 AND 10 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: la extensión es obligatoria';
+    END IF;
+
+    IF p_tamano_bytes < 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el tamaño no puede ser negativo';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM clase_grabada WHERE id = p_clase_id) THEN
+        RAISE EXCEPTION 'CLASE_NO_ENCONTRADA: la clase % no existe', p_clase_id;
+    END IF;
+
+    INSERT INTO material (id, clase_id, nombre_archivo, mime_type, extension, tamano_bytes, version_actual, subido_por)
+    VALUES (v_id, p_clase_id, trim(p_nombre_archivo), trim(p_mime_type), trim(p_extension), p_tamano_bytes, 1, NULL);
+
+    INSERT INTO material_version (material_id, numero_version, url_almacenamiento, tamano_bytes)
+    VALUES (v_id, 1, p_url_almacenamiento, p_tamano_bytes);
+
+    p_material_id := v_id;
+END;
+$$;
+
+-- Publica una nueva versión de un material existente
+CREATE OR REPLACE PROCEDURE sp_agregar_version_material(
+    p_material_id         UUID,
+    p_tamano_bytes        BIGINT,
+    p_url_almacenamiento  TEXT,
+    INOUT p_numero_version INT DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_nueva_version INT;
+BEGIN
+    IF p_tamano_bytes < 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el tamaño no puede ser negativo';
+    END IF;
+
+    UPDATE material
+    SET version_actual  = version_actual + 1,
+        tamano_bytes    = p_tamano_bytes,
+        fecha_subida    = NOW()
+    WHERE id = p_material_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'MATERIAL_NO_ENCONTRADO: el material % no existe', p_material_id;
+    END IF;
+
+    SELECT version_actual INTO v_nueva_version
+    FROM material WHERE id = p_material_id;
+
+    INSERT INTO material_version (material_id, numero_version, url_almacenamiento, tamano_bytes)
+    VALUES (p_material_id, v_nueva_version, p_url_almacenamiento, p_tamano_bytes);
+
+    p_numero_version := v_nueva_version;
+END;
+$$;
+
+-- Elimina un material (las versiones se borran en cascada). Devuelve el
+-- clase_id para que el gateway pueda limpiar los archivos físicos.
+CREATE OR REPLACE PROCEDURE sp_eliminar_material(
+    p_material_id     UUID,
+    INOUT p_eliminado BOOLEAN DEFAULT NULL,
+    INOUT p_clase_id  UUID DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    SELECT clase_id INTO p_clase_id FROM material WHERE id = p_material_id;
+    IF p_clase_id IS NULL THEN
+        p_eliminado := FALSE;
+        RETURN;
+    END IF;
+
+    DELETE FROM material WHERE id = p_material_id;
+    p_eliminado := TRUE;
+END;
+$$;
+
+-- Registra las descargas de material para las metricas de uso. Devuelve el total de descargas acumuladas.
+CREATE OR REPLACE PROCEDURE sp_registrar_descarga_material(
+    p_material_id          UUID,
+    INOUT p_total_descargas BIGINT DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE material
+    SET total_descargas = total_descargas + 1
+    WHERE id = p_material_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'MATERIAL_NO_ENCONTRADO: el material % no existe', p_material_id;
+    END IF;
+
+    SELECT total_descargas INTO p_total_descargas
+    FROM material WHERE id = p_material_id;
+END;
+$$;
+
+-- =====================================================================
+-- Segmentación por capítulos y temas (Práctica 4, alcance 2)
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS capitulo (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    clase_id            UUID NOT NULL REFERENCES clase_grabada(id) ON DELETE CASCADE,
+    titulo              VARCHAR(200) NOT NULL,
+    inicio_segundos     INT NOT NULL CHECK (inicio_segundos >= 0),
+    fin_segundos        INT NOT NULL CHECK (fin_segundos > inicio_segundos),
+    orden               INT NOT NULL CHECK (orden >= 1),
+    fecha_creacion      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (clase_id, orden)
+);
+
+CREATE INDEX IF NOT EXISTS idx_capitulo_clase_tiempo
+    ON capitulo (clase_id, inicio_segundos, fin_segundos);
+
+CREATE OR REPLACE VIEW vw_capitulos_clase AS
+SELECT
+    c.id AS capitulo_id,
+    c.clase_id,
+    c.titulo,
+    c.inicio_segundos,
+    c.fin_segundos,
+    c.orden,
+    c.fecha_creacion,
+    c.fecha_actualizacion
+FROM capitulo c;
+
+CREATE OR REPLACE FUNCTION fn_validar_rango_capitulo(
+    p_clase_id UUID,
+    p_inicio_segundos INT,
+    p_fin_segundos INT,
+    p_capitulo_id UUID DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_duracion INT;
+BEGIN
+    SELECT duracion INTO v_duracion
+    FROM clase_grabada
+    WHERE id = p_clase_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'CLASE_NO_ENCONTRADA: la clase no existe';
+    END IF;
+
+    IF p_inicio_segundos IS NULL OR p_inicio_segundos < 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: inicio_segundos no puede ser negativo';
+    END IF;
+
+    IF p_fin_segundos IS NULL OR p_fin_segundos <= p_inicio_segundos THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: fin_segundos debe ser mayor que inicio_segundos';
+    END IF;
+
+    IF v_duracion IS NULL OR v_duracion <= 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: la clase debe tener una duracion valida antes de segmentarla';
+    END IF;
+
+    IF p_fin_segundos > v_duracion THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el capitulo excede la duracion de la clase';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM capitulo c
+        WHERE c.clase_id = p_clase_id
+          AND (p_capitulo_id IS NULL OR c.id <> p_capitulo_id)
+          AND c.inicio_segundos < p_fin_segundos
+          AND c.fin_segundos > p_inicio_segundos
+    ) THEN
+        RAISE EXCEPTION 'CONFLICTO: el rango del capitulo se sobrepone con otro capitulo';
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_trg_validar_duracion_capitulos()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_fin_maximo INT;
+BEGIN
+    SELECT MAX(fin_segundos) INTO v_fin_maximo
+    FROM capitulo
+    WHERE clase_id = NEW.id;
+
+    IF v_fin_maximo IS NOT NULL AND (NEW.duracion IS NULL OR NEW.duracion < v_fin_maximo) THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: la nueva duracion es menor que el final de un capitulo existente';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_validar_duracion_capitulos ON clase_grabada;
+CREATE TRIGGER trg_validar_duracion_capitulos
+    BEFORE UPDATE OF duracion ON clase_grabada
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_validar_duracion_capitulos();
+
+CREATE OR REPLACE FUNCTION fn_trg_capitulo_actualizado()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.fecha_actualizacion := NOW();
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_capitulo_actualizado ON capitulo;
+CREATE TRIGGER trg_capitulo_actualizado
+    BEFORE UPDATE ON capitulo
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_capitulo_actualizado();
+
+CREATE OR REPLACE PROCEDURE sp_crear_capitulo(
+    p_clase_id UUID,
+    p_titulo VARCHAR(200),
+    p_inicio_segundos INT,
+    p_fin_segundos INT,
+    p_orden INT DEFAULT NULL,
+    INOUT p_capitulo_id UUID DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_orden INT;
+BEGIN
+    LOCK TABLE capitulo IN SHARE ROW EXCLUSIVE MODE;
+    PERFORM fn_validar_rango_capitulo(p_clase_id, p_inicio_segundos, p_fin_segundos);
+
+    IF p_titulo IS NULL OR length(trim(p_titulo)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: titulo es obligatorio';
+    END IF;
+
+    IF p_orden IS NULL OR p_orden < 1 THEN
+        SELECT COALESCE(MAX(orden), 0) + 1 INTO v_orden
+        FROM capitulo
+        WHERE clase_id = p_clase_id;
+    ELSE
+        v_orden := p_orden;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM capitulo WHERE clase_id = p_clase_id AND orden = v_orden) THEN
+        RAISE EXCEPTION 'CONFLICTO: ya existe un capitulo con ese orden';
+    END IF;
+
+    INSERT INTO capitulo (clase_id, titulo, inicio_segundos, fin_segundos, orden)
+    VALUES (p_clase_id, trim(p_titulo), p_inicio_segundos, p_fin_segundos, v_orden)
+    RETURNING id INTO p_capitulo_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_actualizar_capitulo(
+    p_capitulo_id UUID,
+    p_clase_id UUID,
+    p_titulo VARCHAR(200),
+    p_inicio_segundos INT,
+    p_fin_segundos INT,
+    p_orden INT DEFAULT NULL,
+    INOUT p_actualizado BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_clase_id UUID;
+    v_orden INT;
+BEGIN
+    LOCK TABLE capitulo IN SHARE ROW EXCLUSIVE MODE;
+    SELECT clase_id, orden INTO v_clase_id, v_orden
+    FROM capitulo
+    WHERE id = p_capitulo_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'CAPITULO_NO_ENCONTRADO: el capitulo no existe';
+    END IF;
+
+    IF p_clase_id IS NULL THEN
+        p_clase_id := v_clase_id;
+    ELSIF p_clase_id <> v_clase_id THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el capitulo no pertenece a la clase indicada';
+    END IF;
+
+    PERFORM fn_validar_rango_capitulo(p_clase_id, p_inicio_segundos, p_fin_segundos, p_capitulo_id);
+
+    IF p_titulo IS NULL OR length(trim(p_titulo)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: titulo es obligatorio';
+    END IF;
+
+    v_orden := CASE WHEN p_orden IS NULL OR p_orden < 1 THEN v_orden ELSE p_orden END;
+    IF EXISTS (
+        SELECT 1 FROM capitulo
+        WHERE clase_id = p_clase_id AND orden = v_orden AND id <> p_capitulo_id
+    ) THEN
+        RAISE EXCEPTION 'CONFLICTO: ya existe un capitulo con ese orden';
+    END IF;
+
+    UPDATE capitulo
+    SET clase_id = p_clase_id,
+        titulo = trim(p_titulo),
+        inicio_segundos = p_inicio_segundos,
+        fin_segundos = p_fin_segundos,
+        orden = v_orden
+    WHERE id = p_capitulo_id;
+    p_actualizado := TRUE;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_eliminar_capitulo(
+    p_capitulo_id UUID,
+    INOUT p_eliminado BOOLEAN DEFAULT FALSE,
+    INOUT p_clase_id UUID DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    SELECT clase_id INTO p_clase_id FROM capitulo WHERE id = p_capitulo_id;
+    IF p_clase_id IS NULL THEN
+        p_eliminado := FALSE;
+        RETURN;
+    END IF;
+
+    DELETE FROM capitulo WHERE id = p_capitulo_id;
+    p_eliminado := TRUE;
+END;
+$$;

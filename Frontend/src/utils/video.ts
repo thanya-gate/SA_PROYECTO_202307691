@@ -13,8 +13,34 @@ export function youtubeVideoId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+/**
+ * Determina si la URL se reproduce con el <video> nativo: archivos servidos
+ * por la plataforma (/media/...) o archivos alojados en el bucket de Cloud
+ * Storage (URL absoluta que no es de YouTube).
+ */
 export function esVideoLocal(url: string): boolean {
-  return typeof url === 'string' && url.startsWith('/media/');
+  if (typeof url !== 'string' || !url) return false;
+  if (url.startsWith('/media/')) return true;
+  return /^https?:\/\//i.test(url) && youtubeVideoId(url) === null;
+}
+
+/**
+ * Deduce la miniatura de una clase a partir de su URL de video:
+ *  - YouTube: usa la imagen oficial del video (img.youtube.com).
+ *  - Archivo propio: el gateway genera thumbnails/<claseId>.jpg junto al
+ *    video, así que la URL se obtiene reemplazando el segmento /clases/ por
+ *    /thumbnails/ (funciona igual con rutas relativas y URLs del bucket).
+ * Devuelve null cuando no hay miniatura deducible; la tarjeta mostrará su
+ * marcador genérico.
+ */
+export function thumbnailDeClase(urlVideo: string | undefined, claseId: string | undefined): string | null {
+  if (!urlVideo || !claseId) return null;
+  const yt = youtubeVideoId(urlVideo);
+  if (yt) return `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`;
+  if (/\/clases\/[^/?#]+/.test(urlVideo)) {
+    return urlVideo.replace(/\/clases\/[^/?#]+/, `/thumbnails/${encodeURIComponent(claseId)}.jpg`);
+  }
+  return null;
 }
 
 export function formatSegundos(totalSegundos: number): string {
@@ -25,6 +51,52 @@ export function formatSegundos(totalSegundos: number): string {
   const mm = String(minutos).padStart(2, '0');
   const ss = String(segundos).padStart(2, '0');
   return horas > 0 ? `${horas}:${mm}:${ss}` : `${minutos}:${ss}`;
+}
+
+/**
+ * Convierte un texto de duración ("mm:ss", "h:mm:ss" o segundos sueltos) a
+ * segundos. Devuelve null si el formato es inválido.
+ */
+export function parseDuracionInput(valor: string): number | null {
+  const limpio = valor.trim();
+  if (!limpio) return null;
+  const partes = limpio.split(':');
+  if (partes.length > 3) return null;
+  const valores: number[] = [];
+  for (const parte of partes) {
+    const p = parte.trim();
+    if (!/^\d{1,2}$/.test(p)) return null;
+    valores.push(Number(p));
+  }
+  if (valores.length >= 2 && valores[valores.length - 1] >= 60) return null;
+  if (valores.length === 3 && valores[1] >= 60) return null;
+  return valores.reduce((total, parte) => total * 60 + parte, 0);
+}
+
+/**
+ * Detecta la duración (en segundos) de un archivo de video usando el elemento
+ * <video> del navegador. Sirve como respaldo cuando ffprobe no puede leer los
+ * metadatos en el servidor.
+ */
+export function detectarDuracionArchivo(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return resolve(null);
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    const terminar = (valor: number | null) => {
+      URL.revokeObjectURL(url);
+      video.removeAttribute('src');
+      resolve(valor);
+    };
+    video.onloadedmetadata = () => {
+      const dur = video.duration;
+      terminar(Number.isFinite(dur) && dur > 0 ? Math.round(dur) : null);
+    };
+    video.onerror = () => terminar(null);
+    setTimeout(() => terminar(null), 8000);
+    video.src = url;
+  });
 }
 
 export function formatDuracion(totalSegundos: number): string {
@@ -42,4 +114,12 @@ export function formatFecha(iso: string | undefined): string {
   const fecha = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
   if (Number.isNaN(fecha.getTime())) return iso;
   return fecha.toLocaleDateString('es-GT', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+export function formatTamanoBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const unidades = ['B', 'KB', 'MB', 'GB'];
+  const indice = Math.min(unidades.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  const valor = bytes / 1024 ** indice;
+  return `${indice === 0 ? valor : valor.toFixed(1)} ${unidades[indice]}`;
 }

@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { catalogApi, type ClaseResumen } from '../api/catalog';
 import { inscripcionApi, type CursoCatedraticoItem } from '../api/inscripcion';
 import { mediaApi } from '../api/media';
+import { MATERIALES_ACEPTADOS, materialesApi } from '../api/materiales';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import { Alert } from '../components/ui/Alert';
@@ -45,7 +46,6 @@ export default function SubirClasePage() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [materialFile, setMaterialFile] = useState<File | null>(null);
-  const [materialUrl, setMaterialUrl] = useState('');
 
   const [etiquetaDraft, setEtiquetaDraft] = useState('');
   const [etiquetas, setEtiquetas] = useState<string[]>([]);
@@ -197,7 +197,6 @@ export default function SubirClasePage() {
           semestre: semestre.trim(),
           anio: Number(anio),
           urlVideo: conArchivoVideo ? '' : videoUrl.trim(),
-          urlMaterial: materialFile ? undefined : materialUrl.trim() || undefined,
           duracion: 0,
           etiquetas,
           participantes: participantesValidos,
@@ -205,9 +204,18 @@ export default function SubirClasePage() {
         tokenActual,
       );
       const claseId = res.claseId;
-      if (videoFile) await mediaApi.subirVideo(claseId, videoFile, tokenActual);
-      if (materialFile) await mediaApi.subirMaterial(claseId, materialFile, tokenActual);
-      setExito('Clase publicada correctamente.');
+      if (conArchivoVideo && videoFile) {
+        const uploadRes = await mediaApi.subirVideo(claseId, videoFile, tokenActual);
+        if (uploadRes.duracion > 0) {
+          await catalogApi.actualizarDuracion(claseId, uploadRes.duracion, tokenActual);
+        }
+      }
+      if (materialFile) await materialesApi.subir(claseId, materialFile, tokenActual);
+      setExito(
+        materialFile
+          ? 'Clase publicada y material agregado al repositorio.'
+          : 'Clase publicada correctamente.',
+      );
       setExitoClaseId(claseId);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'No se pudo publicar la clase');
@@ -224,12 +232,14 @@ export default function SubirClasePage() {
     setSubiendo(true);
     setError(null);
     setExito(null);
-    setExitoClaseId(null);
+    setExitoClaseId(claseSeleccionada);
     try {
-      await mediaApi.subirMaterial(claseSeleccionada, materialFile, tokenActual);
-      setExito('Material subido a la clase seleccionada.');
+      await materialesApi.subir(claseSeleccionada, materialFile, tokenActual);
+      setExito('Material agregado al repositorio de la clase seleccionada.');
+      setMaterialFile(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'No se pudo subir el material');
+      setExitoClaseId(null);
     } finally {
       setSubiendo(false);
     }
@@ -295,7 +305,8 @@ export default function SubirClasePage() {
               <section className="subirclase__seccion">
                 <h2 className="subirclase__seccion-titulo">Material para una clase existente</h2>
                 <p className="subirclase__seccion-desc">
-                  El material se asocia a una clase ya publicada de este curso.
+                  El archivo se agrega al repositorio de materiales de la clase (versionable y con
+                  métricas de descarga).
                 </p>
                 {clasesCurso.length === 0 ? (
                   <Alert tone="info">
@@ -319,11 +330,11 @@ export default function SubirClasePage() {
                       </select>
                     </label>
                     <label className="subirclase__campo">
-                      <span className="subirclase__campo-label">Archivo (PDF, PPTX, DOCX…)</span>
+                      <span className="subirclase__campo-label">Archivo</span>
                       <input
                         className="subirclase__input"
                         type="file"
-                        accept=".pdf,.pptx,.ppt,.docx,.doc,.txt,image/png,image/jpeg"
+                        accept={MATERIALES_ACEPTADOS}
                         onChange={(e) => setMaterialFile(e.target.files?.[0] ?? null)}
                       />
                       <p className="subirclase__ayuda">Máximo 50 MB.</p>
@@ -427,9 +438,10 @@ export default function SubirClasePage() {
                 </section>
 
                 <section className="subirclase__seccion">
-                  <h2 className="subirclase__seccion-titulo">Material de apoyo</h2>
+                  <h2 className="subirclase__seccion-titulo">Material de apoyo (repositorio)</h2>
                   <p className="subirclase__seccion-desc">
-                    Opcional: sube un archivo o pega un enlace (PDF, PPTX, DOCX…).
+                    Opcional: el archivo quedará en el repositorio de materiales de la clase, donde
+                    podrás versionarlo y ver sus descargas.
                   </p>
                   <div className="subirclase__grid">
                     <label className="subirclase__campo">
@@ -437,21 +449,14 @@ export default function SubirClasePage() {
                       <input
                         className="subirclase__input"
                         type="file"
-                        accept=".pdf,.pptx,.ppt,.docx,.doc,.txt,image/png,image/jpeg"
+                        accept={MATERIALES_ACEPTADOS}
                         onChange={(e) => setMaterialFile(e.target.files?.[0] ?? null)}
                       />
                       <p className="subirclase__ayuda">
-                        {materialFile ? `Seleccionado: ${materialFile.name}` : 'Máximo 50 MB.'}
+                        {materialFile
+                          ? `Seleccionado: ${materialFile.name}`
+                          : 'PDF, Office, código fuente (.py/.go/.sql/.zip) · máx. 50 MB.'}
                       </p>
-                    </label>
-                    <label className="subirclase__campo">
-                      <span className="subirclase__campo-label">Enlace</span>
-                      <input
-                        className="subirclase__input"
-                        value={materialUrl}
-                        placeholder="https://drive.google.com/…"
-                        onChange={(e) => setMaterialUrl(e.target.value)}
-                      />
                     </label>
                   </div>
                 </section>

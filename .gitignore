@@ -1,4 +1,14 @@
+# Secretos locales (nunca se suben)
 .env
-.env.*.local
-.env.cloud*
 .env.local
+.env.*.local
+.env.cloud
+
+# Plantillas de variables de entorno (sí se suben)
+!.env.example
+!.env.cloud.example
+AGENTS.md
+context/
+coverage/
+.coverage
+coverage.out

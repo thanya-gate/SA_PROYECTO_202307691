@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Render companion for VistaLogica_DiagramaSecuencia_F2_G4.drawio -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1900" height="2200" viewBox="0 0 1900 2200" role="img" aria-labelledby="title desc">
+  <title id="title">Vista lógica Fase 2</title>
+  <desc id="desc">Secuencia lógica consolidada de los cinco casos de uso del módulo de aprendizaje interactivo y recursos.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#FFFFFF"/>
+    </marker>
+    <style>
+      .canvas { fill:#121212; stroke:#FFFFFF; stroke-width:1; }
+      .box { fill:#121212; stroke:#FFFFFF; stroke-width:1.5; }
+      .text { fill:#FFFFFF; font-family:Arial,Helvetica,sans-serif; font-size:13px; }
+      .title { fill:#FFFFFF; font-family:Arial,Helvetica,sans-serif; font-size:24px; font-weight:700; }
+      .subtitle { fill:#FFFFFF; font-family:Arial,Helvetica,sans-serif; font-size:13px; }
+      .section { fill:#FFFFFF; font-family:Arial,Helvetica,sans-serif; font-size:16px; font-weight:700; }
+      .line { stroke:#FFFFFF; stroke-width:1; stroke-dasharray:6 6; }
+      .message { stroke:#FFFFFF; stroke-width:1.4; marker-end:url(#arrow); }
+      .return { stroke:#FFFFFF; stroke-width:1.2; stroke-dasharray:6 6; marker-end:url(#arrow); }
+      .label { fill:#121212; }
+      .labelText { fill:#FFFFFF; font-family:Arial,Helvetica,sans-serif; font-size:12px; text-anchor:middle; }
+      .footer { fill:#FFFFFF; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-style:italic; text-anchor:middle; }
+    </style>
+  </defs>
+  <rect class="canvas" x="20" y="20" width="1860" height="2160"/>
+  <text class="title" x="950" y="59" text-anchor="middle">VISTA LÓGICA · FASE 2</text>
+  <text class="subtitle" x="950" y="91" text-anchor="middle">Módulo 7: Aprendizaje interactivo y recursos · CDU0007.1–CDU0007.5</text>
+
+  <g class="box">
+    <rect x="45" y="112" width="190" height="48"/><rect x="295" y="112" width="210" height="48"/>
+    <rect x="555" y="112" width="210" height="48"/><rect x="815" y="112" width="210" height="48"/>
+    <rect x="1075" y="112" width="210" height="48"/><rect x="1335" y="112" width="210" height="48"/>
+    <rect x="1595" y="112" width="210" height="48"/>
+  </g>
+  <g class="text" text-anchor="middle" font-weight="700">
+    <text x="140" y="142">Actores</text><text x="400" y="142">Frontend</text><text x="660" y="142">API Gateway</text>
+    <text x="920" y="142">Catálogo</text><text x="1180" y="142">Reproducción</text><text x="1440" y="142">BD / Storage</text>
+    <text x="1700" y="142">Notificaciones</text>
+  </g>
+  <g class="line">
+    <line x1="140" y1="160" x2="140" y2="2130"/><line x1="400" y1="160" x2="400" y2="2130"/>
+    <line x1="660" y1="160" x2="660" y2="2130"/><line x1="920" y1="160" x2="920" y2="2130"/>
+    <line x1="1180" y1="160" x2="1180" y2="2130"/><line x1="1440" y1="160" x2="1440" y2="2130"/>
+    <line x1="1700" y1="160" x2="1700" y2="2130"/>
+  </g>
+
+  <g class="section">
+    <text x="55" y="215">CDU0007.1 · Foro de dudas ancladas</text>
+    <text x="55" y="580">CDU0007.2 · Cuaderno de apuntes Markdown</text>
+    <text x="55" y="945">CDU0007.3 · Gestión y navegación de capítulos</text>
+    <text x="55" y="1310">CDU0007.4 · Materiales adjuntos y versionado</text>
+    <text x="55" y="1675">CDU0007.5 · Playlists de repaso</text>
+  </g>
+
+  <g class="message">
+    <line x1="140" y1="250" x2="400" y2="250"/><line x1="400" y1="285" x2="660" y2="285"/>
+    <line x1="660" y1="320" x2="920" y2="320"/><line x1="920" y1="355" x2="1180" y2="355"/>
+    <line x1="920" y1="390" x2="1440" y2="390"/><line x1="920" y1="425" x2="1700" y2="425"/>
+    <line x1="140" y1="615" x2="400" y2="615"/><line x1="400" y1="650" x2="660" y2="650"/>
+    <line x1="660" y1="685" x2="1180" y2="685"/><line x1="1180" y1="720" x2="1440" y2="720"/>
+    <line x1="140" y1="980" x2="400" y2="980"/><line x1="400" y1="1015" x2="660" y2="1015"/>
+    <line x1="660" y1="1050" x2="920" y2="1050"/><line x1="920" y1="1085" x2="1440" y2="1085"/>
+    <line x1="400" y1="1120" x2="1180" y2="1120"/>
+    <line x1="140" y1="1345" x2="400" y2="1345"/><line x1="400" y1="1380" x2="660" y2="1380"/>
+    <line x1="660" y1="1415" x2="920" y2="1415"/><line x1="920" y1="1450" x2="1440" y2="1450"/>
+    <line x1="920" y1="1485" x2="1440" y2="1485"/>
+    <line x1="140" y1="1710" x2="400" y2="1710"/><line x1="400" y1="1745" x2="660" y2="1745"/>
+    <line x1="660" y1="1780" x2="920" y2="1780"/><line x1="660" y1="1815" x2="1440" y2="1815"/>
+    <line x1="660" y1="1850" x2="1180" y2="1850"/>
+  </g>
+  <g class="return">
+    <line x1="660" y1="460" x2="400" y2="460"/><line x1="400" y1="495" x2="140" y2="495"/>
+    <line x1="660" y1="755" x2="400" y2="755"/><line x1="400" y1="790" x2="140" y2="790"/>
+    <line x1="1180" y1="1155" x2="400" y2="1155"/><line x1="400" y1="1190" x2="140" y2="1190"/>
+    <line x1="660" y1="1520" x2="400" y2="1520"/><line x1="400" y1="1555" x2="140" y2="1555"/>
+    <line x1="660" y1="1885" x2="400" y2="1885"/><line x1="400" y1="1920" x2="140" y2="1920"/>
+  </g>
+
+  <g class="labelText">
+    <text x="270" y="243">Publica o consulta duda</text><text x="530" y="278">Opera CDU0007.1</text>
+    <text x="790" y="313">Duda, respuesta y estado</text><text x="1050" y="348">Valida acceso y timestamp</text>
+    <text x="1180" y="383">Persiste hilo</text><text x="1310" y="418">Notifica actualización</text>
+    <text x="530" y="453">Marcador e hilo</text><text x="270" y="488">Respuesta al actor</text>
+    <text x="270" y="608">Edita Markdown y timestamps</text><text x="530" y="643">Guardar o exportar</text>
+    <text x="920" y="678">Gestiona apunte</text><text x="1310" y="713">Persiste contenido</text>
+    <text x="530" y="748">Enlace a reproducción / archivo</text><text x="270" y="783">Nota guardada</text>
+    <text x="270" y="973">Administra o selecciona capítulo</text><text x="530" y="1008">CRUD de capítulo</text>
+    <text x="790" y="1043">Valida rango y orden</text><text x="1180" y="1078">Persiste capítulo</text>
+    <text x="790" y="1113">Salta al inicio</text><text x="790" y="1148">Reproducción posicionada</text><text x="270" y="1183">Índice actualizado</text>
+    <text x="270" y="1338">Carga o consulta material</text><text x="530" y="1373">Upload / download</text>
+    <text x="790" y="1408">Valida y versiona</text><text x="1180" y="1443">Guarda / descarga archivo</text>
+    <text x="1180" y="1478">Registra material y contador</text><text x="530" y="1513">Metadatos y archivo</text><text x="270" y="1548">Material disponible</text>
+    <text x="270" y="1703">Crea y ordena playlist</text><text x="530" y="1738">Gestiona playlist</text>
+    <text x="790" y="1773">Resuelve grabaciones</text><text x="1050" y="1808">Persiste playlist</text><text x="920" y="1843">Reproduce fragmento</text>
+    <text x="530" y="1878">Enlace público / estado</text><text x="270" y="1913">Playlist disponible</text>
+  </g>
+  <text class="footer" x="950" y="2160">La vista conserva la separación lógica entre presentación, Gateway, Catálogo, Reproducción y persistencia definida para Fase 2.</text>
+</svg>

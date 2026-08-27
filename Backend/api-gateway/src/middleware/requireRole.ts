@@ -10,8 +10,14 @@ const roleNames: Record<string, string> = {
 
 export function requireRole(requiredRole: string) {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    const roles = req.context?.roles ?? [];
-    if (!roles.includes(requiredRole) && !roles.map((r) => roleNames[r]).includes(requiredRole)) {
+    const normalizedRequired = requiredRole.startsWith('ROLE_')
+      ? requiredRole
+      : `ROLE_${requiredRole}`;
+    const roles = (req.context?.roles ?? []).map((role) => {
+      if (role.startsWith('ROLE_')) return role;
+      return roleNames[`ROLE_${role}`] ? `ROLE_${role}` : role;
+    });
+    if (!roles.includes(normalizedRequired)) {
       return next(
         new DomainError(
           'PERMISO_DENEGADO',

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Render companion for VistaLogica_DiagramaSecuencia_CDU7.3_F2_G4.drawio -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1600" height="940" viewBox="0 0 1600 940" role="img" aria-labelledby="title desc">
+  <title id="title">CDU0007.3 · Gestión y navegación de capítulos</title>
+  <desc id="desc">Secuencia lógica para gestionar capítulos y navegar al inicio de cada segmento.</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#FFFFFF"/></marker></defs>
+  <style>
+    .canvas{fill:#121212;stroke:#FFFFFF;stroke-width:1}.box{fill:#121212;stroke:#FFFFFF;stroke-width:1.5}.text{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px}.title{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700}.subtitle{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px}.line{stroke:#FFFFFF;stroke-width:1;stroke-dasharray:6 6}.activation{fill:#121212;stroke:#FFFFFF;stroke-width:1.2}.message{stroke:#FFFFFF;stroke-width:1.4;marker-end:url(#arrow)}.return{stroke:#FFFFFF;stroke-width:1.2;stroke-dasharray:6 6;marker-end:url(#arrow)}.labelText{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px;text-anchor:middle}
+  </style>
+  <rect class="canvas" x="20" y="20" width="1560" height="900"/>
+  <text class="title" x="800" y="59" text-anchor="middle">CDU0007.3 · Gestión y navegación de capítulos</text>
+  <text class="subtitle" x="800" y="91" text-anchor="middle">Validar rangos y orden, persistir capítulos y saltar al inicio desde el reproductor</text>
+  <g class="box"><rect x="45" y="112" width="190" height="48"/><rect x="295" y="112" width="210" height="48"/><rect x="555" y="112" width="210" height="48"/><rect x="815" y="112" width="210" height="48"/><rect x="1075" y="112" width="210" height="48"/><rect x="1335" y="112" width="210" height="48"/></g>
+  <g class="text" text-anchor="middle" font-weight="700"><text x="140" y="135">Estudiante / Docente</text><text x="140" y="150">Auxiliar</text><text x="400" y="141">Frontend</text><text x="660" y="141">API Gateway</text><text x="920" y="141">Catálogo</text><text x="1180" y="141">Reproducción</text><text x="1440" y="141">BD de Catálogo</text></g>
+  <g class="line"><line x1="140" y1="160" x2="140" y2="860"/><line x1="400" y1="160" x2="400" y2="860"/><line x1="660" y1="160" x2="660" y2="860"/><line x1="920" y1="160" x2="920" y2="860"/><line x1="1180" y1="160" x2="1180" y2="860"/><line x1="1440" y1="160" x2="1440" y2="860"/></g>
+  <g class="activation"><rect x="394" y="200" width="12" height="600"/><rect x="654" y="280" width="12" height="410"/><rect x="914" y="320" width="12" height="170"/><rect x="1174" y="560" width="12" height="48"/><rect x="1434" y="400" width="12" height="48"/></g>
+  <g class="message"><line x1="140" y1="210" x2="400" y2="210"/><line x1="140" y1="250" x2="400" y2="250"/><line x1="400" y1="290" x2="660" y2="290"/><line x1="660" y1="330" x2="920" y2="330"/><line x1="920" y1="370" x2="1440" y2="370"/><line x1="140" y1="530" x2="400" y2="530"/><line x1="400" y1="570" x2="660" y2="570"/><line x1="660" y1="610" x2="1180" y2="610"/></g>
+  <g class="return"><line x1="660" y1="450" x2="400" y2="450"/><line x1="400" y1="490" x2="140" y2="490"/><line x1="1180" y1="650" x2="400" y2="650"/><line x1="400" y1="690" x2="140" y2="690"/></g>
+  <g class="labelText">
+    <text x="270" y="203">1. Abre gestor o índice</text><text x="270" y="243">2. Crea, edita, elimina u ordena</text><text x="530" y="283">3. Solicita operación</text><text x="790" y="323">4. Valida timestamps y orden</text><text x="1180" y="363">5. Persiste capítulo</text><text x="530" y="443">6. Índice actualizado</text><text x="270" y="483">7. Muestra capítulos</text>
+    <text x="270" y="523">8. Selecciona capítulo</text><text x="530" y="563">9. Solicita salto a inicio</text><text x="920" y="603">10. Posiciona reproducción</text><text x="790" y="643">11. Reproducción en timestamp</text><text x="270" y="683">12. Cambia la vista</text>
+  </g>
+</svg>

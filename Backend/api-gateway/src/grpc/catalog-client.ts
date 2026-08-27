@@ -114,4 +114,45 @@ export const catalogGrpc = {
   actualizarCurso: (req: { cursoId: string; codigo: string; nombre: string; escuela: string }) =>
     unary('ActualizarCurso', req),
   eliminarCurso: (cursoId: string) => unary('EliminarCurso', { cursoId }),
+
+  // Materiales adjuntos
+  registrarMaterial: (req: {
+    materialId?: string;
+    claseId: string;
+    nombreArchivo: string;
+    mimeType: string;
+    extension: string;
+    tamanoBytes?: number;
+    urlArchivo: string;
+    subidoPor?: string;
+  }) => unary('RegistrarMaterial', req),
+  obtenerMaterial: (materialId: string) => unary('ObtenerMaterial', { materialId }),
+  agregarVersionMaterial: (req: {
+    materialId: string;
+    tamanoBytes?: number;
+    urlArchivo: string;
+  }) => unary('AgregarVersionMaterial', req),
+  listarMateriales: (claseId: string) => unary('ListarMateriales', { claseId }),
+  eliminarMaterial: (materialId: string) => unary('EliminarMaterial', { materialId }),
+  registrarDescargaMaterial: (materialId: string) =>
+    unary('RegistrarDescargaMaterial', { materialId }),
+
+  // Segmentación por capítulos y temas
+  listarCapitulos: (claseId: string) => unary('ListarCapitulos', { claseId }),
+  crearCapitulo: (req: {
+    claseId: string;
+    titulo: string;
+    inicioSegundos: number;
+    finSegundos: number;
+    orden?: number;
+  }) => unary('CrearCapitulo', req),
+  actualizarCapitulo: (req: {
+    capituloId: string;
+    claseId: string;
+    titulo: string;
+    inicioSegundos: number;
+    finSegundos: number;
+    orden?: number;
+  }) => unary('ActualizarCapitulo', req),
+  eliminarCapitulo: (capituloId: string) => unary('EliminarCapitulo', { capituloId }),
 };

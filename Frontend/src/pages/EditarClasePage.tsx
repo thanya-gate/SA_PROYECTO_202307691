@@ -5,6 +5,7 @@ import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
+import { esVideoLocal, formatSegundos, parseDuracionInput } from '../utils/video';
 
 const YT_URL_REGEX = /^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i;
 
@@ -17,10 +18,6 @@ function fechaParaInput(iso: string): string {
   if (!iso) return '';
   const m = iso.match(/^(\d{4}-\d{2}-\d{2})/);
   return m ? m[1] : '';
-}
-
-function esVideoLocal(url: string): boolean {
-  return typeof url === 'string' && url.startsWith('/media/');
 }
 
 export default function EditarClasePage() {
@@ -42,7 +39,6 @@ export default function EditarClasePage() {
   const [semestre, setSemestre] = useState('');
   const [anio, setAnio] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
-  const [materialUrl, setMaterialUrl] = useState('');
   const [duracion, setDuracion] = useState('');
 
   const [etiquetaDraft, setEtiquetaDraft] = useState('');
@@ -64,8 +60,7 @@ export default function EditarClasePage() {
         setSemestre(res.clase.semestre ?? '');
         setAnio(res.clase.anio ? String(res.clase.anio) : '');
         setVideoUrl(res.clase.urlVideo ?? '');
-        setMaterialUrl(res.clase.urlMaterial ?? '');
-        setDuracion(res.clase.duracion > 0 ? String(Math.floor(res.clase.duracion / 60)) : '');
+        setDuracion(res.clase.duracion > 0 ? formatSegundos(res.clase.duracion) : '');
         setEtiquetas(res.clase.etiquetas ?? []);
         setParticipantes(
           (res.clase.participantes ?? []).map((p) => ({
@@ -126,9 +121,13 @@ export default function EditarClasePage() {
       return;
     }
     const videoActual = videoUrl.trim();
-    const materialActual = materialUrl.trim();
     if (videoActual && !esVideoLocal(videoActual) && !YT_URL_REGEX.test(videoActual)) {
       setError('La URL del video debe ser una URL válida de YouTube (http/https).');
+      return;
+    }
+    const duracionSegundos = duracion.trim() ? parseDuracionInput(duracion) : 0;
+    if (duracionSegundos === null) {
+      setError('La duración debe tener formato mm:ss o h:mm:ss (ej. 12:34).');
       return;
     }
     if (!semestre.trim()) {
@@ -157,8 +156,8 @@ export default function EditarClasePage() {
           semestre: semestre.trim(),
           anio: Number(anio),
           urlVideo: videoActual,
-          urlMaterial: materialActual,
-          duracion: Math.floor((Number(duracion) || 0) * 60),
+          urlMaterial: clase.urlMaterial ?? '',
+          duracion: duracionSegundos,
           etiquetas,
           participantes: participantesValidos,
         },
@@ -271,10 +270,10 @@ export default function EditarClasePage() {
             </section>
 
             <section className="subirclase__seccion">
-              <h2 className="subirclase__seccion-titulo">Video y material</h2>
-              <p className="subirclase__seccion-desc">
-                Las grabaciones ya publicadas se conservan; puedes cambiar su enlace.
-              </p>
+                <h2 className="subirclase__seccion-titulo">Video</h2>
+                <p className="subirclase__seccion-desc">
+                  Los materiales se gestionan desde el repositorio en la página de la clase.
+                </p>
               <div className="subirclase__grid">
                 <label className="subirclase__campo">
                   <span className="subirclase__campo-label">URL del video (YouTube)</span>
@@ -289,23 +288,13 @@ export default function EditarClasePage() {
                   )}
                 </label>
                 <label className="subirclase__campo">
-                  <span className="subirclase__campo-label">Enlace de material</span>
+                  <span className="subirclase__campo-label">Duración (mm:ss)</span>
                   <input
                     className="subirclase__input"
-                    value={materialUrl}
-                    placeholder="https://drive.google.com/…"
-                    onChange={(e) => setMaterialUrl(e.target.value)}
-                  />
-                </label>
-                <label className="subirclase__campo">
-                  <span className="subirclase__campo-label">Duración (minutos)</span>
-                  <input
-                    className="subirclase__input"
-                    type="number"
-                    min={0}
-                    step={1}
+                    type="text"
+                    inputMode="numeric"
                     value={duracion}
-                    placeholder="Ej. 90"
+                    placeholder="Ej. 12:34"
                     onChange={(e) => setDuracion(e.target.value)}
                   />
                 </label>

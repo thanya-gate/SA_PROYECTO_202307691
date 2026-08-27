@@ -3,7 +3,7 @@ import fs from 'fs';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { config } from '../../config/env';
-import { container } from '../../container';
+import { container, Container } from '../../container';
 import { Role } from '../../domain/enums/role';
 import { User } from '../../domain/entities/user';
 import { SessionStatus } from '../../domain/enums/auth';
@@ -117,13 +117,35 @@ function solicitudToProto(s: SolicitudRol) {
 type GrpcCall<T, U> = grpc.ServerUnaryCall<T, U>;
 type GrpcCallback<U> = grpc.sendUnaryData<U>;
 
+/** Dependencias reemplazables para probar el adaptador sin infraestructura. */
+export interface AuthGrpcDependencies {
+  tokenService?: Container['tokenService'];
+  sessionService?: Container['sessionService'];
+  userRepository?: Container['userRepository'];
+  profileService?: Container['profileService'];
+  authService?: Container['authService'];
+  accountService?: Container['accountService'];
+  solicitudService?: Container['solicitudService'];
+  oauthProvider?: Container['oauthProvider'];
+  notificacionesClient?: Container['notificacionesClient'];
+}
+
 /**
  * Servidor gRPC (RNF-06 - tráfico east-west).
  * Expone el contrato completo de Auth para que el API Gateway y los demás
  * microservicios consuman identidad, sesiones y RBAC sin usar REST.
  */
-export function createGrpcServer(): grpc.Server {
+export function createGrpcServer(dependencies: AuthGrpcDependencies = {}): grpc.Server {
   const server = new grpc.Server();
+  const tokenService = dependencies.tokenService ?? container.tokenService;
+  const sessionService = dependencies.sessionService ?? container.sessionService;
+  const userRepository = dependencies.userRepository ?? container.userRepository;
+  const profileService = dependencies.profileService ?? container.profileService;
+  const authService = dependencies.authService ?? container.authService;
+  const accountService = dependencies.accountService ?? container.accountService;
+  const solicitudService = dependencies.solicitudService ?? container.solicitudService;
+  const oauthProvider = dependencies.oauthProvider ?? container.oauthProvider;
+  const notificacionesClient = dependencies.notificacionesClient ?? container.notificacionesClient;
 
   const packageDefinition = protoLoader.loadSync(resolveProtoPath(), {
     keepCase: false,
@@ -139,12 +161,12 @@ export function createGrpcServer(): grpc.Server {
     // ===== Sesión / validación =====
     ValidateSession: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const payload = await container.tokenService.verifyAccessToken(call.request.token);
-        const validated = await container.sessionService.validate(payload.sessionId);
+        const payload = await tokenService.verifyAccessToken(call.request.token);
+        const validated = await sessionService.validate(payload.sessionId);
         if (!validated) {
           return callback({ code: grpc.status.UNAUTHENTICATED, message: 'Sesión no activa' });
         }
-        const user = await container.userRepository.findById(payload.sub);
+        const user = await userRepository.findById(payload.sub);
         if (!user) {
           return callback({ code: grpc.status.NOT_FOUND, message: 'Usuario no encontrado' });
         }
@@ -168,7 +190,7 @@ export function createGrpcServer(): grpc.Server {
 
     RevokeSession: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.sessionService.revoke(call.request.sessionId);
+        await sessionService.revoke(call.request.sessionId);
         callback(null, { revoked: true });
       } catch (err: any) {
         callback(mapError(err));
@@ -182,7 +204,7 @@ export function createGrpcServer(): grpc.Server {
     // ===== Usuarios / perfiles =====
     GetUser: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const user = await container.userRepository.findById(call.request.userId);
+        const user = await userRepository.findById(call.request.userId);
         if (!user) {
           return callback({ code: grpc.status.NOT_FOUND, message: 'Usuario no encontrado' });
         }
@@ -194,7 +216,7 @@ export function createGrpcServer(): grpc.Server {
 
     GetProfiles: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const view = await container.profileService.getProfiles(call.request.userId);
+        const view = await profileService.getProfiles(call.request.userId);
         callback(null, {
           userId: view.userId,
           email: view.email,
@@ -207,7 +229,7 @@ export function createGrpcServer(): grpc.Server {
 
     CheckPermission: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const allowed = await container.profileService.checkPermission(
+        const allowed = await profileService.checkPermission(
           call.request.userId,
           call.request.resource,
           call.request.action,
@@ -226,7 +248,7 @@ export function createGrpcServer(): grpc.Server {
         if (roles.length === 0) {
           throw new DomainError('ROL_INVALIDO', 'Debes indicar al menos un rol', 400);
         }
-        const users = await container.userRepository.findByRoles(roles, call.request.incluirInactivos === true);
+        const users = await userRepository.findByRoles(roles, call.request.incluirInactivos === true);
         callback(null, { users: users.map(userToProto) });
       } catch (err: any) {
         callback(mapError(err));
@@ -246,14 +268,14 @@ export function createGrpcServer(): grpc.Server {
           rol: call.request.rol,
           requiereAutorizacion: call.request.requiereAutorizacion === true,
         });
-        const result = await container.authService.register(input, {
+        const result = await authService.register(input, {
           ip: call.request.ip,
           userAgent: call.request.userAgent,
         });
 
         // CDU0006.1 - Confirmación de registro por correo (asíncrono; el envío
         // ocurre en la cola del notificaciones-service).
-        void container.notificacionesClient.notificarConfirmacionRegistro(result.user);
+        void notificacionesClient.notificarConfirmacionRegistro(result.user);
 
         callback(null, {
           user: userToProto(result.user),
@@ -271,7 +293,7 @@ export function createGrpcServer(): grpc.Server {
           email: call.request.email,
           password: call.request.password,
         });
-        const result = await container.authService.login(input, {
+        const result = await authService.login(input, {
           ip: call.request.ip,
           userAgent: call.request.userAgent,
         });
@@ -287,7 +309,7 @@ export function createGrpcServer(): grpc.Server {
 
     Logout: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.authService.logout(call.request.sessionId);
+        await authService.logout(call.request.sessionId);
         callback(null, { revoked: true });
       } catch (err: any) {
         callback(mapError(err));
@@ -296,7 +318,7 @@ export function createGrpcServer(): grpc.Server {
 
     GetCurrentUser: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const user = await container.authService.validateSession(call.request.sessionId);
+        const user = await authService.validateSession(call.request.sessionId);
         if (!user) {
           return callback({ code: grpc.status.UNAUTHENTICATED, message: 'Sesión no activa' });
         }
@@ -312,7 +334,7 @@ export function createGrpcServer(): grpc.Server {
     // Validación de credenciales para el IdP institucional (no crea sesión).
     ValidateCredentials: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const user = await container.authService.validateCredentials(
+        const user = await authService.validateCredentials(
           call.request.email,
           call.request.password,
         );
@@ -328,7 +350,7 @@ export function createGrpcServer(): grpc.Server {
           if (value === '' || value === undefined) return undefined;
           return value;
         };
-        const user = await container.profileService.updateProfile(call.request.userId, {
+        const user = await profileService.updateProfile(call.request.userId, {
           nombres: patch(call.request.nombres),
           apellidos: patch(call.request.apellidos),
           carnet: patch(call.request.carnet),
@@ -345,7 +367,7 @@ export function createGrpcServer(): grpc.Server {
 
     DesactivarUsuario: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const user = await container.profileService.desactivarUsuario(call.request.userId);
+        const user = await profileService.desactivarUsuario(call.request.userId);
         callback(null, { user: userToProto(user) });
       } catch (err: any) {
         callback(mapError(err));
@@ -354,7 +376,7 @@ export function createGrpcServer(): grpc.Server {
 
     ReactivarUsuario: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const user = await container.profileService.reactivarUsuario(call.request.userId);
+        const user = await profileService.reactivarUsuario(call.request.userId);
         callback(null, { user: userToProto(user) });
       } catch (err: any) {
         callback(mapError(err));
@@ -364,7 +386,7 @@ export function createGrpcServer(): grpc.Server {
     // ===== Cuenta =====
     RequestEmailVerification: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const { token } = await container.accountService.requestEmailVerification(call.request.email);
+        const { token } = await accountService.requestEmailVerification(call.request.email);
         callback(null, { token });
       } catch (err: any) {
         callback(mapError(err));
@@ -373,7 +395,7 @@ export function createGrpcServer(): grpc.Server {
 
     ConfirmEmailVerification: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.accountService.confirmEmailVerification(call.request.token);
+        await accountService.confirmEmailVerification(call.request.token);
         callback(null, { verified: true });
       } catch (err: any) {
         callback(mapError(err));
@@ -382,7 +404,7 @@ export function createGrpcServer(): grpc.Server {
 
     RequestPasswordReset: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const { token } = await container.accountService.requestPasswordReset(call.request.email);
+        const { token } = await accountService.requestPasswordReset(call.request.email);
         callback(null, { token });
       } catch (err: any) {
         callback(mapError(err));
@@ -391,7 +413,7 @@ export function createGrpcServer(): grpc.Server {
 
     ConfirmPasswordReset: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.accountService.confirmPasswordReset(
+        await accountService.confirmPasswordReset(
           call.request.token,
           call.request.newPassword,
         );
@@ -407,7 +429,7 @@ export function createGrpcServer(): grpc.Server {
           currentPassword: call.request.currentPassword,
           newPassword: call.request.newPassword,
         });
-        await container.accountService.changePassword(
+        await accountService.changePassword(
           call.request.userId,
           input.currentPassword,
           input.newPassword,
@@ -422,7 +444,7 @@ export function createGrpcServer(): grpc.Server {
     AssignRole: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
         const input = assignRoleSchema.parse({ role: protoToRole[call.request.role] });
-        const view = await container.profileService.assignRole(call.request.userId, input.role);
+        const view = await profileService.assignRole(call.request.userId, input.role);
         callback(null, {
           profiles: {
             userId: view.userId,
@@ -441,7 +463,7 @@ export function createGrpcServer(): grpc.Server {
         if (!role) {
           throw new DomainError('ROL_INVALIDO', 'Rol inválido', 400);
         }
-        const view = await container.profileService.removeRole(call.request.userId, role);
+        const view = await profileService.removeRole(call.request.userId, role);
         callback(null, {
           profiles: {
             userId: view.userId,
@@ -460,7 +482,7 @@ export function createGrpcServer(): grpc.Server {
         if (!role) {
           throw new DomainError('ROL_INVALIDO', 'Rol inválido', 400);
         }
-        await container.profileService.switchActiveProfile(
+        await profileService.switchActiveProfile(
           call.request.userId,
           role,
           call.request.sessionId,
@@ -477,7 +499,7 @@ export function createGrpcServer(): grpc.Server {
         const input = crearSolicitudRolSchema.parse({
           rolSolicitado: protoToRole[call.request.rolSolicitado],
         });
-        const solicitud = await container.solicitudService.crearSolicitud(
+        const solicitud = await solicitudService.crearSolicitud(
           call.request.usuarioId,
           input.rolSolicitado,
         );
@@ -497,7 +519,7 @@ export function createGrpcServer(): grpc.Server {
           typeof call.request.usuarioId === 'string' && call.request.usuarioId.trim() !== ''
             ? call.request.usuarioId
             : undefined;
-        const solicitudes = await container.solicitudService.listarSolicitudes(estado, usuarioId);
+        const solicitudes = await solicitudService.listarSolicitudes(estado, usuarioId);
         callback(null, { solicitudes: solicitudes.map(solicitudToProto) });
       } catch (err: any) {
         callback(mapError(err));
@@ -510,7 +532,7 @@ export function createGrpcServer(): grpc.Server {
           solicitudId: call.request.solicitudId,
           aprobado: call.request.aprobado,
         });
-        const solicitud = await container.solicitudService.resolverSolicitud(
+        const solicitud = await solicitudService.resolverSolicitud(
           input.solicitudId,
           input.aprobado,
           call.request.resueltoPor,
@@ -524,7 +546,7 @@ export function createGrpcServer(): grpc.Server {
     // ===== OAuth 2.0 (mock - solo se usa cuando OAUTH_PROVIDER=mock) =====
     OAuthAuthorize: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const mockProvider = container.oauthProvider as import('../../infrastructure/oauth/mock-oauth-provider').MockOAuthProvider;
+        const mockProvider = oauthProvider as import('../../infrastructure/oauth/mock-oauth-provider').MockOAuthProvider;
         const code = mockProvider.authorize(
           call.request.email,
           (call.request.roles ?? []).map((r: string) => protoToRole[r]),
@@ -540,17 +562,17 @@ export function createGrpcServer(): grpc.Server {
 
     OAuthCallback: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const profile = await container.oauthProvider.exchangeCode(
+        const profile = await oauthProvider.exchangeCode(
           call.request.code,
           call.request.codeVerifier || call.request.code_verifier,
         );
-        const result = await container.authService.loginWithOAuth(profile, {
+        const result = await authService.loginWithOAuth(profile, {
           ip: call.request.ip,
           userAgent: call.request.userAgent,
         }, config.OAUTH_PROVIDER === 'google' ? 'google' : 'institucional');
 
         if (result.newUser) {
-          void container.notificacionesClient.notificarConfirmacionRegistro(result.user);
+          void notificacionesClient.notificarConfirmacionRegistro(result.user);
         }
 
         callback(null, {

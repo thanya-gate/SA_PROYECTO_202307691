@@ -1,4 +1,5 @@
 import { apiFetch } from './http';
+import type { MaterialAdjunto } from './materiales';
 
 export interface ClaseResumen {
   claseId: string;
@@ -14,6 +15,17 @@ export interface ClaseResumen {
 export interface Participante {
   nombre: string;
   rol: string;
+}
+
+export interface Capitulo {
+  capituloId: string;
+  claseId: string;
+  titulo: string;
+  inicioSegundos: number;
+  finSegundos: number;
+  orden: number;
+  fechaCreacion: string;
+  fechaActualizacion: string;
 }
 
 export interface ClaseDetalle {
@@ -32,6 +44,8 @@ export interface ClaseDetalle {
   fechaPublicacion: string;
   participantes: Participante[];
   etiquetas: string[];
+  materiales: MaterialAdjunto[];
+  capitulos: Capitulo[];
 }
 
 export interface SemestreResumen {
@@ -97,6 +111,17 @@ export interface EditarClaseInput {
   duracion: number;
   etiquetas: string[];
   participantes: ParticipanteInput[];
+}
+
+export interface CrearCapituloInput {
+  titulo: string;
+  inicioSegundos: number;
+  finSegundos: number;
+  orden?: number;
+}
+
+export interface ActualizarCapituloInput extends CrearCapituloInput {
+  claseId: string;
 }
 
 interface GetClaseResponse {
@@ -165,6 +190,37 @@ export const catalogApi = {
 
   eliminarClase: (claseId: string, token: string): Promise<{ message: string }> =>
     apiFetch<{ message: string }>(`/catalog/classes/${claseId}`, {
+      method: 'DELETE',
+      token,
+    }),
+
+  listarCapitulos: (claseId: string, token: string): Promise<{ capitulos: Capitulo[] }> =>
+    apiFetch<{ capitulos: Capitulo[] }>(`/catalog/classes/${encodeURIComponent(claseId)}/chapters`, { token }),
+
+  crearCapitulo: (
+    claseId: string,
+    input: CrearCapituloInput,
+    token: string,
+  ): Promise<{ message: string; capitulo: Capitulo }> =>
+    apiFetch<{ message: string; capitulo: Capitulo }>(`/catalog/classes/${encodeURIComponent(claseId)}/chapters`, {
+      method: 'POST',
+      body: input,
+      token,
+    }),
+
+  actualizarCapitulo: (
+    capituloId: string,
+    input: ActualizarCapituloInput,
+    token: string,
+  ): Promise<{ message: string; capitulo: Capitulo }> =>
+    apiFetch<{ message: string; capitulo: Capitulo }>(`/catalog/chapters/${capituloId}`, {
+      method: 'PATCH',
+      body: input,
+      token,
+    }),
+
+  eliminarCapitulo: (capituloId: string, token: string): Promise<{ message: string; claseId: string }> =>
+    apiFetch<{ message: string; claseId: string }>(`/catalog/chapters/${capituloId}`, {
       method: 'DELETE',
       token,
     }),

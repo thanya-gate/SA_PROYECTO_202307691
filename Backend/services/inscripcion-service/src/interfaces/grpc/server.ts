@@ -3,7 +3,7 @@ import fs from 'fs';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { config } from '../../config/env';
-import { container } from '../../container';
+import { container, Container } from '../../container';
 import {
   AsignacionDocenteItem,
   CursoCatedraticoItem,
@@ -105,8 +105,14 @@ function mapError(err: any): grpc.ServiceError {
 type GrpcCall<T, U> = grpc.ServerUnaryCall<T, U>;
 type GrpcCallback<U> = grpc.sendUnaryData<U>;
 
-export function createGrpcServer(): grpc.Server {
+/** Servicio reemplazable para probar el adaptador sin PostgreSQL. */
+export interface InscripcionGrpcDependencies {
+  inscripcionService?: Container['inscripcionService'];
+}
+
+export function createGrpcServer(dependencies: InscripcionGrpcDependencies = {}): grpc.Server {
   const server = new grpc.Server();
+  const inscripcionService = dependencies.inscripcionService ?? container.inscripcionService;
 
   const packageDefinition = protoLoader.loadSync(resolveProtoPath(), {
     keepCase: false,
@@ -121,7 +127,7 @@ export function createGrpcServer(): grpc.Server {
   const handlers = {
     RegistrarCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const curso = await container.inscripcionService.registrarCurso({
+        const curso = await inscripcionService.registrarCurso({
           codigo: call.request.codigo,
           nombre: call.request.nombre,
           escuela: call.request.escuela,
@@ -136,7 +142,7 @@ export function createGrpcServer(): grpc.Server {
 
     RegistrarDocente: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.inscripcionService.registrarDocente({
+        const result = await inscripcionService.registrarDocente({
           usuarioId: call.request.usuarioId,
         });
         callback(null, { docenteId: result.docenteId });
@@ -147,7 +153,7 @@ export function createGrpcServer(): grpc.Server {
 
     RegistrarAuxiliar: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.inscripcionService.registrarAuxiliar({
+        const result = await inscripcionService.registrarAuxiliar({
           usuarioId: call.request.usuarioId,
         });
         callback(null, { auxiliarId: result.auxiliarId });
@@ -158,7 +164,7 @@ export function createGrpcServer(): grpc.Server {
 
     InscribirEstudiante: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.inscripcionService.inscribirEstudiante({
+        const result = await inscripcionService.inscribirEstudiante({
           estudianteId: call.request.estudianteId,
           cursoId: call.request.cursoId,
           semestre: call.request.semestre,
@@ -174,7 +180,7 @@ export function createGrpcServer(): grpc.Server {
 
     AsignarCatedraticoCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.inscripcionService.asignarCatedraticoCurso({
+        const result = await inscripcionService.asignarCatedraticoCurso({
           docenteId: call.request.docenteId,
           cursoId: call.request.cursoId,
           semestre: call.request.semestre,
@@ -187,7 +193,7 @@ export function createGrpcServer(): grpc.Server {
 
     AsignarAuxiliarCatedratico: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.inscripcionService.asignarAuxiliarCatedratico({
+        const result = await inscripcionService.asignarAuxiliarCatedratico({
           auxiliarId: call.request.auxiliarId,
           asignacionDocenteId: call.request.asignacionDocenteId,
         });
@@ -199,7 +205,7 @@ export function createGrpcServer(): grpc.Server {
 
     ConsultarPanelEstudiante: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const items = await container.inscripcionService.consultarPanelEstudiante(
+        const items = await inscripcionService.consultarPanelEstudiante(
           call.request.estudianteId,
         );
         callback(null, { items: items.map(panelItemToProto) });
@@ -210,7 +216,7 @@ export function createGrpcServer(): grpc.Server {
 
     ConsultarCursosCatedratico: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const items = await container.inscripcionService.consultarCursosCatedratico(
+        const items = await inscripcionService.consultarCursosCatedratico(
           call.request.catedraticoUsuarioId,
         );
         callback(null, { items: items.map(cursoCatedraticoToProto) });
@@ -221,7 +227,7 @@ export function createGrpcServer(): grpc.Server {
 
     ConsultarEstadoMatricula: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const estado = await container.inscripcionService.consultarEstadoMatricula(
+        const estado = await inscripcionService.consultarEstadoMatricula(
           call.request.estudianteId,
           call.request.cursoId,
         );
@@ -233,7 +239,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarCursos: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const cursos = await container.inscripcionService.listarCursos();
+        const cursos = await inscripcionService.listarCursos();
         callback(null, { cursos: cursos.map(cursoToProto) });
       } catch (err: any) {
         callback(mapError(err));
@@ -242,7 +248,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarDocentes: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const docentes = await container.inscripcionService.listarDocentes();
+        const docentes = await inscripcionService.listarDocentes();
         callback(null, { docentes: docentes.map(docenteToProto) });
       } catch (err: any) {
         callback(mapError(err));
@@ -251,7 +257,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarAuxiliares: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const auxiliares = await container.inscripcionService.listarAuxiliares();
+        const auxiliares = await inscripcionService.listarAuxiliares();
         callback(null, {
           auxiliares: auxiliares.map((a) => ({ auxiliarId: a.auxiliarId, usuarioId: a.usuarioId })),
         });
@@ -262,7 +268,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarAsignaciones: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const asignaciones = await container.inscripcionService.listarAsignaciones();
+        const asignaciones = await inscripcionService.listarAsignaciones();
         callback(null, { asignaciones: asignaciones.map(asignacionToProto) });
       } catch (err: any) {
         callback(mapError(err));
@@ -271,7 +277,7 @@ export function createGrpcServer(): grpc.Server {
 
     EliminarDocente: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.inscripcionService.eliminarDocente(call.request.docenteId);
+        await inscripcionService.eliminarDocente(call.request.docenteId);
         callback(null, {});
       } catch (err: any) {
         callback(mapError(err));
@@ -280,7 +286,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarEstudiantesDeCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const estudianteIds = await container.inscripcionService.listarEstudiantesDeCurso(
+        const estudianteIds = await inscripcionService.listarEstudiantesDeCurso(
           call.request.cursoId,
           call.request.semestre,
         );

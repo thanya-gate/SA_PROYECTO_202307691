@@ -15,12 +15,19 @@ import {
   RegistrarEscuelaInput,
   ActualizarEscuelaInput,
   ActualizarCursoInput,
+  RegistrarMaterialInput,
+  AgregarVersionMaterialInput,
+  EliminarMaterialResult,
+  CrearCapituloInput,
+  ActualizarCapituloInput,
 } from '../../../application/ports/catalog-repository';
 import {
+  Capitulo,
   ClaseDetalle,
   CursoAdmin,
   CursoCatalogo,
   EscuelaAdmin,
+  MaterialAdjunto,
   Participante,
   SemestreAdmin,
   SemestreResumen,
@@ -84,6 +91,31 @@ interface EscuelaAdminRow {
   cursos: string;
 }
 
+interface MaterialRow {
+  material_id: string;
+  clase_id: string;
+  nombre_archivo: string;
+  mime_type: string;
+  extension: string;
+  tamano_bytes: string | number;
+  version_actual: string | number;
+  total_descargas: string | number;
+  subido_por: string | null;
+  fecha_subida: Date;
+  url_archivo: string | null;
+}
+
+interface CapituloRow {
+  capitulo_id: string;
+  clase_id: string;
+  titulo: string;
+  inicio_segundos: number;
+  fin_segundos: number;
+  orden: number;
+  fecha_creacion: Date;
+  fecha_actualizacion: Date;
+}
+
 const PARTICIPANTE_REGEX = /^(.+) \((CATEDRATICO|AUXILIAR)\)$/;
 
 function parseParticipantes(raw: string[]): Participante[] {
@@ -95,6 +127,35 @@ function parseParticipantes(raw: string[]): Participante[] {
     }
   }
   return result;
+}
+
+function mapMaterial(r: MaterialRow): MaterialAdjunto {
+  return {
+    materialId: r.material_id,
+    claseId: r.clase_id,
+    nombreArchivo: r.nombre_archivo,
+    mimeType: r.mime_type,
+    extension: r.extension,
+    tamanoBytes: Number(r.tamano_bytes ?? 0),
+    versionActual: Number(r.version_actual ?? 1),
+    totalDescargas: Number(r.total_descargas ?? 0),
+    subidoPor: r.subido_por,
+    fechaSubida: new Date(r.fecha_subida).toISOString(),
+    urlArchivo: r.url_archivo,
+  };
+}
+
+function mapCapitulo(r: CapituloRow): Capitulo {
+  return {
+    capituloId: r.capitulo_id,
+    claseId: r.clase_id,
+    titulo: r.titulo,
+    inicioSegundos: Number(r.inicio_segundos),
+    finSegundos: Number(r.fin_segundos),
+    orden: Number(r.orden),
+    fechaCreacion: new Date(r.fecha_creacion).toISOString(),
+    fechaActualizacion: new Date(r.fecha_actualizacion).toISOString(),
+  };
 }
 
 
@@ -175,6 +236,8 @@ export class PostgresCatalogRepository implements CatalogRepository {
       fechaPublicacion: row.fecha_publicacion.toISOString(),
       participantes: parseParticipantes(row.participantes ?? []),
       etiquetas: row.etiquetas ?? [],
+      materiales: await this.listarMateriales(claseId),
+      capitulos: await this.listarCapitulos(claseId),
     };
   }
 
@@ -492,5 +555,154 @@ export class PostgresCatalogRepository implements CatalogRepository {
     if (!res.rows[0]?.p_eliminado) {
       throw new DomainError('CURSO_NO_ENCONTRADO', 'El curso no existe en el catálogo', 404);
     }
+  }
+
+//Material
+
+  async registrarMaterial(input: RegistrarMaterialInput): Promise<MaterialAdjunto> {
+    const res = await query<{ p_material_id: string }>(
+      `CALL sp_registrar_material($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        input.claseId,
+        input.nombreArchivo,
+        input.mimeType,
+        input.extension,
+        input.tamanoBytes ?? 0,
+        input.urlArchivo,
+        input.materialId ?? null,
+      ],
+    );
+    const materialId = res.rows[0]?.p_material_id ?? input.materialId;
+    return this.obtenerMaterial(materialId) as Promise<MaterialAdjunto>;
+  }
+
+  async obtenerMaterial(materialId: string): Promise<MaterialAdjunto | null> {
+    const res = await query<MaterialRow>(
+      `SELECT material_id, clase_id, nombre_archivo, mime_type, extension,
+              tamano_bytes, version_actual, total_descargas, subido_por,
+              fecha_subida, url_archivo
+       FROM vw_materiales_clase WHERE material_id = $1`,
+      [materialId],
+    );
+    if (res.rows.length === 0) return null;
+    return mapMaterial(res.rows[0]);
+  }
+
+  async agregarVersionMaterial(input: AgregarVersionMaterialInput): Promise<MaterialAdjunto> {
+    const res = await query<{ p_numero_version: string | number }>(
+      'CALL sp_agregar_version_material($1, $2, $3, NULL)',
+      [input.materialId, input.tamanoBytes ?? 0, input.urlArchivo],
+    );
+    if (res.rows.length === 0 || !res.rows[0]?.p_numero_version) {
+      throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+    }
+    return this.obtenerMaterial(input.materialId) as Promise<MaterialAdjunto>;
+  }
+
+  async listarMateriales(claseId: string): Promise<MaterialAdjunto[]> {
+    const res = await query<MaterialRow>(
+      `SELECT material_id, clase_id, nombre_archivo, mime_type, extension,
+              tamano_bytes, version_actual, total_descargas, subido_por,
+              fecha_subida, url_archivo
+       FROM vw_materiales_clase
+       WHERE clase_id = $1
+       ORDER BY fecha_subida DESC`,
+      [claseId],
+    );
+    return res.rows.map(mapMaterial);
+  }
+
+  async eliminarMaterial(materialId: string): Promise<EliminarMaterialResult> {
+    const res = await query<{ p_eliminado: boolean; p_clase_id: string | null }>(
+      'CALL sp_eliminar_material($1, NULL, NULL)',
+      [materialId],
+    );
+    return {
+      eliminado: Boolean(res.rows[0]?.p_eliminado),
+      claseId: res.rows[0]?.p_clase_id ?? null,
+    };
+  }
+
+  async registrarDescargaMaterial(materialId: string): Promise<number> {
+    const res = await query<{ p_total_descargas: string | number }>(
+      'CALL sp_registrar_descarga_material($1, NULL)',
+      [materialId],
+    );
+    if (!res.rows[0] || res.rows[0].p_total_descargas === null) {
+      throw new DomainError('MATERIAL_NO_ENCONTRADO', 'Material no encontrado', 404);
+    }
+    return Number(res.rows[0].p_total_descargas);
+  }
+
+  async listarCapitulos(claseId: string): Promise<Capitulo[]> {
+    const res = await query<CapituloRow>(
+      `SELECT capitulo_id, clase_id, titulo, inicio_segundos, fin_segundos,
+              orden, fecha_creacion, fecha_actualizacion
+       FROM vw_capitulos_clase
+       WHERE clase_id = $1
+       ORDER BY orden, inicio_segundos, capitulo_id`,
+      [claseId],
+    );
+    return res.rows.map(mapCapitulo);
+  }
+
+  async crearCapitulo(input: CrearCapituloInput): Promise<Capitulo> {
+    const res = await query<{ p_capitulo_id: string }>(
+      'CALL sp_crear_capitulo($1, $2, $3, $4, $5, NULL)',
+      [
+        input.claseId,
+        input.titulo,
+        input.inicioSegundos,
+        input.finSegundos,
+        input.orden && input.orden > 0 ? input.orden : null,
+      ],
+    );
+    const capituloId = res.rows[0]?.p_capitulo_id;
+    if (!capituloId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se pudo crear el capitulo', 400);
+    }
+    const capitulos = await query<CapituloRow>(
+      `SELECT capitulo_id, clase_id, titulo, inicio_segundos, fin_segundos,
+              orden, fecha_creacion, fecha_actualizacion
+       FROM vw_capitulos_clase WHERE capitulo_id = $1`,
+      [capituloId],
+    );
+    if (capitulos.rows.length === 0) {
+      throw new DomainError('CAPITULO_NO_ENCONTRADO', 'Capitulo no encontrado tras crearlo', 404);
+    }
+    return mapCapitulo(capitulos.rows[0]);
+  }
+
+  async actualizarCapitulo(input: ActualizarCapituloInput): Promise<Capitulo | null> {
+    const res = await query<{ p_actualizado: boolean }>(
+      'CALL sp_actualizar_capitulo($1, $2, $3, $4, $5, $6, NULL)',
+      [
+        input.capituloId,
+        input.claseId,
+        input.titulo,
+        input.inicioSegundos,
+        input.finSegundos,
+        input.orden && input.orden > 0 ? input.orden : null,
+      ],
+    );
+    if (!res.rows[0]?.p_actualizado) return null;
+    const capitulos = await query<CapituloRow>(
+      `SELECT capitulo_id, clase_id, titulo, inicio_segundos, fin_segundos,
+              orden, fecha_creacion, fecha_actualizacion
+       FROM vw_capitulos_clase WHERE capitulo_id = $1`,
+      [input.capituloId],
+    );
+    return capitulos.rows.length > 0 ? mapCapitulo(capitulos.rows[0]) : null;
+  }
+
+  async eliminarCapitulo(capituloId: string): Promise<{ eliminado: boolean; claseId: string | null }> {
+    const res = await query<{ p_eliminado: boolean; p_clase_id: string | null }>(
+      'CALL sp_eliminar_capitulo($1, NULL, NULL)',
+      [capituloId],
+    );
+    return {
+      eliminado: Boolean(res.rows[0]?.p_eliminado),
+      claseId: res.rows[0]?.p_clase_id ?? null,
+    };
   }
 }

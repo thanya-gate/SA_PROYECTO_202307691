@@ -3,10 +3,12 @@ import fs from 'fs';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { config } from '../../config/env';
-import { container } from '../../container';
+import { container, Container } from '../../container';
 import {
+  Capitulo,
   ClaseDetalle,
   ClaseResumen,
+  MaterialAdjunto,
   SemestreResumen,
 } from '../../domain/entities/clase';
 
@@ -54,6 +56,37 @@ function claseDetalleToProto(c: ClaseDetalle) {
     participantes: c.participantes.map((p) => ({ nombre: p.nombre, rol: p.rol })),
     etiquetas: c.etiquetas,
     cursoId: c.cursoId,
+    materiales: (c.materiales ?? []).map(materialToProto),
+    capitulos: (c.capitulos ?? []).map(capituloToProto),
+  };
+}
+
+function capituloToProto(c: Capitulo) {
+  return {
+    capituloId: c.capituloId,
+    claseId: c.claseId,
+    titulo: c.titulo,
+    inicioSegundos: c.inicioSegundos,
+    finSegundos: c.finSegundos,
+    orden: c.orden,
+    fechaCreacion: c.fechaCreacion,
+    fechaActualizacion: c.fechaActualizacion,
+  };
+}
+
+function materialToProto(m: MaterialAdjunto) {
+  return {
+    materialId: m.materialId,
+    claseId: m.claseId,
+    nombreArchivo: m.nombreArchivo,
+    mimeType: m.mimeType,
+    extension: m.extension,
+    tamanoBytes: m.tamanoBytes,
+    versionActual: m.versionActual,
+    totalDescargas: m.totalDescargas,
+    subidoPor: m.subidoPor ?? '',
+    fechaSubida: m.fechaSubida,
+    urlArchivo: m.urlArchivo ?? '',
   };
 }
 
@@ -72,6 +105,8 @@ const domainErrorToGrpcCode: Record<string, number> = {
   SEMESTRE_NO_ENCONTRADO: 5,
   ESCUELA_NO_ENCONTRADA: 5,
   DOCENTE_NO_ENCONTRADO: 5,
+  MATERIAL_NO_ENCONTRADO: 5,
+  CAPITULO_NO_ENCONTRADO: 5,
   ENTRADA_INVALIDA: 3, 
   CONFLICTO: 6,
   CURSO_CODIGO_DUPLICADO: 6,
@@ -80,7 +115,7 @@ const domainErrorToGrpcCode: Record<string, number> = {
   CURSO_EN_USO: 9,
 };
 
-function mapError(err: any): grpc.ServiceError {
+export function mapError(err: any): grpc.ServiceError {
   const code =
     err?.code && domainErrorToGrpcCode[err.code] !== undefined
       ? domainErrorToGrpcCode[err.code]
@@ -93,9 +128,16 @@ function mapError(err: any): grpc.ServiceError {
 type GrpcCall<T, U> = grpc.ServerUnaryCall<T, U>;
 type GrpcCallback<U> = grpc.sendUnaryData<U>;
 
+/** Dependencias reemplazables para probar el adaptador sin PostgreSQL ni gRPC externo. */
+export interface CatalogGrpcDependencies {
+  catalogService?: Container['catalogService'];
+  notificacionesClient?: Container['notificacionesClient'];
+}
 
-export function createGrpcServer(): grpc.Server {
+export function createGrpcServer(dependencies: CatalogGrpcDependencies = {}): grpc.Server {
   const server = new grpc.Server();
+  const catalogService = dependencies.catalogService ?? container.catalogService;
+  const notificacionesClient = dependencies.notificacionesClient ?? container.notificacionesClient;
 
   const packageDefinition = protoLoader.loadSync(resolveProtoPath(), {
     keepCase: false,
@@ -111,7 +153,7 @@ export function createGrpcServer(): grpc.Server {
 
     Search: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.catalogService.search({
+        const result = await catalogService.search({
           semestre: call.request.semestre,
           escuela: call.request.escuela,
           curso: call.request.curso,
@@ -134,7 +176,7 @@ export function createGrpcServer(): grpc.Server {
 
     GetClase: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const clase = await container.catalogService.getClase(call.request.claseId);
+        const clase = await catalogService.getClase(call.request.claseId);
         callback(null, { clase: claseDetalleToProto(clase) });
       } catch (err: any) {
         callback(mapError(err));
@@ -143,7 +185,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarPorSemestre: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const semestres = await container.catalogService.listarPorSemestre(
+        const semestres = await catalogService.listarPorSemestre(
           call.request.semestre || undefined,
         );
         callback(null, { semestres: semestres.map(semestreToProto) });
@@ -154,7 +196,7 @@ export function createGrpcServer(): grpc.Server {
 
     PublicarClase: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.catalogService.publicarClase({
+        const result = await catalogService.publicarClase({
           cursoId: call.request.cursoId,
           unidad: call.request.unidad || undefined,
           tema: call.request.tema || undefined,
@@ -173,7 +215,7 @@ export function createGrpcServer(): grpc.Server {
 
         // CDU0006.2 - Alerta de nueva clase por correo (asíncrono; el envío
         // ocurre en la cola del notificaciones-service).
-        void container.notificacionesClient.notificarNuevaClase({
+        void notificacionesClient.notificarNuevaClase({
           cursoId: call.request.cursoId,
           semestre: call.request.semestre,
           anio: call.request.anio,
@@ -191,7 +233,7 @@ export function createGrpcServer(): grpc.Server {
 
     ActualizarUrlVideo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const clase = await container.catalogService.actualizarUrlVideo(
+        const clase = await catalogService.actualizarUrlVideo(
           call.request.claseId,
           call.request.urlVideo,
         );
@@ -203,7 +245,7 @@ export function createGrpcServer(): grpc.Server {
 
     ActualizarUrlMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const clase = await container.catalogService.actualizarUrlMaterial(
+        const clase = await catalogService.actualizarUrlMaterial(
           call.request.claseId,
           call.request.urlMaterial,
         );
@@ -215,7 +257,7 @@ export function createGrpcServer(): grpc.Server {
 
     ActualizarDuracion: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const clase = await container.catalogService.actualizarDuracion(
+        const clase = await catalogService.actualizarDuracion(
           call.request.claseId,
           call.request.duracion,
         );
@@ -227,7 +269,7 @@ export function createGrpcServer(): grpc.Server {
 
     EditarClase: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const clase = await container.catalogService.actualizarClase({
+        const clase = await catalogService.actualizarClase({
           claseId: call.request.claseId,
           cursoId: call.request.cursoId,
           unidad: call.request.unidad || undefined,
@@ -252,7 +294,7 @@ export function createGrpcServer(): grpc.Server {
 
     EliminarClase: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.catalogService.eliminarClase(call.request.claseId);
+        await catalogService.eliminarClase(call.request.claseId);
         callback(null, {});
       } catch (err: any) {
         callback(mapError(err));
@@ -261,7 +303,7 @@ export function createGrpcServer(): grpc.Server {
 
     RegistrarCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const curso = await container.catalogService.registrarCurso({
+        const curso = await catalogService.registrarCurso({
           codigo: call.request.codigo,
           nombre: call.request.nombre,
           escuela: call.request.escuela,
@@ -281,7 +323,7 @@ export function createGrpcServer(): grpc.Server {
 
     ObtenerCursoPorCodigo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const curso = await container.catalogService.obtenerCursoPorCodigo(call.request.codigo);
+        const curso = await catalogService.obtenerCursoPorCodigo(call.request.codigo);
         callback(null, {
           curso: {
             cursoId: curso.cursoId,
@@ -313,7 +355,7 @@ export function createGrpcServer(): grpc.Server {
           docentes: c.docentes ?? [],
           auxiliares: c.auxiliares ?? [],
         }));
-        const result = await container.catalogService.cargarClasesCSV(clases);
+        const result = await catalogService.cargarClasesCSV(clases);
         callback(null, {
           registradas: result.registradas,
           omitidas: result.omitidas,
@@ -325,7 +367,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarSemestres: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const semestres = await container.catalogService.listarSemestres();
+        const semestres = await catalogService.listarSemestres();
         callback(null, {
           semestres: semestres.map((s) => ({
             semestreId: s.semestreId,
@@ -341,7 +383,7 @@ export function createGrpcServer(): grpc.Server {
 
     RegistrarSemestre: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.catalogService.registrarSemestre({
+        const result = await catalogService.registrarSemestre({
           nombre: call.request.nombre,
           anio: call.request.anio,
         });
@@ -353,7 +395,7 @@ export function createGrpcServer(): grpc.Server {
 
     ActualizarSemestre: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.catalogService.actualizarSemestre({
+        await catalogService.actualizarSemestre({
           semestreId: call.request.semestreId,
           nombre: call.request.nombre,
           anio: call.request.anio,
@@ -366,7 +408,7 @@ export function createGrpcServer(): grpc.Server {
 
     EliminarSemestre: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.catalogService.eliminarSemestre(call.request.semestreId);
+        await catalogService.eliminarSemestre(call.request.semestreId);
         callback(null, {});
       } catch (err: any) {
         callback(mapError(err));
@@ -375,7 +417,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarEscuelas: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const escuelas = await container.catalogService.listarEscuelas();
+        const escuelas = await catalogService.listarEscuelas();
         callback(null, {
           escuelas: escuelas.map((e) => ({
             escuelaId: e.escuelaId,
@@ -390,7 +432,7 @@ export function createGrpcServer(): grpc.Server {
 
     RegistrarEscuela: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const result = await container.catalogService.registrarEscuela({
+        const result = await catalogService.registrarEscuela({
           nombre: call.request.nombre,
         });
         callback(null, { escuelaId: result.escuelaId });
@@ -401,7 +443,7 @@ export function createGrpcServer(): grpc.Server {
 
     ActualizarEscuela: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.catalogService.actualizarEscuela({
+        await catalogService.actualizarEscuela({
           escuelaId: call.request.escuelaId,
           nombre: call.request.nombre,
         });
@@ -413,7 +455,7 @@ export function createGrpcServer(): grpc.Server {
 
     EliminarEscuela: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.catalogService.eliminarEscuela(call.request.escuelaId);
+        await catalogService.eliminarEscuela(call.request.escuelaId);
         callback(null, {});
       } catch (err: any) {
         callback(mapError(err));
@@ -422,7 +464,7 @@ export function createGrpcServer(): grpc.Server {
 
     ListarCursos: async (_call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        const cursos = await container.catalogService.listarCursos();
+        const cursos = await catalogService.listarCursos();
         callback(null, {
           cursos: cursos.map((c) => ({
             cursoId: c.cursoId,
@@ -438,7 +480,7 @@ export function createGrpcServer(): grpc.Server {
 
     ActualizarCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.catalogService.actualizarCurso({
+        await catalogService.actualizarCurso({
           cursoId: call.request.cursoId,
           codigo: call.request.codigo,
           nombre: call.request.nombre,
@@ -452,8 +494,128 @@ export function createGrpcServer(): grpc.Server {
 
     EliminarCurso: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
       try {
-        await container.catalogService.eliminarCurso(call.request.cursoId);
+        await catalogService.eliminarCurso(call.request.cursoId);
         callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    // ---- Materiales adjuntos (Fase 2) ----
+
+    RegistrarMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const material = await catalogService.registrarMaterial({
+          materialId: call.request.materialId || undefined,
+          claseId: call.request.claseId,
+          nombreArchivo: call.request.nombreArchivo,
+          mimeType: call.request.mimeType,
+          extension: call.request.extension,
+          tamanoBytes: Number(call.request.tamanoBytes ?? 0),
+          urlArchivo: call.request.urlArchivo,
+          subidoPor: call.request.subidoPor || undefined,
+        });
+        callback(null, { material: materialToProto(material) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ObtenerMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const material = await catalogService.obtenerMaterial(call.request.materialId);
+        callback(null, { material: materialToProto(material) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    AgregarVersionMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const material = await catalogService.agregarVersionMaterial({
+          materialId: call.request.materialId,
+          tamanoBytes: Number(call.request.tamanoBytes ?? 0),
+          urlArchivo: call.request.urlArchivo,
+        });
+        callback(null, { material: materialToProto(material) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarMateriales: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const materiales = await catalogService.listarMateriales(call.request.claseId);
+        callback(null, { materiales: materiales.map(materialToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        await catalogService.eliminarMaterial(call.request.materialId);
+        callback(null, {});
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    RegistrarDescargaMaterial: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const totalDescargas = await catalogService.registrarDescargaMaterial(
+          call.request.materialId,
+        );
+        callback(null, { totalDescargas });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarCapitulos: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const capitulos = await catalogService.listarCapitulos(call.request.claseId);
+        callback(null, { capitulos: capitulos.map(capituloToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    CrearCapitulo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const capitulo = await catalogService.crearCapitulo({
+          claseId: call.request.claseId,
+          titulo: call.request.titulo,
+          inicioSegundos: call.request.inicioSegundos,
+          finSegundos: call.request.finSegundos,
+          orden: call.request.orden,
+        });
+        callback(null, { capitulo: capituloToProto(capitulo) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ActualizarCapitulo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const capitulo = await catalogService.actualizarCapitulo({
+          capituloId: call.request.capituloId,
+          claseId: call.request.claseId,
+          titulo: call.request.titulo,
+          inicioSegundos: call.request.inicioSegundos,
+          finSegundos: call.request.finSegundos,
+          orden: call.request.orden,
+        });
+        callback(null, { capitulo: capituloToProto(capitulo) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    EliminarCapitulo: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const result = await catalogService.eliminarCapitulo(call.request.capituloId);
+        callback(null, { claseId: result.claseId ?? '' });
       } catch (err: any) {
         callback(mapError(err));
       }

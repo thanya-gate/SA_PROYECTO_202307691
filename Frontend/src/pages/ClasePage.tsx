@@ -5,11 +5,14 @@ import { reproduccionApi, type Checkpoint, type HistorialItem } from '../api/rep
 import { mediaApi } from '../api/media';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
+import { MaterialesPanel } from '../components/MaterialesPanel';
+import { ChapterManager } from '../components/ChapterManager';
+import { ChapterTimeline } from '../components/ChapterTimeline';
 import { YT_STATE, YouTubePlayer } from '../components/YouTubePlayer';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
-import { esVideoLocal, formatDuracion, formatFecha, formatSegundos, youtubeVideoId } from '../utils/video';
+import { esVideoLocal, formatFecha, formatSegundos, youtubeVideoId } from '../utils/video';
 
 const CHECKPOINT_INTERVAL_SECONDS = 15;
 
@@ -41,8 +44,10 @@ export default function ClasePage() {
   const [videoSubido, setVideoSubido] = useState<string | null>(null);
   const [urlVideoInput, setUrlVideoInput] = useState('');
   const [guardandoUrl, setGuardandoUrl] = useState(false);
-  const [duracionInput, setDuracionInput] = useState('');
-  const [guardandoDuracion, setGuardandoDuracion] = useState(false);
+
+  // Segmentación de la reproducción: ambos reproductores exponen un adaptador
+  // de seek para que la barra de capítulos sea independiente de la fuente.
+  const [currentSeconds, setCurrentSeconds] = useState(0);
 
   // Edición / eliminación de la clase (CRUD)
   const [eliminando, setEliminando] = useState(false);
@@ -51,11 +56,12 @@ export default function ClasePage() {
   const ultimoSegundoRef = useRef(0);
   const ultimoGuardadoRef = useRef(0);
   const vistaRegistradaRef = useRef(false);
+  const seekRef = useRef<(seconds: number) => void>(() => {});
 
   const tokenActual = token ?? '';
   const videoId = clase ? youtubeVideoId(clase.urlVideo) : null;
   const videoLocal = clase ? esVideoLocal(clase.urlVideo) : false;
-  const puedeSubirVideo = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN' || rol === 'ROLE_AUXILIAR');
+  const puedeGestionarContenido = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN' || rol === 'ROLE_AUXILIAR');
 
   const guardarCheckpoint = useCallback(
     async (segundos: number, evento?: string) => {
@@ -91,12 +97,20 @@ export default function ClasePage() {
   const handleTick = useCallback(
     (seconds: number) => {
       ultimoSegundoRef.current = seconds;
+      setCurrentSeconds(seconds);
       if (seconds - ultimoGuardadoRef.current >= CHECKPOINT_INTERVAL_SECONDS) {
         void guardarCheckpoint(seconds);
       }
     },
     [guardarCheckpoint],
   );
+
+  const handleSeek = useCallback((seconds: number) => {
+    const destino = Math.max(0, Math.floor(seconds));
+    seekRef.current(destino);
+    ultimoSegundoRef.current = destino;
+    setCurrentSeconds(destino);
+  }, []);
 
   const handleStateChange = useCallback(
     (state: number) => {
@@ -123,12 +137,13 @@ export default function ClasePage() {
     let active = true;
     setCargando(true);
     setError(null);
+    setCurrentSeconds(0);
+    seekRef.current = () => {};
     catalogApi
       .getClase(claseId, tokenActual)
       .then(async (res) => {
         if (!active) return;
         setClase(res.clase);
-        setDuracionInput(res.clase.duracion > 0 ? String(Math.floor(res.clase.duracion / 60)) : '');
         void catalogApi
           .search({ curso: res.clase.codigo }, tokenActual)
           .then((rel) => {
@@ -187,7 +202,7 @@ export default function ClasePage() {
     setVideoSubido(null);
     try {
       const res = await mediaApi.subirVideo(clase.claseId, file, tokenActual);
-      setClase((prev) => (prev ? { ...prev, urlVideo: res.urlVideo } : prev));
+      setClase((prev) => (prev ? { ...prev, urlVideo: res.urlVideo, duracion: res.duracion ?? prev.duracion } : prev));
       setVideoSubido(res.urlVideo);
     } catch (err) {
       setErrorSubida(err instanceof Error ? err.message : 'No se pudo subir el video');
@@ -203,28 +218,13 @@ export default function ClasePage() {
     setErrorSubida(null);
     setVideoSubido(null);
     try {
-      await mediaApi.establecerUrlVideo(clase.claseId, url, tokenActual);
-      setClase((prev) => (prev ? { ...prev, urlVideo: url } : prev));
+      const res = await mediaApi.establecerUrlVideo(clase.claseId, url, tokenActual);
+      setClase((prev) => (prev ? { ...prev, urlVideo: url, duracion: res.duracion ?? res.clase.duracion ?? prev.duracion } : prev));
       setVideoSubido(url);
     } catch (err) {
       setErrorSubida(err instanceof Error ? err.message : 'No se pudo guardar la URL del video');
     } finally {
       setGuardandoUrl(false);
-    }
-  }
-
-  async function guardarDuracion() {
-    if (!clase || !tokenActual) return;
-    const minutos = Number(duracionInput);
-    if (!Number.isFinite(minutos) || minutos < 0) return;
-    const segundos = Math.floor(minutos * 60);
-    setGuardandoDuracion(true);
-    try {
-      const res = await catalogApi.actualizarDuracion(clase.claseId, segundos, tokenActual);
-      setClase((prev) => (prev ? { ...prev, duracion: res.clase.duracion } : prev));
-    } catch {
-    } finally {
-      setGuardandoDuracion(false);
     }
   }
 
@@ -296,6 +296,9 @@ export default function ClasePage() {
                 <YouTubePlayer
                   videoId={videoId}
                   startSeconds={checkpoint?.segundoActual ?? 0}
+                  onReady={(player) => {
+                    seekRef.current = (seconds) => player.seekTo(seconds, true);
+                  }}
                   onTick={handleTick}
                   onStateChange={handleStateChange}
                 />
@@ -303,6 +306,9 @@ export default function ClasePage() {
                 <LocalVideoPlayer
                   src={clase.urlVideo}
                   startSeconds={checkpoint?.segundoActual ?? 0}
+                  onReady={(player) => {
+                    seekRef.current = (seconds) => player.seekTo(seconds);
+                  }}
                   onTick={handleTick}
                   onStateChange={handleStateChange}
                 />
@@ -311,12 +317,28 @@ export default function ClasePage() {
               )}
             </div>
 
-            {puedeSubirVideo && (
+            <ChapterTimeline
+              capitulos={clase.capitulos ?? []}
+              duracion={clase.duracion}
+              currentSeconds={currentSeconds}
+              onSeek={handleSeek}
+            />
+
+            {puedeGestionarContenido && (
+              <ChapterManager
+                claseId={clase.claseId}
+                duracion={clase.duracion}
+                capitulos={clase.capitulos ?? []}
+                onChange={(capitulos) => setClase((prev) => (prev ? { ...prev, capitulos } : prev))}
+              />
+            )}
+
+            {puedeGestionarContenido && (
               <div className="clase__subida">
                 <h2 className="clase__ficha-titulo">Video de esta clase</h2>
 
                 <p className="clase__subida-desc">
-                  Sube un archivo MP4 para alojarlo en la plataforma (volumen Docker) o usa una URL de YouTube.
+                  Sube un archivo MP4 para alojarlo en la plataforma (disco local o bucket en la nube) o usa una URL de YouTube.
                 </p>
                 <label className="clase__subida-input">
                   <input type="file" accept="video/mp4,video/*" onChange={manejarSubidaVideo} disabled={subiendoVideo} />
@@ -343,26 +365,6 @@ export default function ClasePage() {
 
                 {videoSubido && <Alert tone="info">Video actualizado. El reproductor usará la nueva fuente.</Alert>}
                 {errorSubida && <Alert tone="error">{errorSubida}</Alert>}
-
-                <div className="clase__subida-url">
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={duracionInput}
-                    onChange={(e) => setDuracionInput(e.target.value)}
-                    placeholder="Duración en minutos"
-                    disabled={guardandoDuracion}
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => void guardarDuracion()}
-                    disabled={guardandoDuracion || duracionInput.trim().length === 0}
-                  >
-                    {guardandoDuracion ? 'Guardando…' : 'Guardar duración'}
-                  </Button>
-                </div>
               </div>
             )}
 
@@ -439,7 +441,7 @@ export default function ClasePage() {
                 </div>
                 <div>
                   <dt>Duración</dt>
-                  <dd>{formatDuracion(clase.duracion)}</dd>
+                  <dd>{clase.duracion > 0 ? formatSegundos(clase.duracion) : '—'}</dd>
                 </div>
                 <div>
                   <dt>Escuela</dt>
@@ -451,7 +453,7 @@ export default function ClasePage() {
                 </div>
               </dl>
 
-              {puedeSubirVideo && (
+              {puedeGestionarContenido && (
                 <div className="clase__ficha-acciones">
                   <Button variant="secondary" onClick={() => navigate(`/catalogo/clase/${clase.claseId}/editar`)}>
                     Editar clase
@@ -464,19 +466,11 @@ export default function ClasePage() {
               )}
             </div>
 
-            {clase.urlMaterial && (
-              <div className="clase__material">
-                <h2 className="clase__ficha-titulo">Material adjunto</h2>
-                <a
-                  className="clase__material-link"
-                  href={clase.urlMaterial}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Abrir sílabo / material de la clase ↗
-                </a>
-              </div>
-            )}
+            <MaterialesPanel
+              claseId={clase.claseId}
+              materialesIniciales={clase.materiales ?? []}
+              puedeGestionar={puedeGestionarContenido}
+            />
 
             <div className="clase__participantes">
               <h2 className="clase__ficha-titulo">Docentes y auxiliares</h2>

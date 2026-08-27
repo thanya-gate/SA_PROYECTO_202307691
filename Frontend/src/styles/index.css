@@ -504,9 +504,6 @@ body {
 }
 
 .home__main {
-  padding: 2.5rem 2rem;
-  max-width: 860px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -1494,6 +1491,316 @@ body {
   box-shadow: var(--shadow-card);
 }
 
+.clase__segmentacion,
+.clase__segmentacion-admin {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+}
+
+.clase__segmentacion-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.clase__segmentacion-kicker {
+  margin: 0 0 0.2rem;
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.clase__segmentacion .clase__ficha-titulo,
+.clase__segmentacion-admin .clase__ficha-titulo {
+  margin-bottom: 0;
+}
+
+.clase__segmentacion-tiempo,
+.clase__segmentacion-total {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.clase__segmentacion-barra {
+  position: relative;
+  height: 0.85rem;
+  margin: 1rem 0 1.1rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-primary-light);
+}
+
+.clase__segmentacion-barra-base,
+.clase__segmentacion-progreso,
+.clase__segmentacion-tramo,
+.clase__segmentacion-marcador {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.clase__segmentacion-barra-base {
+  inset: 0;
+  background: var(--color-primary-light);
+}
+
+.clase__segmentacion-progreso {
+  left: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  pointer-events: none;
+}
+
+.clase__segmentacion-tramo {
+  z-index: 2;
+  min-width: 0.15rem;
+  border: 0;
+  border-right: 2px solid var(--color-surface);
+  background: var(--color-primary);
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.clase__segmentacion-tramo:hover,
+.clase__segmentacion-tramo--activo {
+  opacity: 1;
+  transform: scaleY(1.45);
+}
+
+.clase__segmentacion-marcador {
+  z-index: 3;
+  width: 2px;
+  background: var(--color-text);
+  pointer-events: none;
+}
+
+.clase__segmentacion-lista,
+.clase__segmentacion-admin-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clase__segmentacion-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.clase__segmentacion-item:hover,
+.clase__segmentacion-item--activo {
+  border-color: var(--color-border);
+  background: var(--color-primary-light);
+}
+
+.clase__segmentacion-numero {
+  display: inline-flex;
+  min-width: 2.1rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.clase__segmentacion-item-info {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.clase__segmentacion-item-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clase__segmentacion-item-info span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.clase__segmentacion-ir {
+  color: var(--color-primary);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.clase__segmentacion-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.clase__segmentacion-admin .clase__subida-desc {
+  margin-bottom: 0;
+}
+
+.clase__segmentacion-form {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(90px, 0.8fr));
+  gap: 0.7rem;
+  align-items: end;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  background: var(--color-surface-muted);
+}
+
+.clase__segmentacion-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.clase__segmentacion-form input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.clase__segmentacion-form input:focus {
+  outline: 2px solid var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.clase__segmentacion-form-acciones {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.clase__segmentacion-admin-tabla {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+}
+
+.clase__segmentacion-admin-encabezado,
+.clase__segmentacion-admin-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem 5.5rem auto;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.clase__segmentacion-admin-encabezado {
+  padding: 0.55rem 0.7rem;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.clase__segmentacion-admin-item {
+  padding: 0.65rem 0.7rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.clase__segmentacion-admin-nombre {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.clase__segmentacion-admin-nombre strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clase__segmentacion-admin-tiempo {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.clase__segmentacion-admin-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .clase__segmentacion-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .clase__segmentacion-form label:first-child,
+  .clase__segmentacion-form-acciones {
+    grid-column: 1 / -1;
+  }
+
+  .clase__segmentacion-admin-encabezado {
+    display: none;
+  }
+
+  .clase__segmentacion-admin-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .clase__segmentacion-admin-nombre {
+    grid-column: 1 / -1;
+  }
+
+  .clase__segmentacion-admin-tiempo {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+  }
+
+  .clase__segmentacion-admin-tiempo::before {
+    content: attr(data-label);
+    color: var(--color-text-muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .clase__segmentacion-admin-acciones {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
 .clase__youtube-host {
   position: relative;
   width: 100%;
@@ -1663,14 +1970,89 @@ body {
   flex-basis: 100%;
 }
 
-.clase__material-link {
-  color: var(--color-primary);
-  font-weight: 600;
-  text-decoration: none;
+.clase__repo {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
 }
 
-.clase__material-link:hover {
-  text-decoration: underline;
+.clase__repo-subida {
+  margin-bottom: 1rem;
+}
+
+.clase__materiales-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.clase__material-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
+}
+
+.clase__material-item:hover {
+  border-color: var(--color-border-strong);
+}
+
+.clase__material-icono {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.4rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.45rem;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.clase__material-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.clase__material-nombre {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.clase__material-meta {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.clase__material-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .clase__material-item {
+    flex-wrap: wrap;
+  }
+
+  .clase__material-acciones {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 .clase__participantes-lista {
@@ -3460,6 +3842,9 @@ body {
 }
 
 /* ===== Home card (shared) ===== */
+/* El padding superior es 0 para que la miniatura quede pegada al borde de la
+   tarjeta (igual que en el catálogo); el contenido textual conserva su aire
+   con el padding inferior/lateral. */
 .home-card {
   display: flex;
   flex-direction: column;
@@ -3467,7 +3852,8 @@ body {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 0.95rem 1.1rem;
+  padding: 0 1.1rem 0.95rem;
+  overflow: hidden;
   text-decoration: none;
   color: inherit;
   box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
@@ -3585,6 +3971,104 @@ body {
   color: var(--color-text-muted);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* ===== Miniaturas de tarjetas (CardThumbnail) ===== */
+/* Contenedor 16:9 compartido por inicio, catálogo e historial. Mantiene el
+   degradado institucional como marcador mientras carga o cuando la clase no
+   tiene miniatura generada. flex-shrink:0 evita que el flexbox comprima la
+   caja y "acorte" la imagen. */
+.card-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(30, 90, 156, 0.92), rgba(30, 90, 156, 0.85)),
+    radial-gradient(200px 120px at 80% -10%, rgba(247, 181, 0, 0.35), transparent);
+}
+
+.card-thumb__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.card-thumb__img--visible {
+  opacity: 1;
+}
+
+.card-thumb__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-thumb__placeholder--oculto {
+  visibility: hidden;
+}
+
+.card-thumb__icono {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* En las tarjetas del inicio la miniatura va arriba del contenido, pegada a
+   los bordes (la tarjeta ya no tiene padding superior) e igual que en el
+   catálogo: caja 16:9 limpia, sin márgenes negativos. */
+.home-card .card-thumb {
+  margin: 0 0 0.15rem;
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Dentro del thumb del catálogo: la imagen cubre todo el área y los rótulos
+   de código/semestre quedan por encima. */
+.clase-card__thumb .card-thumb {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+}
+
+.clase-card__codigo,
+.clase-card__semestre {
+  position: relative;
+  z-index: 1;
+}
+
+/* Historial: fila horizontal con miniatura fija a la izquierda. align-self
+   evita que el estiramiento vertical del flex altere la proporción 16:9. */
+.historial__item .card-thumb {
+  width: 180px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  border-radius: calc(var(--radius) - 6px);
+}
+
+.historial__item-contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .historial__item {
+    flex-direction: column;
+  }
+
+  .historial__item .card-thumb {
+    width: 100%;
+  }
 }
 
 @media (max-width: 600px) {
