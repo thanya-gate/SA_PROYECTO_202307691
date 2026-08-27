@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Vista lógica F2" id="vistaLogicaF2G4">
+    <mxGraphModel dx="1900" dy="2200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="2200" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="background" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry x="20" y="20" width="1860" height="2160" as="geometry" />
+        </mxCell>
+        <mxCell id="title" parent="1" style="text;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontStyle=1;fontSize=24;" value="VISTA LÓGICA · FASE 2" vertex="1">
+          <mxGeometry x="360" y="35" width="1180" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" parent="1" style="text;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontSize=13;" value="Módulo 7: Aprendizaje interactivo y recursos · CDU0007.1–CDU0007.5" vertex="1">
+          <mxGeometry x="300" y="75" width="1300" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="participantActor" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" value="Actores" vertex="1">
+          <mxGeometry x="45" y="112" width="190" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="participantFrontend" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" value="Frontend" vertex="1">
+          <mxGeometry x="295" y="112" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="participantGateway" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" value="API Gateway" vertex="1">
+          <mxGeometry x="555" y="112" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="participantCatalog" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" value="Catálogo" vertex="1">
+          <mxGeometry x="815" y="112" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="participantPlayback" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" value="Reproducción" vertex="1">
+          <mxGeometry x="1075" y="112" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="participantData" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" value="BD / Storage" vertex="1">
+          <mxGeometry x="1335" y="112" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="participantNotifications" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" value="Notificaciones" vertex="1">
+          <mxGeometry x="1595" y="112" width="210" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lifeActor" parent="1" style="line;strokeColor=#FFFFFF;strokeWidth=1;dashed=1;direction=south;html=1;perimeter=backbonePerimeter;outlineConnect=0;" value="" vertex="1"><mxGeometry x="140" y="160" width="1" height="1970" as="geometry" /></mxCell>
+        <mxCell id="lifeFrontend" parent="1" style="line;strokeColor=#FFFFFF;strokeWidth=1;dashed=1;direction=south;html=1;perimeter=backbonePerimeter;outlineConnect=0;" value="" vertex="1"><mxGeometry x="400" y="160" width="1" height="1970" as="geometry" /></mxCell>
+        <mxCell id="lifeGateway" parent="1" style="line;strokeColor=#FFFFFF;strokeWidth=1;dashed=1;direction=south;html=1;perimeter=backbonePerimeter;outlineConnect=0;" value="" vertex="1"><mxGeometry x="660" y="160" width="1" height="1970" as="geometry" /></mxCell>
+        <mxCell id="lifeCatalog" parent="1" style="line;strokeColor=#FFFFFF;strokeWidth=1;dashed=1;direction=south;html=1;perimeter=backbonePerimeter;outlineConnect=0;" value="" vertex="1"><mxGeometry x="920" y="160" width="1" height="1970" as="geometry" /></mxCell>
+        <mxCell id="lifePlayback" parent="1" style="line;strokeColor=#FFFFFF;strokeWidth=1;dashed=1;direction=south;html=1;perimeter=backbonePerimeter;outlineConnect=0;" value="" vertex="1"><mxGeometry x="1180" y="160" width="1" height="1970" as="geometry" /></mxCell>
+        <mxCell id="lifeData" parent="1" style="line;strokeColor=#FFFFFF;strokeWidth=1;dashed=1;direction=south;html=1;perimeter=backbonePerimeter;outlineConnect=0;" value="" vertex="1"><mxGeometry x="1440" y="160" width="1" height="1970" as="geometry" /></mxCell>
+        <mxCell id="lifeNotifications" parent="1" style="line;strokeColor=#FFFFFF;strokeWidth=1;dashed=1;direction=south;html=1;perimeter=backbonePerimeter;outlineConnect=0;" value="" vertex="1"><mxGeometry x="1700" y="160" width="1" height="1970" as="geometry" /></mxCell>
+
+        <mxCell id="section71" parent="1" style="text;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontStyle=1;fontSize=16;" value="CDU0007.1 · Foro de dudas ancladas" vertex="1"><mxGeometry x="55" y="195" width="700" height="28" as="geometry" /></mxCell>
+        <mxCell id="section72" parent="1" style="text;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontStyle=1;fontSize=16;" value="CDU0007.2 · Cuaderno de apuntes Markdown" vertex="1"><mxGeometry x="55" y="560" width="700" height="28" as="geometry" /></mxCell>
+        <mxCell id="section73" parent="1" style="text;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontStyle=1;fontSize=16;" value="CDU0007.3 · Gestión y navegación de capítulos" vertex="1"><mxGeometry x="55" y="925" width="800" height="28" as="geometry" /></mxCell>
+        <mxCell id="section74" parent="1" style="text;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontStyle=1;fontSize=16;" value="CDU0007.4 · Materiales adjuntos y versionado" vertex="1"><mxGeometry x="55" y="1290" width="800" height="28" as="geometry" /></mxCell>
+        <mxCell id="section75" parent="1" style="text;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontStyle=1;fontSize=16;" value="CDU0007.5 · Playlists de repaso" vertex="1"><mxGeometry x="55" y="1655" width="700" height="28" as="geometry" /></mxCell>
+
+        <mxCell id="a71_1" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Publica o consulta duda"><mxGeometry relative="1" as="geometry"><mxPoint x="140" y="250" as="sourcePoint"/><mxPoint x="400" y="250" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a71_2" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Opera CDU0007.1"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="285" as="sourcePoint"/><mxPoint x="660" y="285" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a71_3" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Duda, respuesta y estado"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="320" as="sourcePoint"/><mxPoint x="920" y="320" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a71_4" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Valida acceso y timestamp"><mxGeometry relative="1" as="geometry"><mxPoint x="920" y="355" as="sourcePoint"/><mxPoint x="1180" y="355" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a71_5" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Persiste hilo"><mxGeometry relative="1" as="geometry"><mxPoint x="920" y="390" as="sourcePoint"/><mxPoint x="1440" y="390" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a71_6" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Notifica actualización"><mxGeometry relative="1" as="geometry"><mxPoint x="920" y="425" as="sourcePoint"/><mxPoint x="1700" y="425" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a71_7" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Marcador e hilo"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="460" as="sourcePoint"/><mxPoint x="400" y="460" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a71_8" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Respuesta al actor"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="495" as="sourcePoint"/><mxPoint x="140" y="495" as="targetPoint"/></mxGeometry></mxCell>
+
+        <mxCell id="a72_1" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Edita Markdown y timestamps"><mxGeometry relative="1" as="geometry"><mxPoint x="140" y="615" as="sourcePoint"/><mxPoint x="400" y="615" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a72_2" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Guardar o exportar"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="650" as="sourcePoint"/><mxPoint x="660" y="650" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a72_3" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Gestiona apunte"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="685" as="sourcePoint"/><mxPoint x="1180" y="685" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a72_4" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Persiste contenido"><mxGeometry relative="1" as="geometry"><mxPoint x="1180" y="720" as="sourcePoint"/><mxPoint x="1440" y="720" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a72_5" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Enlace a reproducción / archivo"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="755" as="sourcePoint"/><mxPoint x="400" y="755" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a72_6" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Nota guardada"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="790" as="sourcePoint"/><mxPoint x="140" y="790" as="targetPoint"/></mxGeometry></mxCell>
+
+        <mxCell id="a73_1" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Administra o selecciona capítulo"><mxGeometry relative="1" as="geometry"><mxPoint x="140" y="980" as="sourcePoint"/><mxPoint x="400" y="980" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a73_2" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="CRUD de capítulo"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="1015" as="sourcePoint"/><mxPoint x="660" y="1015" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a73_3" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Valida rango y orden"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="1050" as="sourcePoint"/><mxPoint x="920" y="1050" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a73_4" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Persiste capítulo"><mxGeometry relative="1" as="geometry"><mxPoint x="920" y="1085" as="sourcePoint"/><mxPoint x="1440" y="1085" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a73_5" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Salta al inicio"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="1120" as="sourcePoint"/><mxPoint x="1180" y="1120" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a73_6" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Reproducción posicionada"><mxGeometry relative="1" as="geometry"><mxPoint x="1180" y="1155" as="sourcePoint"/><mxPoint x="400" y="1155" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a73_7" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Índice actualizado"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="1190" as="sourcePoint"/><mxPoint x="140" y="1190" as="targetPoint"/></mxGeometry></mxCell>
+
+        <mxCell id="a74_1" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Carga o consulta material"><mxGeometry relative="1" as="geometry"><mxPoint x="140" y="1345" as="sourcePoint"/><mxPoint x="400" y="1345" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a74_2" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Upload / download"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="1380" as="sourcePoint"/><mxPoint x="660" y="1380" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a74_3" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Valida y versiona"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="1415" as="sourcePoint"/><mxPoint x="920" y="1415" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a74_4" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Guarda / descarga archivo"><mxGeometry relative="1" as="geometry"><mxPoint x="920" y="1450" as="sourcePoint"/><mxPoint x="1440" y="1450" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a74_5" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Registra material y contador"><mxGeometry relative="1" as="geometry"><mxPoint x="920" y="1485" as="sourcePoint"/><mxPoint x="1440" y="1485" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a74_6" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Metadatos y archivo"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="1520" as="sourcePoint"/><mxPoint x="400" y="1520" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a74_7" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Material disponible"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="1555" as="sourcePoint"/><mxPoint x="140" y="1555" as="targetPoint"/></mxGeometry></mxCell>
+
+        <mxCell id="a75_1" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Crea y ordena playlist"><mxGeometry relative="1" as="geometry"><mxPoint x="140" y="1710" as="sourcePoint"/><mxPoint x="400" y="1710" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a75_2" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Gestiona playlist"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="1745" as="sourcePoint"/><mxPoint x="660" y="1745" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a75_3" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Resuelve grabaciones"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="1780" as="sourcePoint"/><mxPoint x="920" y="1780" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a75_4" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Persiste playlist"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="1815" as="sourcePoint"/><mxPoint x="1440" y="1815" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a75_5" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;endArrow=block;endFill=1;" value="Reproduce fragmento"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="1850" as="sourcePoint"/><mxPoint x="1180" y="1850" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a75_6" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Enlace público / estado"><mxGeometry relative="1" as="geometry"><mxPoint x="660" y="1885" as="sourcePoint"/><mxPoint x="400" y="1885" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="a75_7" edge="1" parent="1" style="edgeStyle=none;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontSize=12;dashed=1;endArrow=block;endFill=0;" value="Playlist disponible"><mxGeometry relative="1" as="geometry"><mxPoint x="400" y="1920" as="sourcePoint"/><mxPoint x="140" y="1920" as="targetPoint"/></mxGeometry></mxCell>
+
+        <mxCell id="footer" parent="1" style="text;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontSize=12;fontStyle=2;" value="La vista conserva la separación lógica entre presentación, Gateway, Catálogo, Reproducción y persistencia definida para Fase 2." vertex="1"><mxGeometry x="230" y="2145" width="1440" height="24" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
