@@ -12,7 +12,6 @@ import (
 	"yousac.com/yousac/reproduccion-service/internal/domain"
 )
 
-
 type ReproduccionRepository struct {
 	pool *pgxpool.Pool
 }
@@ -120,4 +119,79 @@ func (r *ReproduccionRepository) RegistrarCalificacion(ctx context.Context, hist
 		return fmt.Errorf("registrar calificación: %w", mapearError(err))
 	}
 	return nil
+}
+
+func (r *ReproduccionRepository) GuardarApunte(ctx context.Context, estudianteID, claseID, titulo, contenidoMarkdown string) (*domain.Apunte, error) {
+	var apunte domain.Apunte
+	err := r.pool.QueryRow(ctx, `
+		INSERT INTO apunte (estudiante_id, clase_id, titulo, contenido_markdown)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (estudiante_id, clase_id) DO UPDATE SET
+			titulo = EXCLUDED.titulo,
+			contenido_markdown = EXCLUDED.contenido_markdown,
+			fecha_actualizacion = NOW()
+		RETURNING id, estudiante_id, clase_id, titulo, contenido_markdown,
+		          fecha_creacion::text, fecha_actualizacion::text`,
+		estudianteID, claseID, titulo, contenidoMarkdown).
+		Scan(&apunte.ApunteID, &apunte.EstudianteID, &apunte.ClaseID, &apunte.Titulo,
+			&apunte.ContenidoMarkdown, &apunte.FechaCreacion, &apunte.FechaActualizacion)
+	if err != nil {
+		return nil, fmt.Errorf("guardar apunte: %w", mapearError(err))
+	}
+	return &apunte, nil
+}
+
+func (r *ReproduccionRepository) ObtenerApunte(ctx context.Context, estudianteID, claseID string) (*domain.Apunte, error) {
+	var apunte domain.Apunte
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, estudiante_id, clase_id, titulo, contenido_markdown,
+		       fecha_creacion::text, fecha_actualizacion::text
+		FROM apunte
+		WHERE estudiante_id = $1 AND clase_id = $2`, estudianteID, claseID).
+		Scan(&apunte.ApunteID, &apunte.EstudianteID, &apunte.ClaseID, &apunte.Titulo,
+			&apunte.ContenidoMarkdown, &apunte.FechaCreacion, &apunte.FechaActualizacion)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("obtener apunte: %w", err)
+	}
+	return &apunte, nil
+}
+
+func (r *ReproduccionRepository) ListarApuntes(ctx context.Context, estudianteID string) ([]domain.Apunte, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, estudiante_id, clase_id, titulo, contenido_markdown,
+		       fecha_creacion::text, fecha_actualizacion::text
+		FROM apunte
+		WHERE estudiante_id = $1
+		ORDER BY fecha_actualizacion DESC`, estudianteID)
+	if err != nil {
+		return nil, fmt.Errorf("listar apuntes: %w", err)
+	}
+	defer rows.Close()
+
+	apuntes := make([]domain.Apunte, 0)
+	for rows.Next() {
+		var apunte domain.Apunte
+		if err := rows.Scan(&apunte.ApunteID, &apunte.EstudianteID, &apunte.ClaseID,
+			&apunte.Titulo, &apunte.ContenidoMarkdown,
+			&apunte.FechaCreacion, &apunte.FechaActualizacion); err != nil {
+			return nil, fmt.Errorf("leer apuntes: %w", err)
+		}
+		apuntes = append(apuntes, apunte)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterar apuntes: %w", err)
+	}
+	return apuntes, nil
+}
+
+func (r *ReproduccionRepository) EliminarApunte(ctx context.Context, estudianteID, claseID string) (bool, error) {
+	tag, err := r.pool.Exec(ctx,
+		"DELETE FROM apunte WHERE estudiante_id = $1 AND clase_id = $2", estudianteID, claseID)
+	if err != nil {
+		return false, fmt.Errorf("eliminar apunte: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
 }

@@ -18,6 +18,8 @@ type grpcFakeRepository struct {
 	historial  []domain.HistorialItem
 	guardarErr error
 	readErr    error
+	apunte     *domain.Apunte
+	apuntes    []domain.Apunte
 }
 
 func (f *grpcFakeRepository) GuardarCheckpoint(context.Context, string, string, int32, int32) (string, float64, error) {
@@ -37,6 +39,28 @@ func (f *grpcFakeRepository) HistorialReciente(context.Context, string) ([]domai
 
 func (f *grpcFakeRepository) RegistrarCalificacion(context.Context, string, int32, string) error {
 	return f.guardarErr
+}
+
+func (f *grpcFakeRepository) GuardarApunte(ctx context.Context, estudianteID, claseID, titulo, contenidoMarkdown string) (*domain.Apunte, error) {
+	if f.guardarErr != nil {
+		return nil, f.guardarErr
+	}
+	return &domain.Apunte{ApunteID: "apunte-1", EstudianteID: estudianteID, ClaseID: claseID, Titulo: titulo, ContenidoMarkdown: contenidoMarkdown}, nil
+}
+
+func (f *grpcFakeRepository) ObtenerApunte(context.Context, string, string) (*domain.Apunte, error) {
+	return f.apunte, f.readErr
+}
+
+func (f *grpcFakeRepository) ListarApuntes(context.Context, string) ([]domain.Apunte, error) {
+	return f.apuntes, f.readErr
+}
+
+func (f *grpcFakeRepository) EliminarApunte(context.Context, string, string) (bool, error) {
+	if f.guardarErr != nil {
+		return false, f.guardarErr
+	}
+	return true, nil
 }
 
 func (f *grpcFakeRepository) Ping(context.Context) error { return nil }
@@ -104,6 +128,43 @@ func TestServerDevuelveCheckpointVacíoYStatusInvalidArgument(t *testing.T) {
 	}
 }
 
+func TestServerApuntesExponeRespuestasYMapeaErrores(t *testing.T) {
+	repo := &grpcFakeRepository{
+		apunte:  &domain.Apunte{ApunteID: "apunte-1", EstudianteID: "est-1", ClaseID: "clase-1", Titulo: "Resumen", ContenidoMarkdown: "# Resumen\n\n[01:20] tema"},
+		apuntes: []domain.Apunte{{ApunteID: "apunte-1", EstudianteID: "est-1", ClaseID: "clase-1", Titulo: "Resumen"}},
+	}
+	server := New(service.New(repo), "test-version")
+
+	guardado, err := server.GuardarApunte(context.Background(), &reproduccionv1.GuardarApunteRequest{
+		EstudianteId: "est-1", ClaseId: "clase-1", Titulo: "Resumen", ContenidoMarkdown: "[01:20] tema",
+	})
+	if err != nil || guardado.GetApunte().GetApunteId() != "apunte-1" || guardado.GetApunte().GetTitulo() != "Resumen" {
+		t.Fatalf("GuardarApunte() = %#v, %v", guardado, err)
+	}
+
+	obtenido, err := server.ObtenerApunte(context.Background(), &reproduccionv1.ObtenerApunteRequest{EstudianteId: "est-1", ClaseId: "clase-1"})
+	if err != nil || obtenido.GetApunte().GetContenidoMarkdown() != "# Resumen\n\n[01:20] tema" {
+		t.Fatalf("ObtenerApunte() = %#v, %v", obtenido, err)
+	}
+
+	lista, err := server.ListarApuntes(context.Background(), &reproduccionv1.ListarApuntesRequest{EstudianteId: "est-1"})
+	if err != nil || len(lista.GetApuntes()) != 1 || lista.GetApuntes()[0].GetClaseId() != "clase-1" {
+		t.Fatalf("ListarApuntes() = %#v, %v", lista, err)
+	}
+
+	eliminado, err := server.EliminarApunte(context.Background(), &reproduccionv1.EliminarApunteRequest{EstudianteId: "est-1", ClaseId: "clase-1"})
+	if err != nil || !eliminado.GetEliminado() {
+		t.Fatalf("EliminarApunte() = %#v, %v", eliminado, err)
+	}
+
+	// Validación de entrada: contenido inválido debe devolver InvalidArgument.
+	if _, err := server.GuardarApunte(context.Background(), &reproduccionv1.GuardarApunteRequest{
+		EstudianteId: "est", ClaseId: "clase", Titulo: "t", ContenidoMarkdown: "[12:99] mal",
+	}); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("GuardarApunte con marcador inválido status = %s, se esperaba InvalidArgument", status.Code(err))
+	}
+}
+
 func TestMapError(t *testing.T) {
 	tests := []struct {
 		err  error
@@ -115,6 +176,10 @@ func TestMapError(t *testing.T) {
 		{domain.ErrDuracionInvalida, codes.InvalidArgument},
 		{domain.ErrHistorialNoEncontrado, codes.InvalidArgument},
 		{domain.ErrPuntuacionInvalida, codes.InvalidArgument},
+		{domain.ErrApunteTituloRequerido, codes.InvalidArgument},
+		{domain.ErrApunteContenidoRequerido, codes.InvalidArgument},
+		{domain.ErrMarcadorTiempoInvalido, codes.InvalidArgument},
+		{domain.ErrTituloMuyLargo, codes.InvalidArgument},
 		{errors.New("fallo externo"), codes.Internal},
 	}
 	for _, tt := range tests {

@@ -10,24 +10,33 @@ import (
 )
 
 type fakeRepository struct {
-	guardarID         string
-	guardarPorcentaje float64
-	guardarErr        error
-	checkpoint        *domain.Checkpoint
-	checkpointErr     error
-	historial         []domain.HistorialItem
-	historialErr      error
-	calificarErr      error
-	guardarCalls      int
-	checkpointCalls   int
-	historialCalls    int
-	calificarCalls    int
-	lastEstudiante    string
-	lastClase         string
-	lastSegundo       int32
-	lastDuracion      int32
-	lastPuntuacion    int32
-	lastComentario    string
+	guardarID          string
+	guardarPorcentaje  float64
+	guardarErr         error
+	checkpoint         *domain.Checkpoint
+	checkpointErr      error
+	historial          []domain.HistorialItem
+	historialErr       error
+	calificarErr       error
+	guardarCalls       int
+	checkpointCalls    int
+	historialCalls     int
+	calificarCalls     int
+	lastEstudiante     string
+	lastClase          string
+	lastSegundo        int32
+	lastDuracion       int32
+	lastPuntuacion     int32
+	lastComentario     string
+	apunte             *domain.Apunte
+	apunteErr          error
+	apuntes            []domain.Apunte
+	apuntesErr         error
+	eliminarOk         bool
+	eliminarErr        error
+	guardarApunteCalls int
+	lastTitulo         string
+	lastContenido      string
 }
 
 func (f *fakeRepository) GuardarCheckpoint(_ context.Context, estudianteID, claseID string, segundoActual, duracion int32) (string, float64, error) {
@@ -51,6 +60,25 @@ func (f *fakeRepository) RegistrarCalificacion(_ context.Context, _ string, punt
 	f.calificarCalls++
 	f.lastPuntuacion, f.lastComentario = puntuacion, comentario
 	return f.calificarErr
+}
+
+func (f *fakeRepository) GuardarApunte(_ context.Context, estudianteID, claseID, titulo, contenidoMarkdown string) (*domain.Apunte, error) {
+	f.guardarApunteCalls++
+	f.lastEstudiante, f.lastClase = estudianteID, claseID
+	f.lastTitulo, f.lastContenido = titulo, contenidoMarkdown
+	return f.apunte, f.apunteErr
+}
+
+func (f *fakeRepository) ObtenerApunte(context.Context, string, string) (*domain.Apunte, error) {
+	return f.apunte, f.apunteErr
+}
+
+func (f *fakeRepository) ListarApuntes(context.Context, string) ([]domain.Apunte, error) {
+	return f.apuntes, f.apuntesErr
+}
+
+func (f *fakeRepository) EliminarApunte(context.Context, string, string) (bool, error) {
+	return f.eliminarOk, f.eliminarErr
 }
 
 func (f *fakeRepository) Ping(context.Context) error { return nil }
@@ -142,7 +170,8 @@ func TestReproduccionServiceDelegaCheckpointHistorialYCalificacion(t *testing.T)
 
 func TestReproduccionServicePropagaErroresDelRepositorio(t *testing.T) {
 	failure := errors.New("database unavailable")
-	repo := &fakeRepository{guardarErr: failure, checkpointErr: failure, historialErr: failure, calificarErr: failure}
+	repo := &fakeRepository{guardarErr: failure, checkpointErr: failure, historialErr: failure, calificarErr: failure,
+		apunteErr: failure, apuntesErr: failure, eliminarErr: failure}
 	svc := service.New(repo)
 
 	if _, _, err := svc.GuardarCheckpoint(context.Background(), "est", "clase", 1, 10); !errors.Is(err, failure) {
@@ -156,5 +185,71 @@ func TestReproduccionServicePropagaErroresDelRepositorio(t *testing.T) {
 	}
 	if err := svc.RegistrarCalificacion(context.Background(), "hist", 3, ""); !errors.Is(err, failure) {
 		t.Errorf("RegistrarCalificacion no propagó error: %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "clase", "t", "contenido [12:30]"); !errors.Is(err, failure) {
+		t.Errorf("GuardarApunte no propagó error: %v", err)
+	}
+	if _, err := svc.ObtenerApunte(context.Background(), "est", "clase"); !errors.Is(err, failure) {
+		t.Errorf("ObtenerApunte no propagó error: %v", err)
+	}
+	if _, err := svc.ListarApuntes(context.Background(), "est"); !errors.Is(err, failure) {
+		t.Errorf("ListarApuntes no propagó error: %v", err)
+	}
+	if _, err := svc.EliminarApunte(context.Background(), "est", "clase"); !errors.Is(err, failure) {
+		t.Errorf("EliminarApunte no propagó error: %v", err)
+	}
+}
+
+func TestReproduccionServiceApuntesValidaYDelega(t *testing.T) {
+	repo := &fakeRepository{
+		apunte:     &domain.Apunte{ApunteID: "apunte-1", EstudianteID: "est-1", ClaseID: "clase-1", Titulo: "Resumen", ContenidoMarkdown: "# Resumen\\n\\n[01:20] tema"},
+		apuntes:    []domain.Apunte{{ApunteID: "apunte-1", ClaseID: "clase-1"}},
+		eliminarOk: true,
+	}
+	svc := service.New(repo)
+
+	apunte, err := svc.GuardarApunte(context.Background(), "est-1", "clase-1", "Resumen", "[01:20] tema")
+	if err != nil || apunte.ApunteID != "apunte-1" {
+		t.Fatalf("GuardarApunte() = %#v, %v", apunte, err)
+	}
+	if repo.lastEstudiante != "est-1" || repo.lastClase != "clase-1" || repo.lastTitulo != "Resumen" {
+		t.Fatalf("argumentos delegados incorrectos: %#v", repo)
+	}
+
+	if _, err := svc.ObtenerApunte(context.Background(), "est-1", "clase-1"); err != nil {
+		t.Fatalf("ObtenerApunte() error = %v", err)
+	}
+	lista, err := svc.ListarApuntes(context.Background(), "est-1")
+	if err != nil || len(lista) != 1 {
+		t.Fatalf("ListarApuntes() = %#v, %v", lista, err)
+	}
+	ok, err := svc.EliminarApunte(context.Background(), "est-1", "clase-1")
+	if err != nil || !ok {
+		t.Fatalf("EliminarApunte() = %v, %v", ok, err)
+	}
+
+	if _, err := svc.GuardarApunte(context.Background(), "", "clase", "t", "c"); !errors.Is(err, domain.ErrEstudianteRequerido) {
+		t.Errorf("apunte sin estudiante = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "", "t", "c"); !errors.Is(err, domain.ErrClaseRequerida) {
+		t.Errorf("apunte sin clase = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "clase", "", "c"); !errors.Is(err, domain.ErrApunteTituloRequerido) {
+		t.Errorf("apunte sin título = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "clase", "t", ""); !errors.Is(err, domain.ErrApunteContenidoRequerido) {
+		t.Errorf("apunte sin contenido = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "clase", "t", "texto [99:99] inválido"); !errors.Is(err, domain.ErrMarcadorTiempoInvalido) {
+		t.Errorf("apunte con marcador inválido = %v", err)
+	}
+	if _, err := svc.ObtenerApunte(context.Background(), "", "clase"); !errors.Is(err, domain.ErrEstudianteRequerido) {
+		t.Errorf("obtener apunte sin estudiante = %v", err)
+	}
+	if _, err := svc.EliminarApunte(context.Background(), "est", ""); !errors.Is(err, domain.ErrClaseRequerida) {
+		t.Errorf("eliminar apunte sin clase = %v", err)
+	}
+	if repo.guardarApunteCalls != 1 {
+		t.Errorf("el repositorio de apuntes recibió %d llamadas, se esperaba 1", repo.guardarApunteCalls)
 	}
 }

@@ -89,6 +89,60 @@ func (s *Server) RegistrarCalificacion(ctx context.Context, req *reproduccionv1.
 	return &reproduccionv1.RegistrarCalificacionResponse{Registrada: true}, nil
 }
 
+func (s *Server) GuardarApunte(ctx context.Context, req *reproduccionv1.GuardarApunteRequest) (*reproduccionv1.GuardarApunteResponse, error) {
+	apunte, err := s.svc.GuardarApunte(ctx, req.GetEstudianteId(), req.GetClaseId(), req.GetTitulo(), req.GetContenidoMarkdown())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &reproduccionv1.GuardarApunteResponse{Apunte: toProtoApunte(apunte)}, nil
+}
+
+func (s *Server) ObtenerApunte(ctx context.Context, req *reproduccionv1.ObtenerApunteRequest) (*reproduccionv1.ObtenerApunteResponse, error) {
+	apunte, err := s.svc.ObtenerApunte(ctx, req.GetEstudianteId(), req.GetClaseId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	if apunte == nil {
+		return &reproduccionv1.ObtenerApunteResponse{}, nil
+	}
+	return &reproduccionv1.ObtenerApunteResponse{Apunte: toProtoApunte(apunte)}, nil
+}
+
+func (s *Server) ListarApuntes(ctx context.Context, req *reproduccionv1.ListarApuntesRequest) (*reproduccionv1.ListarApuntesResponse, error) {
+	apuntes, err := s.svc.ListarApuntes(ctx, req.GetEstudianteId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	protoApuntes := make([]*reproduccionv1.Apunte, 0, len(apuntes))
+	for i := range apuntes {
+		protoApuntes = append(protoApuntes, toProtoApunte(&apuntes[i]))
+	}
+	return &reproduccionv1.ListarApuntesResponse{Apuntes: protoApuntes}, nil
+}
+
+func (s *Server) EliminarApunte(ctx context.Context, req *reproduccionv1.EliminarApunteRequest) (*reproduccionv1.EliminarApunteResponse, error) {
+	eliminado, err := s.svc.EliminarApunte(ctx, req.GetEstudianteId(), req.GetClaseId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &reproduccionv1.EliminarApunteResponse{Eliminado: eliminado}, nil
+}
+
+func toProtoApunte(a *domain.Apunte) *reproduccionv1.Apunte {
+	if a == nil {
+		return nil
+	}
+	return &reproduccionv1.Apunte{
+		ApunteId:           a.ApunteID,
+		EstudianteId:       a.EstudianteID,
+		ClaseId:            a.ClaseID,
+		Titulo:             a.Titulo,
+		ContenidoMarkdown:  a.ContenidoMarkdown,
+		FechaCreacion:      a.FechaCreacion,
+		FechaActualizacion: a.FechaActualizacion,
+	}
+}
+
 func mapError(err error) error {
 	switch {
 	case errors.Is(err, domain.ErrEstudianteRequerido),
@@ -96,7 +150,11 @@ func mapError(err error) error {
 		errors.Is(err, domain.ErrSegundoInvalido),
 		errors.Is(err, domain.ErrDuracionInvalida),
 		errors.Is(err, domain.ErrHistorialNoEncontrado),
-		errors.Is(err, domain.ErrPuntuacionInvalida):
+		errors.Is(err, domain.ErrPuntuacionInvalida),
+		errors.Is(err, domain.ErrApunteTituloRequerido),
+		errors.Is(err, domain.ErrApunteContenidoRequerido),
+		errors.Is(err, domain.ErrMarcadorTiempoInvalido),
+		errors.Is(err, domain.ErrTituloMuyLargo):
 		return status.Error(codes.InvalidArgument, err.Error())
 	default:
 		log.Printf("[reproduccion-service] error no mapeado: %v", err)
