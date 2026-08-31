@@ -1703,6 +1703,23 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
     }
   });
 
+  // Exportación del cuaderno de apuntes a un archivo Markdown (.md). Solo el
+  // backend genera el .md; la conversión a PDF con rendering enriquecido
+  // (fórmulas, resaltado de sintaxis) se realiza en el frontend.
+  app.get('/reproduccion/apuntes/:claseId/exportar', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.exportarApunteMd({
+        estudianteId: req.context!.userId,
+        claseId: req.params.claseId,
+      });
+      res.setHeader('Content-Type', result.mimeType ?? 'text/markdown; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.nombreArchivo}"`);
+      res.status(200).send(result.contenidoMd);
+    } catch (err) {
+      next(err);
+    }
+  });
+
 //analitica
   app.get('/analitica/clases-mas-vistas', authenticate, async (req, res, next) => {
     try {

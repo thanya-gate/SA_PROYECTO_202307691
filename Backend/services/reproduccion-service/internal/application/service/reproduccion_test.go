@@ -253,3 +253,63 @@ func TestReproduccionServiceApuntesValidaYDelega(t *testing.T) {
 		t.Errorf("el repositorio de apuntes recibió %d llamadas, se esperaba 1", repo.guardarApunteCalls)
 	}
 }
+
+func TestReproduccionServiceExportarApunteMd(t *testing.T) {
+	t.Run("genera archivo markdown desde el apunte persistido", func(t *testing.T) {
+		repo := &fakeRepository{
+			apunte: &domain.Apunte{
+				ApunteID:          "apunte-1",
+				EstudianteID:      "est-1",
+				ClaseID:           "clase-1",
+				Titulo:            "Resumen",
+				ContenidoMarkdown: "# Resumen\n\n[00:05] marcador",
+			},
+		}
+		svc := service.New(repo)
+
+		archivo, err := svc.ExportarApunteMd(context.Background(), "est-1", "clase-1")
+		if err != nil {
+			t.Fatalf("ExportarApunteMd() error = %v", err)
+		}
+		if archivo.NombreArchivo != "apunte-clase-1.md" {
+			t.Errorf("NombreArchivo = %q, se esperaba apunte-clase-1.md", archivo.NombreArchivo)
+		}
+		if archivo.ContenidoMD != "# Resumen\n\n[00:05] marcador" {
+			t.Errorf("ContenidoMD = %q", archivo.ContenidoMD)
+		}
+		if archivo.MimeType != domain.MimeTypeMarkdown {
+			t.Errorf("MimeType = %q, se esperaba %q", archivo.MimeType, domain.MimeTypeMarkdown)
+		}
+	})
+
+	t.Run("apunte inexistente devuelve ErrApunteNoEncontrado", func(t *testing.T) {
+		repo := &fakeRepository{}
+		svc := service.New(repo)
+
+		if _, err := svc.ExportarApunteMd(context.Background(), "est-1", "clase-1"); !errors.Is(err, domain.ErrApunteNoEncontrado) {
+			t.Errorf("ExportarApunteMd() error = %v, se esperaba ErrApunteNoEncontrado", err)
+		}
+	})
+
+	t.Run("propaga error del repositorio", func(t *testing.T) {
+		failure := errors.New("fallo de bd")
+		repo := &fakeRepository{apunteErr: failure}
+		svc := service.New(repo)
+
+		if _, err := svc.ExportarApunteMd(context.Background(), "est-1", "clase-1"); !errors.Is(err, failure) {
+			t.Errorf("ExportarApunteMd() no propagó el error: %v", err)
+		}
+	})
+
+	t.Run("valida identificadores", func(t *testing.T) {
+		repo := &fakeRepository{}
+		svc := service.New(repo)
+
+		if _, err := svc.ExportarApunteMd(context.Background(), "", "clase"); !errors.Is(err, domain.ErrEstudianteRequerido) {
+			t.Errorf("sin estudiante = %v", err)
+		}
+		if _, err := svc.ExportarApunteMd(context.Background(), "est", ""); !errors.Is(err, domain.ErrClaseRequerida) {
+			t.Errorf("sin clase = %v", err)
+		}
+	})
+}

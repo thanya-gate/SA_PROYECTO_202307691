@@ -128,6 +128,18 @@ func (s *Server) EliminarApunte(ctx context.Context, req *reproduccionv1.Elimina
 	return &reproduccionv1.EliminarApunteResponse{Eliminado: eliminado}, nil
 }
 
+func (s *Server) ExportarApunteMd(ctx context.Context, req *reproduccionv1.ExportarApunteMdRequest) (*reproduccionv1.ExportarApunteMdResponse, error) {
+	archivo, err := s.svc.ExportarApunteMd(ctx, req.GetEstudianteId(), req.GetClaseId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &reproduccionv1.ExportarApunteMdResponse{
+		NombreArchivo: archivo.NombreArchivo,
+		ContenidoMd:   archivo.ContenidoMD,
+		MimeType:      archivo.MimeType,
+	}, nil
+}
+
 func toProtoApunte(a *domain.Apunte) *reproduccionv1.Apunte {
 	if a == nil {
 		return nil
@@ -156,6 +168,8 @@ func mapError(err error) error {
 		errors.Is(err, domain.ErrMarcadorTiempoInvalido),
 		errors.Is(err, domain.ErrTituloMuyLargo):
 		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, domain.ErrApunteNoEncontrado):
+		return status.Error(codes.NotFound, err.Error())
 	default:
 		log.Printf("[reproduccion-service] error no mapeado: %v", err)
 		return status.Error(codes.Internal, "ERROR_INTERNO: no se pudo completar la operación")

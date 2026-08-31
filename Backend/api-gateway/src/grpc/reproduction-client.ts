@@ -74,4 +74,6 @@ export const reproductionGrpc = {
   listarApuntes: (req: { estudianteId: string }) => unary('ListarApuntes', req),
   eliminarApunte: (req: { estudianteId: string; claseId: string }) =>
     unary('EliminarApunte', req),
+  exportarApunteMd: (req: { estudianteId: string; claseId: string }) =>
+    unary('ExportarApunteMd', req),
 };

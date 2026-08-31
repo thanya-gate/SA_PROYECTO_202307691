@@ -130,6 +130,21 @@ message EliminarApunteResponse {
   bool eliminado = 1;
 }
 
+// Exportación del cuaderno de apuntes a un archivo Markdown (.md). El backend
+// devuelve el archivo listo para descargar; la conversión a PDF con el
+// rendering enriquecido (fórmulas, resaltado de sintaxis) se realiza en el
+// frontend, que ya dispone del renderizador.
+message ExportarApunteMdRequest {
+  string estudiante_id = 1;
+  string clase_id = 2;
+}
+
+message ExportarApunteMdResponse {
+  string nombre_archivo = 1; // p. ej. "apunte-<clase>.md"
+  string contenido_md = 2;   // contenido Markdown exportado
+  string mime_type = 3;      // "text/markdown; charset=utf-8"
+}
+
 service ReproduccionService {
   rpc Health(HealthRequest) returns (HealthResponse);
 
@@ -148,4 +163,7 @@ service ReproduccionService {
   rpc ObtenerApunte(ObtenerApunteRequest) returns (ObtenerApunteResponse);
   rpc ListarApuntes(ListarApuntesRequest) returns (ListarApuntesResponse);
   rpc EliminarApunte(EliminarApunteRequest) returns (EliminarApunteResponse);
+
+  // --- Exportación del apunte a archivo Markdown ---
+  rpc ExportarApunteMd(ExportarApunteMdRequest) returns (ExportarApunteMdResponse);
 }

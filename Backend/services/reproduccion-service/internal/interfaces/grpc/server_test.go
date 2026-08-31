@@ -165,6 +165,41 @@ func TestServerApuntesExponeRespuestasYMapeaErrores(t *testing.T) {
 	}
 }
 
+func TestServerExportarApunteMdExponeArchivo(t *testing.T) {
+	repo := &grpcFakeRepository{
+		apunte: &domain.Apunte{
+			ApunteID:          "apunte-1",
+			EstudianteID:      "est-1",
+			ClaseID:           "clase-1",
+			Titulo:            "Resumen",
+			ContenidoMarkdown: "# Resumen\n\n[00:05] marcador",
+		},
+	}
+	server := New(service.New(repo), "test-version")
+
+	exportado, err := server.ExportarApunteMd(context.Background(), &reproduccionv1.ExportarApunteMdRequest{EstudianteId: "est-1", ClaseId: "clase-1"})
+	if err != nil {
+		t.Fatalf("ExportarApunteMd() error = %v", err)
+	}
+	if exportado.GetNombreArchivo() != "apunte-clase-1.md" {
+		t.Errorf("NombreArchivo = %q, se esperaba apunte-clase-1.md", exportado.GetNombreArchivo())
+	}
+	if exportado.GetContenidoMd() != "# Resumen\n\n[00:05] marcador" {
+		t.Errorf("ContenidoMd = %q", exportado.GetContenidoMd())
+	}
+	if exportado.GetMimeType() != domain.MimeTypeMarkdown {
+		t.Errorf("MimeType = %q, se esperaba %q", exportado.GetMimeType(), domain.MimeTypeMarkdown)
+	}
+
+	// Apunte inexistente (fake devuelve (nil, nil)) debe mapearse a NotFound.
+	repoSinApunte := &grpcFakeRepository{}
+	serverSinApunte := New(service.New(repoSinApunte), "test-version")
+	if _, err := serverSinApunte.ExportarApunteMd(context.Background(),
+		&reproduccionv1.ExportarApunteMdRequest{EstudianteId: "est-1", ClaseId: "clase-1"}); status.Code(err) != codes.NotFound {
+		t.Fatalf("ExportarApunteMd sin apunte status = %s, se esperaba NotFound", status.Code(err))
+	}
+}
+
 func TestMapError(t *testing.T) {
 	tests := []struct {
 		err  error
@@ -180,6 +215,7 @@ func TestMapError(t *testing.T) {
 		{domain.ErrApunteContenidoRequerido, codes.InvalidArgument},
 		{domain.ErrMarcadorTiempoInvalido, codes.InvalidArgument},
 		{domain.ErrTituloMuyLargo, codes.InvalidArgument},
+		{domain.ErrApunteNoEncontrado, codes.NotFound},
 		{errors.New("fallo externo"), codes.Internal},
 	}
 	for _, tt := range tests {

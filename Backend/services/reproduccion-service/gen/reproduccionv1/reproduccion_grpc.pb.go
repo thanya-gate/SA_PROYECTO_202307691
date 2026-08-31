@@ -28,6 +28,7 @@ const (
 	ReproduccionService_ObtenerApunte_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/ObtenerApunte"
 	ReproduccionService_ListarApuntes_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/ListarApuntes"
 	ReproduccionService_EliminarApunte_FullMethodName        = "/yousac.reproduccion.v1.ReproduccionService/EliminarApunte"
+	ReproduccionService_ExportarApunteMd_FullMethodName      = "/yousac.reproduccion.v1.ReproduccionService/ExportarApunteMd"
 )
 
 // ReproduccionServiceClient is the client API for ReproduccionService service.
@@ -47,6 +48,8 @@ type ReproduccionServiceClient interface {
 	ObtenerApunte(ctx context.Context, in *ObtenerApunteRequest, opts ...grpc.CallOption) (*ObtenerApunteResponse, error)
 	ListarApuntes(ctx context.Context, in *ListarApuntesRequest, opts ...grpc.CallOption) (*ListarApuntesResponse, error)
 	EliminarApunte(ctx context.Context, in *EliminarApunteRequest, opts ...grpc.CallOption) (*EliminarApunteResponse, error)
+	// --- Exportación del apunte a archivo Markdown ---
+	ExportarApunteMd(ctx context.Context, in *ExportarApunteMdRequest, opts ...grpc.CallOption) (*ExportarApunteMdResponse, error)
 }
 
 type reproduccionServiceClient struct {
@@ -147,6 +150,16 @@ func (c *reproduccionServiceClient) EliminarApunte(ctx context.Context, in *Elim
 	return out, nil
 }
 
+func (c *reproduccionServiceClient) ExportarApunteMd(ctx context.Context, in *ExportarApunteMdRequest, opts ...grpc.CallOption) (*ExportarApunteMdResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportarApunteMdResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_ExportarApunteMd_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReproduccionServiceServer is the server API for ReproduccionService service.
 // All implementations must embed UnimplementedReproduccionServiceServer
 // for forward compatibility.
@@ -164,6 +177,8 @@ type ReproduccionServiceServer interface {
 	ObtenerApunte(context.Context, *ObtenerApunteRequest) (*ObtenerApunteResponse, error)
 	ListarApuntes(context.Context, *ListarApuntesRequest) (*ListarApuntesResponse, error)
 	EliminarApunte(context.Context, *EliminarApunteRequest) (*EliminarApunteResponse, error)
+	// --- Exportación del apunte a archivo Markdown ---
+	ExportarApunteMd(context.Context, *ExportarApunteMdRequest) (*ExportarApunteMdResponse, error)
 	mustEmbedUnimplementedReproduccionServiceServer()
 }
 
@@ -200,6 +215,9 @@ func (UnimplementedReproduccionServiceServer) ListarApuntes(context.Context, *Li
 }
 func (UnimplementedReproduccionServiceServer) EliminarApunte(context.Context, *EliminarApunteRequest) (*EliminarApunteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EliminarApunte not implemented")
+}
+func (UnimplementedReproduccionServiceServer) ExportarApunteMd(context.Context, *ExportarApunteMdRequest) (*ExportarApunteMdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExportarApunteMd not implemented")
 }
 func (UnimplementedReproduccionServiceServer) mustEmbedUnimplementedReproduccionServiceServer() {}
 func (UnimplementedReproduccionServiceServer) testEmbeddedByValue()                             {}
@@ -384,6 +402,24 @@ func _ReproduccionService_EliminarApunte_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReproduccionService_ExportarApunteMd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportarApunteMdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).ExportarApunteMd(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_ExportarApunteMd_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).ExportarApunteMd(ctx, req.(*ExportarApunteMdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReproduccionService_ServiceDesc is the grpc.ServiceDesc for ReproduccionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -426,6 +462,10 @@ var ReproduccionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EliminarApunte",
 			Handler:    _ReproduccionService_EliminarApunte_Handler,
+		},
+		{
+			MethodName: "ExportarApunteMd",
+			Handler:    _ReproduccionService_ExportarApunteMd_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -22,9 +22,35 @@ var (
 	ErrApunteContenidoRequerido = errors.New("APUNTE_CONTENIDO_OBLIGATORIO: el contenido Markdown del apunte es obligatorio")
 	ErrMarcadorTiempoInvalido   = errors.New("MARCADOR_TIEMPO_INVALIDO: el marcador de tiempo debe tener el formato [MM:SS]")
 	ErrTituloMuyLargo           = errors.New("APUNTE_TITULO_LARGO: el título del apunte no puede superar los 200 caracteres")
+	ErrApunteNoEncontrado       = errors.New("APUNTE_NO_ENCONTRADO: no existe apunte para esta clase")
 )
 
-const MaxTituloApunte = 200
+const (
+	MaxTituloApunte  = 200
+	MimeTypeMarkdown = "text/markdown; charset=utf-8"
+	ExtensionApunte  = ".md"
+)
+
+// ArchivoApunte representa un cuaderno de apuntes exportado a un archivo
+// Markdown listo para descargar.
+type ArchivoApunte struct {
+	NombreArchivo string
+	ContenidoMD   string
+	MimeType      string
+}
+
+// NuevoArchivoApunte construye el archivo .md a partir de un apunte persistido.
+// El nombre de archivo usa el identificador de la clase para que sea único.
+func NuevoArchivoApunte(a *Apunte) *ArchivoApunte {
+	if a == nil {
+		return nil
+	}
+	return &ArchivoApunte{
+		NombreArchivo: "apunte-" + a.ClaseID + ExtensionApunte,
+		ContenidoMD:   a.ContenidoMarkdown,
+		MimeType:      MimeTypeMarkdown,
+	}
+}
 
 // marcadorTiempoRe expresa el formato admitido para los marcadores de tiempo
 // dentro del apunte: [MM:SS] con minutos y segundos de dos dígitos.

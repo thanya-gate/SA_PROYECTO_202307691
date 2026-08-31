@@ -39,3 +39,29 @@ func (s *ReproduccionService) EliminarApunte(ctx context.Context, estudianteID, 
 	}
 	return s.repo.EliminarApunte(ctx, estudianteID, claseID)
 }
+
+// ExportarApunteMd genera el archivo Markdown (.md) del cuaderno de apuntes de
+// una clase. Como el contenido ya se persiste como Markdown, la exportación es
+// directa: se recupera el apunte y se envuelve en un ArchivoApunte listo para
+// descargar. La conversión a PDF (con rendering enriquecido) queda en el
+// frontend.
+func (s *ReproduccionService) ExportarApunteMd(ctx context.Context, estudianteID, claseID string) (*domain.ArchivoApunte, error) {
+	if estudianteID == "" {
+		return nil, domain.ErrEstudianteRequerido
+	}
+	if claseID == "" {
+		return nil, domain.ErrClaseRequerida
+	}
+	apunte, err := s.repo.ObtenerApunte(ctx, estudianteID, claseID)
+	if err != nil {
+		return nil, err
+	}
+	if apunte == nil {
+		return nil, domain.ErrApunteNoEncontrado
+	}
+	archivo := domain.NuevoArchivoApunte(apunte)
+	if archivo == nil {
+		return nil, domain.ErrApunteNoEncontrado
+	}
+	return archivo, nil
+}
