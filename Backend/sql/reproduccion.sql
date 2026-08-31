@@ -27,8 +27,21 @@ CREATE TABLE calificacion (
     UNIQUE (historial_id)
 );
 
+CREATE TABLE apunte (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    estudiante_id       UUID NOT NULL,
+    clase_id            UUID NOT NULL,
+    titulo              VARCHAR(200) NOT NULL,
+    contenido_markdown  TEXT NOT NULL,
+    fecha_creacion      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (estudiante_id, clase_id)
+);
+
 CREATE INDEX idx_historial_estudiante ON historial_reproduccion (estudiante_id);
 CREATE INDEX idx_checkpoint_historial ON checkpoint (historial_id);
+CREATE INDEX idx_apunte_estudiante ON apunte (estudiante_id);
+CREATE INDEX idx_apunte_clase ON apunte (clase_id);
 
 --funciones
 CREATE OR REPLACE FUNCTION fn_calcular_progreso(p_segundo_actual INT, p_duracion_total INT)
