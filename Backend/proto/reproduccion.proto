@@ -80,6 +80,56 @@ message RegistrarCalificacionResponse {
   bool registrada = 1;
 }
 
+// Cuaderno de apuntes Markdown con marcadores de tiempo ([MM:SS]) ligado al
+// estudiante y a una clase. El contenido se almacena como Markdown enriquecido
+// y los marcadores de tiempo permiten saltar a un segundo exacto del video.
+message Apunte {
+  string apunte_id = 1;
+  string estudiante_id = 2;
+  string clase_id = 3;
+  string titulo = 4;
+  string contenido_markdown = 5; // Markdown con marcadores de tiempo [MM:SS]
+  string fecha_creacion = 6;
+  string fecha_actualizacion = 7;
+}
+
+message GuardarApunteRequest {
+  string estudiante_id = 1;
+  string clase_id = 2;
+  string titulo = 3;
+  string contenido_markdown = 4;
+}
+
+message GuardarApunteResponse {
+  Apunte apunte = 1;
+}
+
+message ObtenerApunteRequest {
+  string estudiante_id = 1;
+  string clase_id = 2;
+}
+
+message ObtenerApunteResponse {
+  Apunte apunte = 1;
+}
+
+message ListarApuntesRequest {
+  string estudiante_id = 1;
+}
+
+message ListarApuntesResponse {
+  repeated Apunte apuntes = 1;
+}
+
+message EliminarApunteRequest {
+  string estudiante_id = 1;
+  string clase_id = 2;
+}
+
+message EliminarApunteResponse {
+  bool eliminado = 1;
+}
+
 service ReproduccionService {
   rpc Health(HealthRequest) returns (HealthResponse);
 
@@ -92,4 +142,10 @@ service ReproduccionService {
 
   // --- Valoraciones ---
   rpc RegistrarCalificacion(RegistrarCalificacionRequest) returns (RegistrarCalificacionResponse);
+
+  // --- Cuaderno de apuntes Markdown con marcadores de tiempo ---
+  rpc GuardarApunte(GuardarApunteRequest) returns (GuardarApunteResponse);
+  rpc ObtenerApunte(ObtenerApunteRequest) returns (ObtenerApunteResponse);
+  rpc ListarApuntes(ListarApuntesRequest) returns (ListarApuntesResponse);
+  rpc EliminarApunte(EliminarApunteRequest) returns (EliminarApunteResponse);
 }
