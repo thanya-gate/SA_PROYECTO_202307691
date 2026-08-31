@@ -1642,6 +1642,67 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
     }
   });
 
+// ===== Cuaderno de apuntes Markdown con marcadores de tiempo =====
+  app.get('/reproduccion/apuntes', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.listarApuntes({ estudianteId: req.context!.userId });
+      res.json({ apuntes: result.apuntes ?? [] });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/reproduccion/apuntes/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.obtenerApunte({
+        estudianteId: req.context!.userId,
+        claseId: req.params.claseId,
+      });
+      res.json({ apunte: result.apunte ?? null });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/reproduccion/apuntes', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const { claseId, titulo, contenidoMarkdown } = req.body as Record<string, unknown>;
+      if (typeof claseId !== 'string' || typeof titulo !== 'string' || typeof contenidoMarkdown !== 'string') {
+        throw new DomainError('ENTRADA_INVALIDA', 'claseId, titulo y contenidoMarkdown son obligatorios', 400);
+      }
+      // Los marcadores de tiempo embebidos en el Markdown deben respetar el
+      // formato [MM:SS] con minutos y segundos de dos dígitos (segundos <= 59).
+      const marcadorRe = /\[(\d{2}):(\d{2})\]/g;
+      let match: RegExpExecArray | null;
+      while ((match = marcadorRe.exec(contenidoMarkdown)) !== null) {
+        if (Number(match[2]) > 59) {
+          throw new DomainError('ENTRADA_INVALIDA', 'El marcador de tiempo debe tener el formato [MM:SS]', 400);
+        }
+      }
+      const result = await reproductionGrpc.guardarApunte({
+        estudianteId: req.context!.userId,
+        claseId,
+        titulo,
+        contenidoMarkdown,
+      });
+      res.status(201).json({ message: 'Apunte guardado', apunte: result.apunte });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.delete('/reproduccion/apuntes/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.eliminarApunte({
+        estudianteId: req.context!.userId,
+        claseId: req.params.claseId,
+      });
+      res.json({ message: 'Apunte eliminado', eliminado: result.eliminado });
+    } catch (err) {
+      next(err);
+    }
+  });
+
 //analitica
   app.get('/analitica/clases-mas-vistas', authenticate, async (req, res, next) => {
     try {

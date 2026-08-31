@@ -62,4 +62,16 @@ export const reproductionGrpc = {
     puntuacion: number;
     comentario?: string;
   }) => unary('RegistrarCalificacion', req),
+
+  guardarApunte: (req: {
+    estudianteId: string;
+    claseId: string;
+    titulo: string;
+    contenidoMarkdown: string;
+  }) => unary('GuardarApunte', req),
+  obtenerApunte: (req: { estudianteId: string; claseId: string }) =>
+    unary('ObtenerApunte', req),
+  listarApuntes: (req: { estudianteId: string }) => unary('ListarApuntes', req),
+  eliminarApunte: (req: { estudianteId: string; claseId: string }) =>
+    unary('EliminarApunte', req),
 };
