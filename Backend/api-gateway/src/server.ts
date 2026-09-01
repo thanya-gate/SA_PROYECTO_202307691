@@ -1643,33 +1643,27 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
   });
 
 // ===== Cuaderno de apuntes Markdown con marcadores de tiempo =====
+  // Lista todos los apuntes del estudiante. Si se indica claseId, filtra solo
+  // los de esa clase. Un estudiante puede tener varios apuntes por clase.
   app.get('/reproduccion/apuntes', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
-      const result = await reproductionGrpc.listarApuntes({ estudianteId: req.context!.userId });
+      const claseId = typeof req.query.claseId === 'string' ? req.query.claseId : undefined;
+      const result = await reproductionGrpc.listarApuntes({ estudianteId: req.context!.userId, claseId });
       res.json({ apuntes: result.apuntes ?? [] });
     } catch (err) {
       next(err);
     }
   });
 
-  app.get('/reproduccion/apuntes/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
-    try {
-      const result = await reproductionGrpc.obtenerApunte({
-        estudianteId: req.context!.userId,
-        claseId: req.params.claseId,
-      });
-      res.json({ apunte: result.apunte ?? null });
-    } catch (err) {
-      next(err);
-    }
-  });
-
+  // Crea un apunte nuevo (sin apunteId) o actualiza uno existente (con apunteId).
   app.post('/reproduccion/apuntes', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
-      const { claseId, titulo, contenidoMarkdown } = req.body as Record<string, unknown>;
+      const { claseId, apunteId, titulo, contenidoMarkdown, posicionSegundos } = req.body as Record<string, unknown>;
       if (typeof claseId !== 'string' || typeof titulo !== 'string' || typeof contenidoMarkdown !== 'string') {
         throw new DomainError('ENTRADA_INVALIDA', 'claseId, titulo y contenidoMarkdown son obligatorios', 400);
       }
+      const posicion = typeof posicionSegundos === 'number' && Number.isFinite(posicionSegundos) ? Math.max(0, Math.floor(posicionSegundos)) : 0;
+      const apunteIdFinal = typeof apunteId === 'string' && apunteId.length > 0 ? apunteId : '';
       // Los marcadores de tiempo embebidos en el Markdown deben respetar el
       // formato [MM:SS] con minutos y segundos de dos dígitos (segundos <= 59).
       const marcadorRe = /\[(\d{2}):(\d{2})\]/g;
@@ -1682,20 +1676,22 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
       const result = await reproductionGrpc.guardarApunte({
         estudianteId: req.context!.userId,
         claseId,
+        apunteId: apunteIdFinal,
         titulo,
         contenidoMarkdown,
+        posicionSegundos: posicion,
       });
-      res.status(201).json({ message: 'Apunte guardado', apunte: result.apunte });
+      res.status(apunteIdFinal ? 200 : 201).json({ message: 'Apunte guardado', apunte: result.apunte });
     } catch (err) {
       next(err);
     }
   });
 
-  app.delete('/reproduccion/apuntes/:claseId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+  app.delete('/reproduccion/apuntes/:apunteId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const result = await reproductionGrpc.eliminarApunte({
         estudianteId: req.context!.userId,
-        claseId: req.params.claseId,
+        apunteId: req.params.apunteId,
       });
       res.json({ message: 'Apunte eliminado', eliminado: result.eliminado });
     } catch (err) {
@@ -1703,9 +1699,10 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
     }
   });
 
-  // Exportación del cuaderno de apuntes a un archivo Markdown (.md). Solo el
-  // backend genera el .md; la conversión a PDF con rendering enriquecido
-  // (fórmulas, resaltado de sintaxis) se realiza en el frontend.
+  // Exportación del cuaderno de apuntes de una clase a un archivo Markdown
+  // (.md). Concatena todos los apuntes de la clase. Solo el backend genera el
+  // .md; la conversión a PDF con rendering enriquecido (fórmulas, resaltado de
+  // sintaxis) se realiza en el frontend.
   app.get('/reproduccion/apuntes/:claseId/exportar', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const result = await reproductionGrpc.exportarApunteMd({

@@ -66,13 +66,14 @@ export const reproductionGrpc = {
   guardarApunte: (req: {
     estudianteId: string;
     claseId: string;
+    apunteId?: string;
     titulo: string;
     contenidoMarkdown: string;
+    posicionSegundos: number;
   }) => unary('GuardarApunte', req),
-  obtenerApunte: (req: { estudianteId: string; claseId: string }) =>
-    unary('ObtenerApunte', req),
-  listarApuntes: (req: { estudianteId: string }) => unary('ListarApuntes', req),
-  eliminarApunte: (req: { estudianteId: string; claseId: string }) =>
+  listarApuntes: (req: { estudianteId: string; claseId?: string }) =>
+    unary('ListarApuntes', req),
+  eliminarApunte: (req: { estudianteId: string; apunteId: string }) =>
     unary('EliminarApunte', req),
   exportarApunteMd: (req: { estudianteId: string; claseId: string }) =>
     unary('ExportarApunteMd', req),
