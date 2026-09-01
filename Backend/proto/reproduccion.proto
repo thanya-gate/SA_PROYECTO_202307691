@@ -91,30 +91,28 @@ message Apunte {
   string contenido_markdown = 5; // Markdown con marcadores de tiempo [MM:SS]
   string fecha_creacion = 6;
   string fecha_actualizacion = 7;
+  int32 posicion_segundos = 8;   // segundo exacto del video donde se guardó el apunte
 }
 
+// GuardarApunte crea un apunte nuevo cuando apunte_id está vacío, o actualiza
+// el apunte existente cuyo apunte_id coincide (verificando que pertenezca al
+// estudiante). Esto permite varios apuntes por clase.
 message GuardarApunteRequest {
   string estudiante_id = 1;
   string clase_id = 2;
-  string titulo = 3;
-  string contenido_markdown = 4;
+  string apunte_id = 3;      // vacío = crear nuevo; no vacío = actualizar existente
+  string titulo = 4;
+  string contenido_markdown = 5;
+  int32 posicion_segundos = 6; // segundo del video al que se asocia el apunte
 }
 
 message GuardarApunteResponse {
   Apunte apunte = 1;
 }
 
-message ObtenerApunteRequest {
-  string estudiante_id = 1;
-  string clase_id = 2;
-}
-
-message ObtenerApunteResponse {
-  Apunte apunte = 1;
-}
-
 message ListarApuntesRequest {
   string estudiante_id = 1;
+  string clase_id = 2;       // vacío = todos los apuntes del estudiante
 }
 
 message ListarApuntesResponse {
@@ -123,24 +121,25 @@ message ListarApuntesResponse {
 
 message EliminarApunteRequest {
   string estudiante_id = 1;
-  string clase_id = 2;
+  string apunte_id = 2;      // apunte específico a eliminar (verifica dueño)
 }
 
 message EliminarApunteResponse {
   bool eliminado = 1;
 }
 
-// Exportación del cuaderno de apuntes a un archivo Markdown (.md). El backend
-// devuelve el archivo listo para descargar; la conversión a PDF con el
-// rendering enriquecido (fórmulas, resaltado de sintaxis) se realiza en el
-// frontend, que ya dispone del renderizador.
+// Exportación del cuaderno de apuntes de una clase a un archivo Markdown (.md).
+// Concatena todos los apuntes de la clase. El backend devuelve el archivo listo
+// para descargar; la conversión a PDF con el rendering enriquecido (fórmulas,
+// resaltado de sintaxis) se realiza en el frontend, que ya dispone del
+// renderizador.
 message ExportarApunteMdRequest {
   string estudiante_id = 1;
   string clase_id = 2;
 }
 
 message ExportarApunteMdResponse {
-  string nombre_archivo = 1; // p. ej. "apunte-<clase>.md"
+  string nombre_archivo = 1; // p. ej. "apuntes-<clase>.md"
   string contenido_md = 2;   // contenido Markdown exportado
   string mime_type = 3;      // "text/markdown; charset=utf-8"
 }
@@ -159,8 +158,8 @@ service ReproduccionService {
   rpc RegistrarCalificacion(RegistrarCalificacionRequest) returns (RegistrarCalificacionResponse);
 
   // --- Cuaderno de apuntes Markdown con marcadores de tiempo ---
+  // Un estudiante puede tener varios apuntes por clase, identificados por apunte_id.
   rpc GuardarApunte(GuardarApunteRequest) returns (GuardarApunteResponse);
-  rpc ObtenerApunte(ObtenerApunteRequest) returns (ObtenerApunteResponse);
   rpc ListarApuntes(ListarApuntesRequest) returns (ListarApuntesResponse);
   rpc EliminarApunte(EliminarApunteRequest) returns (EliminarApunteResponse);
 
