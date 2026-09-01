@@ -12,10 +12,9 @@ type ReproduccionRepository interface {
 	HistorialReciente(ctx context.Context, estudianteID string) ([]domain.HistorialItem, error)
 	RegistrarCalificacion(ctx context.Context, historialID string, puntuacion int32, comentario string) error
 
-	GuardarApunte(ctx context.Context, estudianteID, claseID, titulo, contenidoMarkdown string) (*domain.Apunte, error)
-	ObtenerApunte(ctx context.Context, estudianteID, claseID string) (*domain.Apunte, error)
-	ListarApuntes(ctx context.Context, estudianteID string) ([]domain.Apunte, error)
-	EliminarApunte(ctx context.Context, estudianteID, claseID string) (bool, error)
+	GuardarApunte(ctx context.Context, estudianteID, apunteID, claseID, titulo, contenidoMarkdown string, posicionSegundos int32) (*domain.Apunte, error)
+	ListarApuntes(ctx context.Context, estudianteID, claseID string) ([]domain.Apunte, error)
+	EliminarApunte(ctx context.Context, estudianteID, apunteID string) (bool, error)
 
 	Ping(ctx context.Context) error
 }

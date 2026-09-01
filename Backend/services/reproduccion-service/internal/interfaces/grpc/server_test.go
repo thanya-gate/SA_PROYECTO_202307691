@@ -41,18 +41,14 @@ func (f *grpcFakeRepository) RegistrarCalificacion(context.Context, string, int3
 	return f.guardarErr
 }
 
-func (f *grpcFakeRepository) GuardarApunte(ctx context.Context, estudianteID, claseID, titulo, contenidoMarkdown string) (*domain.Apunte, error) {
+func (f *grpcFakeRepository) GuardarApunte(ctx context.Context, estudianteID, apunteID, claseID, titulo, contenidoMarkdown string, posicionSegundos int32) (*domain.Apunte, error) {
 	if f.guardarErr != nil {
 		return nil, f.guardarErr
 	}
-	return &domain.Apunte{ApunteID: "apunte-1", EstudianteID: estudianteID, ClaseID: claseID, Titulo: titulo, ContenidoMarkdown: contenidoMarkdown}, nil
+	return &domain.Apunte{ApunteID: "apunte-1", EstudianteID: estudianteID, ClaseID: claseID, Titulo: titulo, ContenidoMarkdown: contenidoMarkdown, PosicionSegundos: posicionSegundos}, nil
 }
 
-func (f *grpcFakeRepository) ObtenerApunte(context.Context, string, string) (*domain.Apunte, error) {
-	return f.apunte, f.readErr
-}
-
-func (f *grpcFakeRepository) ListarApuntes(context.Context, string) ([]domain.Apunte, error) {
+func (f *grpcFakeRepository) ListarApuntes(context.Context, string, string) ([]domain.Apunte, error) {
 	return f.apuntes, f.readErr
 }
 
@@ -136,30 +132,25 @@ func TestServerApuntesExponeRespuestasYMapeaErrores(t *testing.T) {
 	server := New(service.New(repo), "test-version")
 
 	guardado, err := server.GuardarApunte(context.Background(), &reproduccionv1.GuardarApunteRequest{
-		EstudianteId: "est-1", ClaseId: "clase-1", Titulo: "Resumen", ContenidoMarkdown: "[01:20] tema",
+		EstudianteId: "est-1", ClaseId: "clase-1", ApunteId: "", Titulo: "Resumen", ContenidoMarkdown: "[01:20] tema", PosicionSegundos: 80,
 	})
-	if err != nil || guardado.GetApunte().GetApunteId() != "apunte-1" || guardado.GetApunte().GetTitulo() != "Resumen" {
+	if err != nil || guardado.GetApunte().GetApunteId() != "apunte-1" || guardado.GetApunte().GetTitulo() != "Resumen" || guardado.GetApunte().GetPosicionSegundos() != 80 {
 		t.Fatalf("GuardarApunte() = %#v, %v", guardado, err)
 	}
 
-	obtenido, err := server.ObtenerApunte(context.Background(), &reproduccionv1.ObtenerApunteRequest{EstudianteId: "est-1", ClaseId: "clase-1"})
-	if err != nil || obtenido.GetApunte().GetContenidoMarkdown() != "# Resumen\n\n[01:20] tema" {
-		t.Fatalf("ObtenerApunte() = %#v, %v", obtenido, err)
-	}
-
-	lista, err := server.ListarApuntes(context.Background(), &reproduccionv1.ListarApuntesRequest{EstudianteId: "est-1"})
+	lista, err := server.ListarApuntes(context.Background(), &reproduccionv1.ListarApuntesRequest{EstudianteId: "est-1", ClaseId: "clase-1"})
 	if err != nil || len(lista.GetApuntes()) != 1 || lista.GetApuntes()[0].GetClaseId() != "clase-1" {
 		t.Fatalf("ListarApuntes() = %#v, %v", lista, err)
 	}
 
-	eliminado, err := server.EliminarApunte(context.Background(), &reproduccionv1.EliminarApunteRequest{EstudianteId: "est-1", ClaseId: "clase-1"})
+	eliminado, err := server.EliminarApunte(context.Background(), &reproduccionv1.EliminarApunteRequest{EstudianteId: "est-1", ApunteId: "apunte-1"})
 	if err != nil || !eliminado.GetEliminado() {
 		t.Fatalf("EliminarApunte() = %#v, %v", eliminado, err)
 	}
 
 	// Validación de entrada: contenido inválido debe devolver InvalidArgument.
 	if _, err := server.GuardarApunte(context.Background(), &reproduccionv1.GuardarApunteRequest{
-		EstudianteId: "est", ClaseId: "clase", Titulo: "t", ContenidoMarkdown: "[12:99] mal",
+		EstudianteId: "est", ClaseId: "clase", ApunteId: "apunte-1", Titulo: "t", ContenidoMarkdown: "[12:99] mal",
 	}); status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("GuardarApunte con marcador inválido status = %s, se esperaba InvalidArgument", status.Code(err))
 	}
@@ -167,12 +158,14 @@ func TestServerApuntesExponeRespuestasYMapeaErrores(t *testing.T) {
 
 func TestServerExportarApunteMdExponeArchivo(t *testing.T) {
 	repo := &grpcFakeRepository{
-		apunte: &domain.Apunte{
-			ApunteID:          "apunte-1",
-			EstudianteID:      "est-1",
-			ClaseID:           "clase-1",
-			Titulo:            "Resumen",
-			ContenidoMarkdown: "# Resumen\n\n[00:05] marcador",
+		apuntes: []domain.Apunte{
+			{
+				ApunteID:          "apunte-1",
+				EstudianteID:      "est-1",
+				ClaseID:           "clase-1",
+				Titulo:            "Resumen",
+				ContenidoMarkdown: "# Resumen\n\n[00:05] marcador",
+			},
 		},
 	}
 	server := New(service.New(repo), "test-version")
@@ -181,17 +174,17 @@ func TestServerExportarApunteMdExponeArchivo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ExportarApunteMd() error = %v", err)
 	}
-	if exportado.GetNombreArchivo() != "apunte-clase-1.md" {
-		t.Errorf("NombreArchivo = %q, se esperaba apunte-clase-1.md", exportado.GetNombreArchivo())
+	if exportado.GetNombreArchivo() != "apuntes-clase-1.md" {
+		t.Errorf("NombreArchivo = %q, se esperaba apuntes-clase-1.md", exportado.GetNombreArchivo())
 	}
-	if exportado.GetContenidoMd() != "# Resumen\n\n[00:05] marcador" {
+	if exportado.GetContenidoMd() != "# Resumen\n\n# Resumen\n\n[00:05] marcador" {
 		t.Errorf("ContenidoMd = %q", exportado.GetContenidoMd())
 	}
 	if exportado.GetMimeType() != domain.MimeTypeMarkdown {
 		t.Errorf("MimeType = %q, se esperaba %q", exportado.GetMimeType(), domain.MimeTypeMarkdown)
 	}
 
-	// Apunte inexistente (fake devuelve (nil, nil)) debe mapearse a NotFound.
+	// Apunte inexistente (fake devuelve lista vacía) debe mapearse a NotFound.
 	repoSinApunte := &grpcFakeRepository{}
 	serverSinApunte := New(service.New(repoSinApunte), "test-version")
 	if _, err := serverSinApunte.ExportarApunteMd(context.Background(),
@@ -215,6 +208,7 @@ func TestMapError(t *testing.T) {
 		{domain.ErrApunteContenidoRequerido, codes.InvalidArgument},
 		{domain.ErrMarcadorTiempoInvalido, codes.InvalidArgument},
 		{domain.ErrTituloMuyLargo, codes.InvalidArgument},
+		{domain.ErrApunteIDRequerido, codes.InvalidArgument},
 		{domain.ErrApunteNoEncontrado, codes.NotFound},
 		{errors.New("fallo externo"), codes.Internal},
 	}

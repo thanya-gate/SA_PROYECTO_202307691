@@ -25,7 +25,6 @@ const (
 	ReproduccionService_HistorialReciente_FullMethodName     = "/yousac.reproduccion.v1.ReproduccionService/HistorialReciente"
 	ReproduccionService_RegistrarCalificacion_FullMethodName = "/yousac.reproduccion.v1.ReproduccionService/RegistrarCalificacion"
 	ReproduccionService_GuardarApunte_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/GuardarApunte"
-	ReproduccionService_ObtenerApunte_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/ObtenerApunte"
 	ReproduccionService_ListarApuntes_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/ListarApuntes"
 	ReproduccionService_EliminarApunte_FullMethodName        = "/yousac.reproduccion.v1.ReproduccionService/EliminarApunte"
 	ReproduccionService_ExportarApunteMd_FullMethodName      = "/yousac.reproduccion.v1.ReproduccionService/ExportarApunteMd"
@@ -44,8 +43,8 @@ type ReproduccionServiceClient interface {
 	// --- Valoraciones ---
 	RegistrarCalificacion(ctx context.Context, in *RegistrarCalificacionRequest, opts ...grpc.CallOption) (*RegistrarCalificacionResponse, error)
 	// --- Cuaderno de apuntes Markdown con marcadores de tiempo ---
+	// Un estudiante puede tener varios apuntes por clase, identificados por apunte_id.
 	GuardarApunte(ctx context.Context, in *GuardarApunteRequest, opts ...grpc.CallOption) (*GuardarApunteResponse, error)
-	ObtenerApunte(ctx context.Context, in *ObtenerApunteRequest, opts ...grpc.CallOption) (*ObtenerApunteResponse, error)
 	ListarApuntes(ctx context.Context, in *ListarApuntesRequest, opts ...grpc.CallOption) (*ListarApuntesResponse, error)
 	EliminarApunte(ctx context.Context, in *EliminarApunteRequest, opts ...grpc.CallOption) (*EliminarApunteResponse, error)
 	// --- Exportación del apunte a archivo Markdown ---
@@ -120,16 +119,6 @@ func (c *reproduccionServiceClient) GuardarApunte(ctx context.Context, in *Guard
 	return out, nil
 }
 
-func (c *reproduccionServiceClient) ObtenerApunte(ctx context.Context, in *ObtenerApunteRequest, opts ...grpc.CallOption) (*ObtenerApunteResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ObtenerApunteResponse)
-	err := c.cc.Invoke(ctx, ReproduccionService_ObtenerApunte_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *reproduccionServiceClient) ListarApuntes(ctx context.Context, in *ListarApuntesRequest, opts ...grpc.CallOption) (*ListarApuntesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListarApuntesResponse)
@@ -173,8 +162,8 @@ type ReproduccionServiceServer interface {
 	// --- Valoraciones ---
 	RegistrarCalificacion(context.Context, *RegistrarCalificacionRequest) (*RegistrarCalificacionResponse, error)
 	// --- Cuaderno de apuntes Markdown con marcadores de tiempo ---
+	// Un estudiante puede tener varios apuntes por clase, identificados por apunte_id.
 	GuardarApunte(context.Context, *GuardarApunteRequest) (*GuardarApunteResponse, error)
-	ObtenerApunte(context.Context, *ObtenerApunteRequest) (*ObtenerApunteResponse, error)
 	ListarApuntes(context.Context, *ListarApuntesRequest) (*ListarApuntesResponse, error)
 	EliminarApunte(context.Context, *EliminarApunteRequest) (*EliminarApunteResponse, error)
 	// --- Exportación del apunte a archivo Markdown ---
@@ -206,9 +195,6 @@ func (UnimplementedReproduccionServiceServer) RegistrarCalificacion(context.Cont
 }
 func (UnimplementedReproduccionServiceServer) GuardarApunte(context.Context, *GuardarApunteRequest) (*GuardarApunteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GuardarApunte not implemented")
-}
-func (UnimplementedReproduccionServiceServer) ObtenerApunte(context.Context, *ObtenerApunteRequest) (*ObtenerApunteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ObtenerApunte not implemented")
 }
 func (UnimplementedReproduccionServiceServer) ListarApuntes(context.Context, *ListarApuntesRequest) (*ListarApuntesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListarApuntes not implemented")
@@ -348,24 +334,6 @@ func _ReproduccionService_GuardarApunte_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ReproduccionService_ObtenerApunte_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObtenerApunteRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ReproduccionServiceServer).ObtenerApunte(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ReproduccionService_ObtenerApunte_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ReproduccionServiceServer).ObtenerApunte(ctx, req.(*ObtenerApunteRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ReproduccionService_ListarApuntes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListarApuntesRequest)
 	if err := dec(in); err != nil {
@@ -450,10 +418,6 @@ var ReproduccionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GuardarApunte",
 			Handler:    _ReproduccionService_GuardarApunte_Handler,
-		},
-		{
-			MethodName: "ObtenerApunte",
-			Handler:    _ReproduccionService_ObtenerApunte_Handler,
 		},
 		{
 			MethodName: "ListarApuntes",

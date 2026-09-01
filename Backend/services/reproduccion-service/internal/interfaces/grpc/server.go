@@ -90,26 +90,15 @@ func (s *Server) RegistrarCalificacion(ctx context.Context, req *reproduccionv1.
 }
 
 func (s *Server) GuardarApunte(ctx context.Context, req *reproduccionv1.GuardarApunteRequest) (*reproduccionv1.GuardarApunteResponse, error) {
-	apunte, err := s.svc.GuardarApunte(ctx, req.GetEstudianteId(), req.GetClaseId(), req.GetTitulo(), req.GetContenidoMarkdown())
+	apunte, err := s.svc.GuardarApunte(ctx, req.GetEstudianteId(), req.GetApunteId(), req.GetClaseId(), req.GetTitulo(), req.GetContenidoMarkdown(), req.GetPosicionSegundos())
 	if err != nil {
 		return nil, mapError(err)
 	}
 	return &reproduccionv1.GuardarApunteResponse{Apunte: toProtoApunte(apunte)}, nil
 }
 
-func (s *Server) ObtenerApunte(ctx context.Context, req *reproduccionv1.ObtenerApunteRequest) (*reproduccionv1.ObtenerApunteResponse, error) {
-	apunte, err := s.svc.ObtenerApunte(ctx, req.GetEstudianteId(), req.GetClaseId())
-	if err != nil {
-		return nil, mapError(err)
-	}
-	if apunte == nil {
-		return &reproduccionv1.ObtenerApunteResponse{}, nil
-	}
-	return &reproduccionv1.ObtenerApunteResponse{Apunte: toProtoApunte(apunte)}, nil
-}
-
 func (s *Server) ListarApuntes(ctx context.Context, req *reproduccionv1.ListarApuntesRequest) (*reproduccionv1.ListarApuntesResponse, error) {
-	apuntes, err := s.svc.ListarApuntes(ctx, req.GetEstudianteId())
+	apuntes, err := s.svc.ListarApuntes(ctx, req.GetEstudianteId(), req.GetClaseId())
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -121,7 +110,7 @@ func (s *Server) ListarApuntes(ctx context.Context, req *reproduccionv1.ListarAp
 }
 
 func (s *Server) EliminarApunte(ctx context.Context, req *reproduccionv1.EliminarApunteRequest) (*reproduccionv1.EliminarApunteResponse, error) {
-	eliminado, err := s.svc.EliminarApunte(ctx, req.GetEstudianteId(), req.GetClaseId())
+	eliminado, err := s.svc.EliminarApunte(ctx, req.GetEstudianteId(), req.GetApunteId())
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -152,6 +141,7 @@ func toProtoApunte(a *domain.Apunte) *reproduccionv1.Apunte {
 		ContenidoMarkdown:  a.ContenidoMarkdown,
 		FechaCreacion:      a.FechaCreacion,
 		FechaActualizacion: a.FechaActualizacion,
+		PosicionSegundos:   a.PosicionSegundos,
 	}
 }
 
@@ -166,7 +156,9 @@ func mapError(err error) error {
 		errors.Is(err, domain.ErrApunteTituloRequerido),
 		errors.Is(err, domain.ErrApunteContenidoRequerido),
 		errors.Is(err, domain.ErrMarcadorTiempoInvalido),
-		errors.Is(err, domain.ErrTituloMuyLargo):
+		errors.Is(err, domain.ErrTituloMuyLargo),
+		errors.Is(err, domain.ErrApunteIDRequerido),
+		errors.Is(err, domain.ErrPosicionInvalida):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, domain.ErrApunteNoEncontrado):
 		return status.Error(codes.NotFound, err.Error())

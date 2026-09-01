@@ -6,45 +6,41 @@ import (
 	"yousac.com/yousac/reproduccion-service/internal/domain"
 )
 
-func (s *ReproduccionService) GuardarApunte(ctx context.Context, estudianteID, claseID, titulo, contenidoMarkdown string) (*domain.Apunte, error) {
-	if err := domain.ValidarApunte(estudianteID, claseID, titulo, contenidoMarkdown); err != nil {
+// GuardarApunte crea un apunte nuevo cuando apunteID está vacío, o actualiza
+// el apunte existente cuando apunteID viene definido (verificando pertenencia
+// al estudiante en la capa de persistencia). Permite varios apuntes por clase.
+func (s *ReproduccionService) GuardarApunte(ctx context.Context, estudianteID, apunteID, claseID, titulo, contenidoMarkdown string, posicionSegundos int32) (*domain.Apunte, error) {
+	if err := domain.ValidarApunte(estudianteID, claseID, titulo, contenidoMarkdown, posicionSegundos); err != nil {
 		return nil, err
 	}
-	return s.repo.GuardarApunte(ctx, estudianteID, claseID, titulo, contenidoMarkdown)
+	return s.repo.GuardarApunte(ctx, estudianteID, apunteID, claseID, titulo, contenidoMarkdown, posicionSegundos)
 }
 
-func (s *ReproduccionService) ObtenerApunte(ctx context.Context, estudianteID, claseID string) (*domain.Apunte, error) {
+// ListarApuntes devuelve los apuntes del estudiante. Si claseID no es vacío,
+// filtra solo los apuntes de esa clase.
+func (s *ReproduccionService) ListarApuntes(ctx context.Context, estudianteID, claseID string) ([]domain.Apunte, error) {
 	if estudianteID == "" {
 		return nil, domain.ErrEstudianteRequerido
 	}
-	if claseID == "" {
-		return nil, domain.ErrClaseRequerida
-	}
-	return s.repo.ObtenerApunte(ctx, estudianteID, claseID)
+	return s.repo.ListarApuntes(ctx, estudianteID, claseID)
 }
 
-func (s *ReproduccionService) ListarApuntes(ctx context.Context, estudianteID string) ([]domain.Apunte, error) {
-	if estudianteID == "" {
-		return nil, domain.ErrEstudianteRequerido
-	}
-	return s.repo.ListarApuntes(ctx, estudianteID)
-}
-
-func (s *ReproduccionService) EliminarApunte(ctx context.Context, estudianteID, claseID string) (bool, error) {
+// EliminarApunte elimina un apunte específico por su identificador, siempre
+// que pertenezca al estudiante autenticado.
+func (s *ReproduccionService) EliminarApunte(ctx context.Context, estudianteID, apunteID string) (bool, error) {
 	if estudianteID == "" {
 		return false, domain.ErrEstudianteRequerido
 	}
-	if claseID == "" {
-		return false, domain.ErrClaseRequerida
+	if apunteID == "" {
+		return false, domain.ErrApunteIDRequerido
 	}
-	return s.repo.EliminarApunte(ctx, estudianteID, claseID)
+	return s.repo.EliminarApunte(ctx, estudianteID, apunteID)
 }
 
 // ExportarApunteMd genera el archivo Markdown (.md) del cuaderno de apuntes de
-// una clase. Como el contenido ya se persiste como Markdown, la exportación es
-// directa: se recupera el apunte y se envuelve en un ArchivoApunte listo para
-// descargar. La conversión a PDF (con rendering enriquecido) queda en el
-// frontend.
+// una clase concatenando todos los apuntes del estudiante para esa clase. Como
+// el contenido ya se persiste como Markdown, la exportación es directa; la
+// conversión a PDF (con rendering enriquecido) queda en el frontend.
 func (s *ReproduccionService) ExportarApunteMd(ctx context.Context, estudianteID, claseID string) (*domain.ArchivoApunte, error) {
 	if estudianteID == "" {
 		return nil, domain.ErrEstudianteRequerido
@@ -52,16 +48,12 @@ func (s *ReproduccionService) ExportarApunteMd(ctx context.Context, estudianteID
 	if claseID == "" {
 		return nil, domain.ErrClaseRequerida
 	}
-	apunte, err := s.repo.ObtenerApunte(ctx, estudianteID, claseID)
+	apuntes, err := s.repo.ListarApuntes(ctx, estudianteID, claseID)
 	if err != nil {
 		return nil, err
 	}
-	if apunte == nil {
+	if len(apuntes) == 0 {
 		return nil, domain.ErrApunteNoEncontrado
 	}
-	archivo := domain.NuevoArchivoApunte(apunte)
-	if archivo == nil {
-		return nil, domain.ErrApunteNoEncontrado
-	}
-	return archivo, nil
+	return domain.NuevoArchivoCuadernoApuntes(claseID, apuntes), nil
 }

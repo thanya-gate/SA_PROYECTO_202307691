@@ -15,6 +15,7 @@ type Apunte struct {
 	ContenidoMarkdown  string
 	FechaCreacion      string
 	FechaActualizacion string
+	PosicionSegundos   int32
 }
 
 var (
@@ -22,7 +23,9 @@ var (
 	ErrApunteContenidoRequerido = errors.New("APUNTE_CONTENIDO_OBLIGATORIO: el contenido Markdown del apunte es obligatorio")
 	ErrMarcadorTiempoInvalido   = errors.New("MARCADOR_TIEMPO_INVALIDO: el marcador de tiempo debe tener el formato [MM:SS]")
 	ErrTituloMuyLargo           = errors.New("APUNTE_TITULO_LARGO: el título del apunte no puede superar los 200 caracteres")
-	ErrApunteNoEncontrado       = errors.New("APUNTE_NO_ENCONTRADO: no existe apunte para esta clase")
+	ErrApunteIDRequerido        = errors.New("APUNTE_ID_OBLIGATORIO: debe indicarse el apunte a modificar")
+	ErrApunteNoEncontrado       = errors.New("APUNTE_NO_ENCONTRADO: no existe el apunte indicado")
+	ErrPosicionInvalida         = errors.New("APUNTE_POSICION_INVALIDA: la posición en segundos del apunte no puede ser negativa")
 )
 
 const (
@@ -52,13 +55,34 @@ func NuevoArchivoApunte(a *Apunte) *ArchivoApunte {
 	}
 }
 
+// NuevoArchivoCuadernoApuntes concatena todos los apuntes de una clase en un
+// único archivo Markdown para su exportación. El encabezado de cada apunte
+// incluye su título.
+func NuevoArchivoCuadernoApuntes(claseID string, apuntes []Apunte) *ArchivoApunte {
+	var b strings.Builder
+	for i, apunte := range apuntes {
+		if i > 0 {
+			b.WriteString("\n\n---\n\n")
+		}
+		b.WriteString("# ")
+		b.WriteString(apunte.Titulo)
+		b.WriteString("\n\n")
+		b.WriteString(apunte.ContenidoMarkdown)
+	}
+	return &ArchivoApunte{
+		NombreArchivo: "apuntes-" + claseID + ExtensionApunte,
+		ContenidoMD:   b.String(),
+		MimeType:      MimeTypeMarkdown,
+	}
+}
+
 // marcadorTiempoRe expresa el formato admitido para los marcadores de tiempo
 // dentro del apunte: [MM:SS] con minutos y segundos de dos dígitos.
 var marcadorTiempoRe = regexp.MustCompile(`\[(\d{2}):(\d{2})\]`)
 
 // ValidarApunte valida los campos del cuaderno de apuntes ligado a un
 // estudiante y una clase.
-func ValidarApunte(estudianteID, claseID, titulo, contenidoMarkdown string) error {
+func ValidarApunte(estudianteID, claseID, titulo, contenidoMarkdown string, posicionSegundos int32) error {
 	if estudianteID == "" {
 		return ErrEstudianteRequerido
 	}
@@ -73,6 +97,9 @@ func ValidarApunte(estudianteID, claseID, titulo, contenidoMarkdown string) erro
 	}
 	if strings.TrimSpace(contenidoMarkdown) == "" {
 		return ErrApunteContenidoRequerido
+	}
+	if posicionSegundos < 0 {
+		return ErrPosicionInvalida
 	}
 	if err := ValidarMarcadoresTiempo(contenidoMarkdown); err != nil {
 		return err
