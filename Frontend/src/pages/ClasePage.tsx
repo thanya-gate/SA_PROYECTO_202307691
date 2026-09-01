@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { catalogApi, type ClaseDetalle, type ClaseResumen } from '../api/catalog';
-import { reproduccionApi, type Checkpoint, type HistorialItem } from '../api/reproduccion';
+import { reproduccionApi, type Apunte, type Checkpoint, type HistorialItem } from '../api/reproduccion';
 import { mediaApi } from '../api/media';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
 import { MaterialesPanel } from '../components/MaterialesPanel';
 import { ChapterManager } from '../components/ChapterManager';
-import { ChapterTimeline } from '../components/ChapterTimeline';
+import { ChapterTimeline, type ApunteTimeline } from '../components/ChapterTimeline';
+import { ApunteEditor } from '../components/ApunteEditor';
 import { YT_STATE, YouTubePlayer } from '../components/YouTubePlayer';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
-import { esVideoLocal, formatFecha, formatSegundos, youtubeVideoId } from '../utils/video';
+import { esVideoLocal, extraerPrimerMarcador, formatFecha, formatSegundos, youtubeVideoId } from '../utils/video';
 
 const CHECKPOINT_INTERVAL_SECONDS = 15;
 
@@ -48,6 +49,11 @@ export default function ClasePage() {
   // Segmentación de la reproducción: ambos reproductores exponen un adaptador
   // de seek para que la barra de capítulos sea independiente de la fuente.
   const [currentSeconds, setCurrentSeconds] = useState(0);
+
+  // Cuaderno de apuntes (varios por clase, cada uno abierto en su editor)
+  const [apuntes, setApuntes] = useState<Apunte[]>([]);
+  const [editorAbierto, setEditorAbierto] = useState(false);
+  const [apunteEditando, setApunteEditando] = useState<Apunte | null>(null);
 
   // Edición / eliminación de la clase (CRUD)
   const [eliminando, setEliminando] = useState(false);
@@ -110,6 +116,88 @@ export default function ClasePage() {
     seekRef.current(destino);
     ultimoSegundoRef.current = destino;
     setCurrentSeconds(destino);
+  }, []);
+
+  useEffect(() => {
+    setEditorAbierto(false);
+    setApunteEditando(null);
+    setApuntes([]);
+    if (!tokenActual || !claseId) return;
+    let active = true;
+    reproduccionApi
+      .listarApuntes(tokenActual, claseId)
+      .then((res) => {
+        if (active) setApuntes(res.apuntes ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [claseId, tokenActual]);
+
+  const posicionDeApunte = useCallback((apunte: Apunte): number | null => {
+    if (typeof apunte.posicionSegundos === 'number' && apunte.posicionSegundos > 0) {
+      return apunte.posicionSegundos;
+    }
+    return extraerPrimerMarcador(apunte.contenidoMarkdown);
+  }, []);
+
+  const apuntesTimeline: ApunteTimeline[] = apuntes
+    .map((apunte) => ({
+      apunteId: apunte.apunteId,
+      titulo: apunte.titulo,
+      posicion: posicionDeApunte(apunte),
+    }))
+    .filter((apunte): apunte is ApunteTimeline => apunte.posicion !== null && apunte.posicion >= 0);
+
+  const abrirEditorNuevo = useCallback(
+    (seconds: number) => {
+      if (seconds >= 0) handleSeek(seconds);
+      setApunteEditando(null);
+      setEditorAbierto(true);
+    },
+    [handleSeek],
+  );
+
+  const abrirEditorApunte = useCallback(
+    (apunte: Apunte) => {
+      const pos = posicionDeApunte(apunte);
+      if (pos !== null && pos >= 0) handleSeek(pos);
+      setApunteEditando(apunte);
+      setEditorAbierto(true);
+    },
+    [posicionDeApunte, handleSeek],
+  );
+
+  const manejarAbrirApunte = useCallback(
+    (apunteId: string | null, seconds: number) => {
+      if (apunteId === null) {
+        abrirEditorNuevo(seconds);
+      } else {
+        const apunte = apuntes.find((a) => a.apunteId === apunteId);
+        if (apunte) abrirEditorApunte(apunte);
+      }
+    },
+    [abrirEditorNuevo, abrirEditorApunte, apuntes],
+  );
+
+  const cerrarEditor = useCallback(() => {
+    setEditorAbierto(false);
+    setApunteEditando(null);
+  }, []);
+
+  const apunteGuardado = useCallback((apunteActualizado: Apunte) => {
+    setApuntes((prev) => {
+      const existente = prev.some((a) => a.apunteId === apunteActualizado.apunteId);
+      return existente
+        ? prev.map((a) => (a.apunteId === apunteActualizado.apunteId ? apunteActualizado : a))
+        : [...prev, apunteActualizado];
+    });
+    setApunteEditando(apunteActualizado);
+  }, []);
+
+  const apunteEliminado = useCallback((apunteId: string) => {
+    setApuntes((prev) => prev.filter((a) => a.apunteId !== apunteId));
   }, []);
 
   const handleStateChange = useCallback(
@@ -289,7 +377,7 @@ export default function ClasePage() {
           </Alert>
         )}
 
-        <div className="clase__grid">
+        <div className={`clase__grid${editorAbierto ? ' clase__grid--editor' : ''}`}>
           <div className="clase__principal">
             <div className="clase__player">
               {videoId ? (
@@ -301,6 +389,9 @@ export default function ClasePage() {
                   }}
                   onTick={handleTick}
                   onStateChange={handleStateChange}
+                  capitulos={clase.capitulos ?? []}
+                  apuntes={apuntesTimeline}
+                  onAbrirApunte={manejarAbrirApunte}
                 />
               ) : videoLocal ? (
                 <LocalVideoPlayer
@@ -311,6 +402,9 @@ export default function ClasePage() {
                   }}
                   onTick={handleTick}
                   onStateChange={handleStateChange}
+                  capitulos={clase.capitulos ?? []}
+                  apuntes={apuntesTimeline}
+                  onAbrirApunte={manejarAbrirApunte}
                 />
               ) : (
                 <p className="clase__sin-video">No hay video disponible para esta clase.</p>
@@ -323,6 +417,19 @@ export default function ClasePage() {
               currentSeconds={currentSeconds}
               onSeek={handleSeek}
             />
+
+            {!editorAbierto && (
+              <div className="clase__apunte-acceso">
+                <span className="clase__apunte-acceso-tiempo">{formatSegundos(Math.floor(currentSeconds))}</span>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => abrirEditorNuevo(currentSeconds)}
+                >
+                  Nuevo apunte
+                </Button>
+              </div>
+            )}
 
             {puedeGestionarContenido && (
               <ChapterManager
@@ -495,55 +602,67 @@ export default function ClasePage() {
             </div>
           </div>
 
-          <aside className="clase__lateral" aria-label="Clases del curso">
-            <h2 className="clase__ficha-titulo">Clases de {clase.codigo}</h2>
-            {relacionadas.length === 0 ? (
-              <p className="clase__estado">No hay más clases publicadas de este curso.</p>
-            ) : (
-              <ul className="clase__lateral-lista">
-                {relacionadas.map((c) => (
-                  <li key={c.claseId}>
-                    <Link to={`/catalogo/clase/${c.claseId}`} className="clase__lateral-item">
-                      <span className="clase__lateral-titulo">{c.tema || c.curso}</span>
-                      <span className="clase__lateral-meta">
-                        {c.semestre} · {c.anio}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+          {editorAbierto ? (
+            <ApunteEditor
+              claseId={clase.claseId}
+              currentSeconds={currentSeconds}
+              apunte={apunteEditando}
+              onGuardado={apunteGuardado}
+              onEliminado={apunteEliminado}
+              onCerrar={cerrarEditor}
+              onSeek={handleSeek}
+            />
+          ) : (
+            <aside className="clase__lateral" aria-label="Clases del curso">
+              <h2 className="clase__ficha-titulo">Clases de {clase.codigo}</h2>
+              {relacionadas.length === 0 ? (
+                <p className="clase__estado">No hay más clases publicadas de este curso.</p>
+              ) : (
+                <ul className="clase__lateral-lista">
+                  {relacionadas.map((c) => (
+                    <li key={c.claseId}>
+                      <Link to={`/catalogo/clase/${c.claseId}`} className="clase__lateral-item">
+                        <span className="clase__lateral-titulo">{c.tema || c.curso}</span>
+                        <span className="clase__lateral-meta">
+                          {c.semestre} · {c.anio}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-            <h2 className="clase__ficha-titulo">Continuar viendo</h2>
-            {continuarViendo.length === 0 ? (
-              <p className="clase__estado">Aún no tienes reproducciones recientes.</p>
-            ) : (
-              <ul className="clase__lateral-lista">
-                {continuarViendo.map((item) => (
-                  <li key={item.claseId}>
-                    <Link to={`/catalogo/clase/${item.claseId}`} className="clase__lateral-item">
-                      <span className="clase__lateral-titulo">{item.tema || item.curso || 'Clase'}</span>
-                      <span className="clase__lateral-meta">
-                        {item.semestre}
-                        {item.anio ? ` · ${item.anio}` : ''}
-                      </span>
-                      <div className="clase__historial-progreso" aria-hidden="true">
-                        <div
-                          className="clase__historial-progreso-llenado"
-                          style={{ width: `${Math.min(100, Math.max(0, item.porcentajeAvance))}%` }}
-                        />
-                      </div>
-                      <span className="clase__historial-reanudar">
-                        {item.tieneCheckpoint && item.segundoActual > 0
-                          ? `Reanudar en ${formatSegundos(item.segundoActual)}`
-                          : 'Ver clase'}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </aside>
+              <h2 className="clase__ficha-titulo">Continuar viendo</h2>
+              {continuarViendo.length === 0 ? (
+                <p className="clase__estado">Aún no tienes reproducciones recientes.</p>
+              ) : (
+                <ul className="clase__lateral-lista">
+                  {continuarViendo.map((item) => (
+                    <li key={item.claseId}>
+                      <Link to={`/catalogo/clase/${item.claseId}`} className="clase__lateral-item">
+                        <span className="clase__lateral-titulo">{item.tema || item.curso || 'Clase'}</span>
+                        <span className="clase__lateral-meta">
+                          {item.semestre}
+                          {item.anio ? ` · ${item.anio}` : ''}
+                        </span>
+                        <div className="clase__historial-progreso" aria-hidden="true">
+                          <div
+                            className="clase__historial-progreso-llenado"
+                            style={{ width: `${Math.min(100, Math.max(0, item.porcentajeAvance))}%` }}
+                          />
+                        </div>
+                        <span className="clase__historial-reanudar">
+                          {item.tieneCheckpoint && item.segundoActual > 0
+                            ? `Reanudar en ${formatSegundos(item.segundoActual)}`
+                            : 'Ver clase'}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </aside>
+          )}
         </div>
       </section>
     </AppLayout>

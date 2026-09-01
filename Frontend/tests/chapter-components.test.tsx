@@ -8,6 +8,7 @@ import { useAuth } from '../src/auth/auth-context';
 import { catalogApi, type Capitulo } from '../src/api/catalog';
 import { ChapterManager } from '../src/components/ChapterManager';
 import { ChapterTimeline } from '../src/components/ChapterTimeline';
+import { PlayerProgressBar } from '../src/components/PlayerProgressBar';
 
 const useAuthMock = useAuth as jest.MockedFunction<typeof useAuth>;
 const claseId = 'clase-1';
@@ -35,15 +36,151 @@ describe('ChapterTimeline', () => {
       currentSeconds={70}
       onSeek={onSeek}
     />);
-    expect(screen.getByRole('button', { name: /Ir a Segundo/ })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: /Segundo/ })).toHaveAttribute('aria-current', 'true');
     expect(screen.getByText('Introducción')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Ir a Introducción/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Introducción/ }));
     expect(onSeek).toHaveBeenCalledWith(0);
   });
 
   test('no renderiza barra cuando no hay capítulos', () => {
     const { container } = render(<ChapterTimeline capitulos={[]} duracion={120} currentSeconds={0} onSeek={jest.fn()} />);
     expect(container.firstChild).toBeNull();
+  });
+
+  test('no muestra la barra segmentada gráfica, solo la lista de capítulos', () => {
+    const { container } = render(<ChapterTimeline
+      capitulos={[chapter(), chapter({ capituloId: 'cap-2', titulo: 'Segundo', inicioSegundos: 60, finSegundos: 120, orden: 2 })]}
+      duracion={120}
+      currentSeconds={0}
+      onSeek={jest.fn()}
+    />);
+    expect(container.querySelector('.clase__segmentacion-barra')).toBeNull();
+    expect(screen.getAllByRole('button', { name: /Introducción|Segundo/ })).toHaveLength(2);
+  });
+});
+
+describe('PlayerProgressBar', () => {
+  test('muestra play/pause, tiempo y rendeiza capítulos y pines de apuntes', () => {
+    const onSeek = jest.fn();
+    const onTogglePlay = jest.fn();
+    const { container } = render(<PlayerProgressBar
+      currentSeconds={10}
+      duracion={120}
+      isPlaying={false}
+      onTogglePlay={onTogglePlay}
+      onSeek={onSeek}
+      capitulos={[chapter()]}
+      apuntes={[
+        { apunteId: 'ap-1', titulo: 'Intro', posicion: 10 },
+        { apunteId: 'ap-2', titulo: 'Tema', posicion: 45 },
+      ]}
+    />);
+    expect(screen.getByRole('button', { name: 'Reproducir' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Apunte/ })).toHaveLength(2);
+    expect(container.querySelector('.clase__barra-capitulo')).not.toBeNull();
+  });
+
+  test('al hacer clic en play dispara onTogglePlay, y al pin abre el apunte', () => {
+    const onTogglePlay = jest.fn();
+    const onAbrirApunte = jest.fn();
+    render(<PlayerProgressBar
+      currentSeconds={10}
+      duracion={120}
+      isPlaying={false}
+      onTogglePlay={onTogglePlay}
+      onSeek={jest.fn()}
+      apuntes={[{ apunteId: 'ap-1', titulo: 'Intro', posicion: 10 }]}
+      onAbrirApunte={onAbrirApunte}
+    />);
+    fireEvent.click(screen.getByRole('button', { name: 'Reproducir' }));
+    expect(onTogglePlay).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Apunte Intro/ }));
+    expect(onAbrirApunte).toHaveBeenCalledWith('ap-1', 10);
+  });
+
+  test('tooltip hover en la barra: sin apunte cercano abre apunte nuevo, con apunte abre el existente', () => {
+    type Rect = { left: number; width: number; top: number; height: number; right: number; bottom: number; x: number; y: number; toJSON: () => Record<string, unknown> };
+    const rectSpy = jest.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      left: 0, width: 100, top: 0, height: 20, right: 100, bottom: 20, x: 0, y: 0,
+      toJSON: () => ({}),
+    } as unknown as Rect);
+    const onAbrirApunte = jest.fn();
+    const { container, rerender } = render(<PlayerProgressBar
+      currentSeconds={10}
+      duracion={100}
+      isPlaying={false}
+      onTogglePlay={jest.fn()}
+      onSeek={jest.fn()}
+      apuntes={[{ apunteId: 'ap-1', titulo: 'Resumen', posicion: 50 }]}
+      onAbrirApunte={onAbrirApunte}
+    />);
+    const barra = container.querySelector('.clase__barra-seek') as HTMLElement;
+    const botonTooltip = () => container.querySelector('.clase__barra-tooltip-boton') as HTMLButtonElement;
+
+    fireEvent.mouseMove(barra, { clientX: 10 });
+    expect(botonTooltip().textContent).toMatch(/Nuevo apunte/);
+    fireEvent.click(botonTooltip());
+    expect(onAbrirApunte).toHaveBeenCalledWith(null, 10);
+
+    onAbrirApunte.mockClear();
+    const props = {
+      currentSeconds: 50,
+      duracion: 100,
+      isPlaying: false,
+      onTogglePlay: jest.fn(),
+      onSeek: jest.fn(),
+      apuntes: [{ apunteId: 'ap-1', titulo: 'Resumen', posicion: 50 }],
+      onAbrirApunte: onAbrirApunte,
+    };
+    rerender(<PlayerProgressBar {...props} />);
+    fireEvent.mouseMove(barra, { clientX: 50 });
+    expect(botonTooltip().textContent).toMatch(/Resumen/);
+    fireEvent.click(botonTooltip());
+    expect(onAbrirApunte).toHaveBeenCalledWith('ap-1', 50);
+
+    rectSpy.mockRestore();
+  });
+
+  test('tooltip usa la posicion sobre la barra, no la reproduccion, para decidir ver/apunte nuevo', () => {
+    type Rect = { left: number; width: number; top: number; height: number; right: number; bottom: number; x: number; y: number; toJSON: () => Record<string, unknown> };
+    const rectSpy = jest.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      left: 0, width: 100, top: 0, height: 20, right: 100, bottom: 20, x: 0, y: 0,
+      toJSON: () => ({}),
+    } as unknown as Rect);
+    const onAbrirApunte = jest.fn();
+    const { container } = render(<PlayerProgressBar
+      currentSeconds={50}
+      duracion={100}
+      isPlaying={false}
+      onTogglePlay={jest.fn()}
+      onSeek={jest.fn()}
+      apuntes={[{ apunteId: 'ap-1', titulo: 'Resumen', posicion: 50 }]}
+      onAbrirApunte={onAbrirApunte}
+    />);
+    const barra = container.querySelector('.clase__barra-seek') as HTMLElement;
+    const botonTooltip = () => container.querySelector('.clase__barra-tooltip-boton') as HTMLButtonElement;
+
+    fireEvent.mouseMove(barra, { clientX: 30 });
+    expect(botonTooltip().textContent).toMatch(/Nuevo apunte/);
+    fireEvent.click(botonTooltip());
+    expect(onAbrirApunte).toHaveBeenCalledWith(null, 30);
+
+    rectSpy.mockRestore();
+  });
+
+  test('navega con flechas del teclado sobre la barra de progreso', () => {
+    const onSeek = jest.fn();
+    const { container } = render(<PlayerProgressBar
+      currentSeconds={30}
+      duracion={100}
+      isPlaying={false}
+      onTogglePlay={jest.fn()}
+      onSeek={onSeek}
+    />);
+    fireEvent.keyDown(container.querySelector('.clase__barra-seek') as HTMLElement, { key: 'ArrowRight' });
+    expect(onSeek).toHaveBeenCalledWith(35);
+    fireEvent.keyDown(container.querySelector('.clase__barra-seek') as HTMLElement, { key: 'ArrowLeft' });
+    expect(onSeek).toHaveBeenCalledWith(25);
   });
 });
 

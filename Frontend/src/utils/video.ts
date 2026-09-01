@@ -123,3 +123,13 @@ export function formatTamanoBytes(bytes: number): string {
   const valor = bytes / 1024 ** indice;
   return `${indice === 0 ? valor : valor.toFixed(1)} ${unidades[indice]}`;
 }
+
+/**
+ * Extrae el primer marcador de tiempo [MM:SS] de un texto Markdown y lo
+ * devuelve en segundos. Devuelve null si no hay ningún marcador válido.
+ */
+export function extraerPrimerMarcador(texto: string): number | null {
+  const match = texto.match(/\[(\d{2}):(\d{2})\]/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
