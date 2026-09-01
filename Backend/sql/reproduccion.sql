@@ -33,9 +33,9 @@ CREATE TABLE apunte (
     clase_id            UUID NOT NULL,
     titulo              VARCHAR(200) NOT NULL,
     contenido_markdown  TEXT NOT NULL,
+    posicion_segundos   INT NOT NULL DEFAULT 0,
     fecha_creacion      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (estudiante_id, clase_id)
+    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_historial_estudiante ON historial_reproduccion (estudiante_id);
