@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Capitulo } from '../api/catalog';
+import { PlayerProgressBar, type ApunteBarra } from './PlayerProgressBar';
 
 export const YT_STATE = {
   ENDED: 0,
@@ -59,9 +61,21 @@ interface YouTubePlayerProps {
   onReady?: (player: YTPlayer) => void;
   onStateChange?: (state: number) => void;
   onTick?: (seconds: number) => void;
+  capitulos?: Capitulo[];
+  apuntes?: ApunteBarra[];
+  onAbrirApunte?: (apunteId: string | null, seconds: number) => void;
 }
 
-export function YouTubePlayer({ videoId, startSeconds, onReady, onStateChange, onTick }: YouTubePlayerProps) {
+export function YouTubePlayer({
+  videoId,
+  startSeconds,
+  onReady,
+  onStateChange,
+  onTick,
+  capitulos,
+  apuntes,
+  onAbrirApunte,
+}: YouTubePlayerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const startRef = useRef(startSeconds);
@@ -69,6 +83,10 @@ export function YouTubePlayer({ videoId, startSeconds, onReady, onStateChange, o
   const onStateChangeRef = useRef(onStateChange);
   const onTickRef = useRef(onTick);
   const tickRef = useRef<number | null>(null);
+
+  const [currentSeconds, setCurrentSeconds] = useState(0);
+  const [duracion, setDuracion] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   startRef.current = startSeconds;
   onReadyRef.current = onReady;
@@ -87,19 +105,26 @@ export function YouTubePlayer({ videoId, startSeconds, onReady, onStateChange, o
           start: Math.max(0, Math.floor(startRef.current)),
           rel: 0,
           playsinline: 1,
+          controls: 0,
         },
         events: {
           onReady: (event) => {
             playerRef.current = event.target;
+            setDuracion(event.target.getDuration() || 0);
+            setCurrentSeconds(event.target.getCurrentTime());
             onReadyRef.current?.(event.target);
           },
           onStateChange: (event) => {
             const state = event.data;
             if (state === YT_STATE.PLAYING) {
+              setIsPlaying(true);
               tickRef.current = window.setInterval(() => {
-                onTickRef.current?.(playerRef.current?.getCurrentTime() ?? 0);
+                const t = playerRef.current?.getCurrentTime() ?? 0;
+                setCurrentSeconds(t);
+                onTickRef.current?.(t);
               }, 1000);
             } else if (state === YT_STATE.PAUSED || state === YT_STATE.ENDED) {
+              setIsPlaying(false);
               if (tickRef.current !== null) {
                 window.clearInterval(tickRef.current);
                 tickRef.current = null;
@@ -124,5 +149,33 @@ export function YouTubePlayer({ videoId, startSeconds, onReady, onStateChange, o
     };
   }, [videoId]);
 
-  return <div ref={hostRef} className="clase__youtube-host" data-testid="youtube-player" />;
+  const togglePlay = useCallback(() => {
+    const player = playerRef.current;
+    if (!player) return;
+    if (isPlaying) {
+      player.pauseVideo();
+    } else {
+      player.playVideo();
+    }
+  }, [isPlaying]);
+
+  const handleSeek = useCallback((seconds: number) => {
+    playerRef.current?.seekTo(Math.max(0, Math.floor(seconds)), true);
+  }, []);
+
+  return (
+    <div className="clase__player-shell">
+      <div ref={hostRef} className="clase__youtube-host" data-testid="youtube-player" />
+      <PlayerProgressBar
+        currentSeconds={currentSeconds}
+        duracion={duracion}
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlay}
+        onSeek={handleSeek}
+        capitulos={capitulos}
+        apuntes={apuntes}
+        onAbrirApunte={onAbrirApunte}
+      />
+    </div>
+  );
 }

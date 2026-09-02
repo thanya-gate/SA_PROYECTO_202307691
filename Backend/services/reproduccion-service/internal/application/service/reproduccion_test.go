@@ -10,24 +10,35 @@ import (
 )
 
 type fakeRepository struct {
-	guardarID         string
-	guardarPorcentaje float64
-	guardarErr        error
-	checkpoint        *domain.Checkpoint
-	checkpointErr     error
-	historial         []domain.HistorialItem
-	historialErr      error
-	calificarErr      error
-	guardarCalls      int
-	checkpointCalls   int
-	historialCalls    int
-	calificarCalls    int
-	lastEstudiante    string
-	lastClase         string
-	lastSegundo       int32
-	lastDuracion      int32
-	lastPuntuacion    int32
-	lastComentario    string
+	guardarID          string
+	guardarPorcentaje  float64
+	guardarErr         error
+	checkpoint         *domain.Checkpoint
+	checkpointErr      error
+	historial          []domain.HistorialItem
+	historialErr       error
+	calificarErr       error
+	guardarCalls       int
+	checkpointCalls    int
+	historialCalls     int
+	calificarCalls     int
+	lastEstudiante     string
+	lastClase          string
+	lastSegundo        int32
+	lastDuracion       int32
+	lastPuntuacion     int32
+	lastComentario     string
+	apunte             *domain.Apunte
+	apunteErr          error
+	apuntes            []domain.Apunte
+	apuntesErr         error
+	eliminarOk         bool
+	eliminarErr        error
+	guardarApunteCalls int
+	lastApunte         string
+	lastTitulo         string
+	lastContenido      string
+	lastPosicion       int32
 }
 
 func (f *fakeRepository) GuardarCheckpoint(_ context.Context, estudianteID, claseID string, segundoActual, duracion int32) (string, float64, error) {
@@ -51,6 +62,22 @@ func (f *fakeRepository) RegistrarCalificacion(_ context.Context, _ string, punt
 	f.calificarCalls++
 	f.lastPuntuacion, f.lastComentario = puntuacion, comentario
 	return f.calificarErr
+}
+
+func (f *fakeRepository) GuardarApunte(_ context.Context, estudianteID, apunteID, claseID, titulo, contenidoMarkdown string, posicionSegundos int32) (*domain.Apunte, error) {
+	f.guardarApunteCalls++
+	f.lastEstudiante, f.lastApunte, f.lastClase = estudianteID, apunteID, claseID
+	f.lastTitulo, f.lastContenido = titulo, contenidoMarkdown
+	f.lastPosicion = posicionSegundos
+	return f.apunte, f.apunteErr
+}
+
+func (f *fakeRepository) ListarApuntes(context.Context, string, string) ([]domain.Apunte, error) {
+	return f.apuntes, f.apuntesErr
+}
+
+func (f *fakeRepository) EliminarApunte(context.Context, string, string) (bool, error) {
+	return f.eliminarOk, f.eliminarErr
 }
 
 func (f *fakeRepository) Ping(context.Context) error { return nil }
@@ -142,7 +169,8 @@ func TestReproduccionServiceDelegaCheckpointHistorialYCalificacion(t *testing.T)
 
 func TestReproduccionServicePropagaErroresDelRepositorio(t *testing.T) {
 	failure := errors.New("database unavailable")
-	repo := &fakeRepository{guardarErr: failure, checkpointErr: failure, historialErr: failure, calificarErr: failure}
+	repo := &fakeRepository{guardarErr: failure, checkpointErr: failure, historialErr: failure, calificarErr: failure,
+		apunteErr: failure, apuntesErr: failure, eliminarErr: failure}
 	svc := service.New(repo)
 
 	if _, _, err := svc.GuardarCheckpoint(context.Background(), "est", "clase", 1, 10); !errors.Is(err, failure) {
@@ -157,4 +185,132 @@ func TestReproduccionServicePropagaErroresDelRepositorio(t *testing.T) {
 	if err := svc.RegistrarCalificacion(context.Background(), "hist", 3, ""); !errors.Is(err, failure) {
 		t.Errorf("RegistrarCalificacion no propagó error: %v", err)
 	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "", "clase", "t", "contenido [12:30]", 30); !errors.Is(err, failure) {
+		t.Errorf("GuardarApunte no propagó error: %v", err)
+	}
+	if _, err := svc.ListarApuntes(context.Background(), "est", "clase"); !errors.Is(err, failure) {
+		t.Errorf("ListarApuntes no propagó error: %v", err)
+	}
+	if _, err := svc.EliminarApunte(context.Background(), "est", "apunte-1"); !errors.Is(err, failure) {
+		t.Errorf("EliminarApunte no propagó error: %v", err)
+	}
+}
+
+func TestReproduccionServiceApuntesValidaYDelega(t *testing.T) {
+	repo := &fakeRepository{
+		apunte:     &domain.Apunte{ApunteID: "apunte-1", EstudianteID: "est-1", ClaseID: "clase-1", Titulo: "Resumen", ContenidoMarkdown: "# Resumen\\n\\n[01:20] tema"},
+		apuntes:    []domain.Apunte{{ApunteID: "apunte-1", ClaseID: "clase-1"}},
+		eliminarOk: true,
+	}
+	svc := service.New(repo)
+
+	apunte, err := svc.GuardarApunte(context.Background(), "est-1", "", "clase-1", "Resumen", "[01:20] tema", 80)
+	if err != nil || apunte.ApunteID != "apunte-1" {
+		t.Fatalf("GuardarApunte() = %#v, %v", apunte, err)
+	}
+	if repo.lastEstudiante != "est-1" || repo.lastApunte != "" || repo.lastClase != "clase-1" || repo.lastTitulo != "Resumen" || repo.lastPosicion != 80 {
+		t.Fatalf("argumentos delegados incorrectos: %#v", repo)
+	}
+
+	lista, err := svc.ListarApuntes(context.Background(), "est-1", "clase-1")
+	if err != nil || len(lista) != 1 {
+		t.Fatalf("ListarApuntes() = %#v, %v", lista, err)
+	}
+	ok, err := svc.EliminarApunte(context.Background(), "est-1", "apunte-1")
+	if err != nil || !ok {
+		t.Fatalf("EliminarApunte() = %v, %v", ok, err)
+	}
+
+	if _, err := svc.GuardarApunte(context.Background(), "", "", "clase", "t", "c", 0); !errors.Is(err, domain.ErrEstudianteRequerido) {
+		t.Errorf("apunte sin estudiante = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "", "", "t", "c", 0); !errors.Is(err, domain.ErrClaseRequerida) {
+		t.Errorf("apunte sin clase = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "", "clase", "", "c", 0); !errors.Is(err, domain.ErrApunteTituloRequerido) {
+		t.Errorf("apunte sin título = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "", "clase", "t", "", 0); !errors.Is(err, domain.ErrApunteContenidoRequerido) {
+		t.Errorf("apunte sin contenido = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "", "clase", "t", "texto [99:99] inválido", 0); !errors.Is(err, domain.ErrMarcadorTiempoInvalido) {
+		t.Errorf("apunte con marcador inválido = %v", err)
+	}
+	if _, err := svc.GuardarApunte(context.Background(), "est", "", "clase", "t", "c", -1); !errors.Is(err, domain.ErrPosicionInvalida) {
+		t.Errorf("apunte con posición negativa = %v", err)
+	}
+	if _, err := svc.ListarApuntes(context.Background(), "", "clase"); !errors.Is(err, domain.ErrEstudianteRequerido) {
+		t.Errorf("listar apuntes sin estudiante = %v", err)
+	}
+	if _, err := svc.EliminarApunte(context.Background(), "", "apunte-1"); !errors.Is(err, domain.ErrEstudianteRequerido) {
+		t.Errorf("eliminar apunte sin estudiante = %v", err)
+	}
+	if _, err := svc.EliminarApunte(context.Background(), "est", ""); !errors.Is(err, domain.ErrApunteIDRequerido) {
+		t.Errorf("eliminar apunte sin id = %v", err)
+	}
+	if repo.guardarApunteCalls != 1 {
+		t.Errorf("el repositorio de apuntes recibió %d llamadas, se esperaba 1", repo.guardarApunteCalls)
+	}
+}
+
+func TestReproduccionServiceExportarApunteMd(t *testing.T) {
+	t.Run("genera archivo markdown desde el apunte persistido", func(t *testing.T) {
+		repo := &fakeRepository{
+			apuntes: []domain.Apunte{
+				{
+					ApunteID:          "apunte-1",
+					EstudianteID:      "est-1",
+					ClaseID:           "clase-1",
+					Titulo:            "Resumen",
+					ContenidoMarkdown: "# Resumen\n\n[00:05] marcador",
+				},
+			},
+		}
+		svc := service.New(repo)
+
+		archivo, err := svc.ExportarApunteMd(context.Background(), "est-1", "clase-1")
+		if err != nil {
+			t.Fatalf("ExportarApunteMd() error = %v", err)
+		}
+		if archivo.NombreArchivo != "apuntes-clase-1.md" {
+			t.Errorf("NombreArchivo = %q, se esperaba apuntes-clase-1.md", archivo.NombreArchivo)
+		}
+		if archivo.ContenidoMD != "# Resumen\n\n# Resumen\n\n[00:05] marcador" {
+			t.Errorf("ContenidoMD = %q", archivo.ContenidoMD)
+		}
+		if archivo.MimeType != domain.MimeTypeMarkdown {
+			t.Errorf("MimeType = %q, se esperaba %q", archivo.MimeType, domain.MimeTypeMarkdown)
+		}
+	})
+
+	t.Run("apunte inexistente devuelve ErrApunteNoEncontrado", func(t *testing.T) {
+		repo := &fakeRepository{}
+		svc := service.New(repo)
+
+		if _, err := svc.ExportarApunteMd(context.Background(), "est-1", "clase-1"); !errors.Is(err, domain.ErrApunteNoEncontrado) {
+			t.Errorf("ExportarApunteMd() error = %v, se esperaba ErrApunteNoEncontrado", err)
+		}
+	})
+
+	t.Run("propaga error del repositorio", func(t *testing.T) {
+		failure := errors.New("fallo de bd")
+		repo := &fakeRepository{apuntesErr: failure}
+		svc := service.New(repo)
+
+		if _, err := svc.ExportarApunteMd(context.Background(), "est-1", "clase-1"); !errors.Is(err, failure) {
+			t.Errorf("ExportarApunteMd() no propagó el error: %v", err)
+		}
+	})
+
+	t.Run("valida identificadores", func(t *testing.T) {
+		repo := &fakeRepository{}
+		svc := service.New(repo)
+
+		if _, err := svc.ExportarApunteMd(context.Background(), "", "clase"); !errors.Is(err, domain.ErrEstudianteRequerido) {
+			t.Errorf("sin estudiante = %v", err)
+		}
+		if _, err := svc.ExportarApunteMd(context.Background(), "est", ""); !errors.Is(err, domain.ErrClaseRequerida) {
+			t.Errorf("sin clase = %v", err)
+		}
+	})
 }
