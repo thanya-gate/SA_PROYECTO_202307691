@@ -1,0 +1,217 @@
+name: CI/CD — Pruebas y publicación de imágenes
+
+# Pipeline de Integración Continua (Práctica 5):
+# 1. Ejecuta las suites de pruebas unitarias ante cada PR / push.
+# 2. Si todas pasan, construye y publica las imágenes Docker de los
+#    8 servicios en GCP Artifact Registry con versionamiento semántico.
+# 3. Si una prueba falla, el pipeline cortocircuita y NINGUNA imagen
+#    se sube al registry.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. Pruebas unitarias (cortocircuito: bloquea la publicación)
+  # ------------------------------------------------------------------
+  tests:
+    name: Pruebas — ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - package: Backend/services/auth-service
+            stack: node
+          - package: Backend/services/catalog-service
+            stack: node
+          - package: Backend/services/inscripcion-service
+            stack: node
+          - package: Backend/services/notificaciones-service
+            stack: node
+          - package: Backend/api-gateway
+            stack: node
+          - package: Frontend
+            stack: node
+          - package: Backend/services/reproduccion-service
+            stack: go
+          - package: Backend/services/analitica-service
+            stack: python
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        if: matrix.stack == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ matrix.package }}/package-lock.json
+
+      - name: Configurar Go
+        if: matrix.stack == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Configurar Python
+        if: matrix.stack == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: Backend/services/analitica-service/requirements.txt
+
+      - name: Instalar dependencias
+        if: matrix.stack == 'node'
+        run: npm ci
+
+      - name: Instalar dependencias (Python)
+        if: matrix.stack == 'python'
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip3 install -r requirements.txt
+
+      - name: Ejecutar pruebas unitarias (Jest)
+        if: matrix.stack == 'node'
+        run: npm test -- --runInBand
+
+      - name: Ejecutar pruebas unitarias (Go)
+        if: matrix.stack == 'go'
+        run: go test ./... -v
+
+      - name: Ejecutar pruebas unitarias (pytest)
+        if: matrix.stack == 'python'
+        run: |
+          source .venv/bin/activate
+          python3 -m pytest -v
+
+  # ------------------------------------------------------------------
+  # 2. Build y publicación de imágenes en GCP Artifact Registry
+  # ------------------------------------------------------------------
+  publish:
+    name: Publicar — ${{ matrix.name }}
+    needs: tests
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      # Credenciales definidas como Repository Secrets.
+      # Mientras no existan, el job termina con éxito sin publicar.
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}
+      GCP_REPOSITORY: ${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          # context = directorio de contexto de build del Dockerfile
+          # dockerfile = ruta relativa al context
+          - name: frontend
+            context: Frontend
+            dockerfile: Dockerfile
+          - name: api-gateway
+            context: Backend
+            dockerfile: api-gateway/Dockerfile
+          - name: auth-service
+            context: Backend
+            dockerfile: services/auth-service/Dockerfile
+          - name: catalog-service
+            context: Backend
+            dockerfile: services/catalog-service/Dockerfile
+          - name: inscripcion-service
+            context: Backend
+            dockerfile: services/inscripcion-service/Dockerfile
+          - name: notificaciones-service
+            context: Backend
+            dockerfile: services/notificaciones-service/Dockerfile
+          - name: reproduccion-service
+            context: Backend/services/reproduccion-service
+            dockerfile: Dockerfile
+          - name: analitica-service
+            context: Backend/services/analitica-service
+            dockerfile: Dockerfile
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Verificar credenciales del Registry
+        id: guard
+        env:
+          SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$GCP_REPOSITORY" ] || [ -z "$SA_KEY" ]; then
+            echo "::warning::Faltan los Repository Secrets de GCP (GCP_PROJECT_ID, GCP_ARTIFACT_REGISTRY_REGION, GCP_ARTIFACT_REGISTRY_REPOSITORY, GCP_SA_KEY). La publicación se omite."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Autenticación con el patrón oficial de Artifact Registry:
+      # usuario "_json_key" + la llave JSON de la Service Account como password.
+      - name: Login en Artifact Registry
+        if: steps.guard.outputs.enabled == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configurar Docker Buildx
+        if: steps.guard.outputs.enabled == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Calcular etiquetas de imagen
+        if: steps.guard.outputs.enabled == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ matrix.name }}
+          tags: |
+            # Tag de release: v1.2.0 -> :1.2.0 (+ :latest automático)
+            type=semver,pattern={{version}}
+            # Push a rama: main -> :main
+            type=ref,event=branch
+            # SHA del commit para trazabilidad: :sha-<hash>
+            type=sha
+
+      - name: Build y push de la imagen
+        if: steps.guard.outputs.enabled == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          # Rutas absolutas: evita la ambigüedad de si buildx resuelve `file`
+          # relativo al context o al directorio de trabajo del runner.
+          context: ${{ github.workspace }}/${{ matrix.context }}
+          file: ${{ github.workspace }}/${{ matrix.context }}/${{ matrix.dockerfile }}
+          # El paso solo corre cuando el guard detectó credenciales.
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Resumen de imágenes publicadas
+        run: |
+          {
+            echo "### Imagen \`${{ matrix.name }}\`"
+            if [ -n "${{ steps.meta.outputs.tags }}" ]; then
+              echo '```'
+              echo "${{ steps.meta.outputs.tags }}"
+              echo '```'
+            else
+              echo "_Publicación omitida: faltan los Repository Secrets de GCP._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

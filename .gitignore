@@ -12,3 +12,4 @@ context/
 coverage/
 .coverage
 coverage.out
+.opencode
