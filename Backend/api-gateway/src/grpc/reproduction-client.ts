@@ -62,4 +62,19 @@ export const reproductionGrpc = {
     puntuacion: number;
     comentario?: string;
   }) => unary('RegistrarCalificacion', req),
+
+  guardarApunte: (req: {
+    estudianteId: string;
+    claseId: string;
+    apunteId?: string;
+    titulo: string;
+    contenidoMarkdown: string;
+    posicionSegundos: number;
+  }) => unary('GuardarApunte', req),
+  listarApuntes: (req: { estudianteId: string; claseId?: string }) =>
+    unary('ListarApuntes', req),
+  eliminarApunte: (req: { estudianteId: string; apunteId: string }) =>
+    unary('EliminarApunte', req),
+  exportarApunteMd: (req: { estudianteId: string; claseId: string }) =>
+    unary('ExportarApunteMd', req),
 };
