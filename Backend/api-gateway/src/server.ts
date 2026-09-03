@@ -1666,10 +1666,10 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
       const apunteIdFinal = typeof apunteId === 'string' && apunteId.length > 0 ? apunteId : '';
       // Los marcadores de tiempo embebidos en el Markdown deben respetar el
       // formato [MM:SS] con minutos y segundos de dos dígitos (segundos <= 59).
-      const marcadorRe = /\[(\d{2}):(\d{2})\]/g;
-      let match: RegExpExecArray | null;
-      while ((match = marcadorRe.exec(contenidoMarkdown)) !== null) {
-        if (Number(match[2]) > 59) {
+      const candidatos = contenidoMarkdown.match(/\[\d+:\d+\]/g) ?? [];
+      for (const candidato of candidatos) {
+        const match = candidato.match(/^\[(\d{2}):(\d{2})\]$/);
+        if (!match || Number(match[2]) > 59) {
           throw new DomainError('ENTRADA_INVALIDA', 'El marcador de tiempo debe tener el formato [MM:SS]', 400);
         }
       }
