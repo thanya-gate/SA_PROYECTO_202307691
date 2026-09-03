@@ -76,9 +76,13 @@ func NuevoArchivoCuadernoApuntes(claseID string, apuntes []Apunte) *ArchivoApunt
 	}
 }
 
-// marcadorTiempoRe expresa el formato admitido para los marcadores de tiempo
-// dentro del apunte: [MM:SS] con minutos y segundos de dos dígitos.
-var marcadorTiempoRe = regexp.MustCompile(`\[(\d{2}):(\d{2})\]`)
+// Los candidatos permiten detectar marcadores numéricos mal formados como
+// [1:30] o [01:5], en lugar de ignorarlos silenciosamente. La expresión
+// completa aplica el formato admitido: [MM:SS], con dos dígitos por grupo.
+var (
+	marcadorTiempoCompletoRe  = regexp.MustCompile(`^\[(\d{2}):(\d{2})\]$`)
+	marcadorTiempoCandidatoRe = regexp.MustCompile(`\[\d+:\d+\]`)
+)
 
 // ValidarApunte valida los campos del cuaderno de apuntes ligado a un
 // estudiante y una clase.
@@ -110,8 +114,12 @@ func ValidarApunte(estudianteID, claseID, titulo, contenidoMarkdown string, posi
 // ValidarMarcadoresTiempo comprueba que todos los marcadores de tiempo
 // embebidos en el Markdown ([MM:SS]) sean sintácticamente válidos.
 func ValidarMarcadoresTiempo(markdown string) error {
-	matches := marcadorTiempoRe.FindAllStringSubmatch(markdown, -1)
-	for _, m := range matches {
+	candidatos := marcadorTiempoCandidatoRe.FindAllString(markdown, -1)
+	for _, candidato := range candidatos {
+		m := marcadorTiempoCompletoRe.FindStringSubmatch(candidato)
+		if m == nil {
+			return ErrMarcadorTiempoInvalido
+		}
 		minutos, errMin := strconv.Atoi(m[1])
 		segundos, errSeg := strconv.Atoi(m[2])
 		if errMin != nil || errSeg != nil {
@@ -127,7 +135,7 @@ func ValidarMarcadoresTiempo(markdown string) error {
 // SegundosDeMarcadorTiempo convierte un marcador de tiempo de la forma
 // "MM:SS" a su equivalente en segundos. Devuelve -1 si el formato no es válido.
 func SegundosDeMarcadorTiempo(cadena string) int {
-	m := marcadorTiempoRe.FindStringSubmatch(cadena)
+	m := marcadorTiempoCompletoRe.FindStringSubmatch(cadena)
 	if m == nil {
 		return -1
 	}

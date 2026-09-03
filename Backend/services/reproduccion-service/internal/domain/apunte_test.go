@@ -24,6 +24,9 @@ func TestValidarApunte(t *testing.T) {
 		{name: "contenido requerido", estudiante: "est-1", clase: "clase-1", titulo: "t", contenido: "   ", wantErr: ErrApunteContenidoRequerido},
 		{name: "marcador con segundos inválidos", estudiante: "est-1", clase: "clase-1", titulo: "t", contenido: "[01:75]", wantErr: ErrMarcadorTiempoInvalido},
 		{name: "marcador fuera de rango", estudiante: "est-1", clase: "clase-1", titulo: "t", contenido: "[99:99]", wantErr: ErrMarcadorTiempoInvalido},
+		{name: "marcador con minuto de un dígito", estudiante: "est-1", clase: "clase-1", titulo: "t", contenido: "[1:30]", wantErr: ErrMarcadorTiempoInvalido},
+		{name: "marcador con segundo de un dígito", estudiante: "est-1", clase: "clase-1", titulo: "t", contenido: "[01:5]", wantErr: ErrMarcadorTiempoInvalido},
+		{name: "marcador con minuto de tres dígitos", estudiante: "est-1", clase: "clase-1", titulo: "t", contenido: "[001:30]", wantErr: ErrMarcadorTiempoInvalido},
 		{name: "posición negativa", estudiante: "est-1", clase: "clase-1", titulo: "t", contenido: "c", posicion: -1, wantErr: ErrPosicionInvalida},
 	}
 
@@ -55,6 +58,7 @@ func TestSegundosDeMarcadorTiempo(t *testing.T) {
 		{in: "99:59", want: 5999},
 		{in: "00:60", want: -1},
 		{in: "1:30", want: -1},
+		{in: "001:30", want: -1},
 		{in: "abc", want: -1},
 		{in: "", want: -1},
 	}
@@ -62,5 +66,48 @@ func TestSegundosDeMarcadorTiempo(t *testing.T) {
 		if got := SegundosDeMarcadorTiempo("[" + tt.in + "]"); got != tt.want {
 			t.Errorf("SegundosDeMarcadorTiempo(%q) = %d, want %d", tt.in, got, tt.want)
 		}
+	}
+}
+
+func TestSegundosDeMarcadorTiempoRequiereCadenaExacta(t *testing.T) {
+	if got := SegundosDeMarcadorTiempo("inicio [01:30] fin"); got != -1 {
+		t.Fatalf("SegundosDeMarcadorTiempo() = %d, want -1 para una cadena no exacta", got)
+	}
+}
+
+func TestNuevoArchivoApunte(t *testing.T) {
+	if got := NuevoArchivoApunte(nil); got != nil {
+		t.Fatalf("NuevoArchivoApunte(nil) = %#v, want nil", got)
+	}
+
+	apunte := &Apunte{ClaseID: "clase-1", ContenidoMarkdown: "## Tema\n\n[01:30] concepto"}
+	archivo := NuevoArchivoApunte(apunte)
+	if archivo.NombreArchivo != "apunte-clase-1.md" {
+		t.Errorf("NombreArchivo = %q", archivo.NombreArchivo)
+	}
+	if archivo.ContenidoMD != apunte.ContenidoMarkdown {
+		t.Errorf("ContenidoMD = %q", archivo.ContenidoMD)
+	}
+	if archivo.MimeType != MimeTypeMarkdown {
+		t.Errorf("MimeType = %q", archivo.MimeType)
+	}
+}
+
+func TestNuevoArchivoCuadernoApuntes(t *testing.T) {
+	apuntes := []Apunte{
+		{Titulo: "Introducción", ContenidoMarkdown: "[00:15] Definición"},
+		{Titulo: "Ejemplo", ContenidoMarkdown: "```go\nfmt.Println(1)\n```"},
+	}
+	archivo := NuevoArchivoCuadernoApuntes("clase-1", apuntes)
+	want := "# Introducción\n\n[00:15] Definición\n\n---\n\n# Ejemplo\n\n```go\nfmt.Println(1)\n```"
+
+	if archivo.NombreArchivo != "apuntes-clase-1.md" {
+		t.Errorf("NombreArchivo = %q", archivo.NombreArchivo)
+	}
+	if archivo.ContenidoMD != want {
+		t.Errorf("ContenidoMD = %q, want %q", archivo.ContenidoMD, want)
+	}
+	if archivo.MimeType != MimeTypeMarkdown {
+		t.Errorf("MimeType = %q", archivo.MimeType)
 	}
 }
