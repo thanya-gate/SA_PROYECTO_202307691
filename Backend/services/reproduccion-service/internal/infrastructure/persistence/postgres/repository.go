@@ -7,16 +7,26 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"yousac.com/yousac/reproduccion-service/internal/domain"
 )
 
-type ReproduccionRepository struct {
-	pool *pgxpool.Pool
+// DBTX contiene el subconjunto del pool pgx que utiliza el repositorio. La
+// interfaz mantiene el adaptador desacoplado y permite probar sus consultas sin
+// levantar una instancia real de PostgreSQL.
+type DBTX interface {
+	Ping(ctx context.Context) error
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-func NewReproduccionRepository(pool *pgxpool.Pool) *ReproduccionRepository {
+type ReproduccionRepository struct {
+	pool DBTX
+}
+
+func NewReproduccionRepository(pool DBTX) *ReproduccionRepository {
 	return &ReproduccionRepository{pool: pool}
 }
 
