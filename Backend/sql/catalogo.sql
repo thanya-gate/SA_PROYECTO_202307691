@@ -1246,3 +1246,167 @@ BEGIN
     p_eliminado := TRUE;
 END;
 $$;
+
+-- =====================================================================
+-- Foro de Dudas anclado al minuto del video (Práctica 5)
+-- Los estudiantes pausan el video en un instante y plantean una duda; la
+-- posicion_segundos se corresponde con el minuto exacto de la reproducción
+-- (formato de ejemplo 14:32). El personal docente y otros estudiantes
+-- responden dentro del hilo, y se puede marcar una respuesta como
+-- "Respuesta Correcta / Verificada" (máximo una por hilo).
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS duda_clase (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    clase_id          UUID NOT NULL REFERENCES clase_grabada(id) ON DELETE CASCADE,
+    autor_id          UUID NOT NULL,
+    posicion_segundos INT NOT NULL CHECK (posicion_segundos >= 0),
+    pregunta          TEXT NOT NULL CHECK (length(btrim(pregunta)) > 0),
+    resuelta          BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_creacion    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS respuesta_duda (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    duda_id          UUID NOT NULL REFERENCES duda_clase(id) ON DELETE CASCADE,
+    autor_id         UUID NOT NULL,
+    contenido        TEXT NOT NULL CHECK (length(btrim(contenido)) > 0),
+    es_verificada    BOOLEAN NOT NULL DEFAULT FALSE,
+    verificada_por   UUID,
+    fecha_creacion   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_duda_clase ON duda_clase (clase_id, posicion_segundos);
+CREATE INDEX IF NOT EXISTS idx_respuesta_duda ON respuesta_duda (duda_id, fecha_creacion);
+
+-- Ficha de cada duda con totales de su hilo (sin el detalle de respuestas).
+CREATE OR REPLACE VIEW vw_dudas_clase AS
+SELECT
+    d.id                   AS duda_id,
+    d.clase_id,
+    d.autor_id,
+    d.posicion_segundos,
+    d.pregunta,
+    d.resuelta,
+    d.fecha_creacion,
+    COALESCE(r.total_respuestas, 0)      AS total_respuestas,
+    COALESCE(r.total_verificadas, 0)     AS total_verificadas
+FROM duda_clase d
+LEFT JOIN (
+    SELECT
+        duda_id,
+        COUNT(*)                                        AS total_respuestas,
+        COUNT(*) FILTER (WHERE es_verificada)           AS total_verificadas
+    FROM respuesta_duda
+    GROUP BY duda_id
+) r ON r.duda_id = d.id;
+
+-- Detalle de las respuestas de un hilo.
+CREATE OR REPLACE VIEW vw_respuestas_duda AS
+SELECT
+    r.id            AS respuesta_id,
+    r.duda_id,
+    r.autor_id,
+    r.contenido,
+    r.es_verificada,
+    r.verificada_por,
+    r.fecha_creacion
+FROM respuesta_duda r;
+
+-- Crea una duda asociada al minuto exacto del video.
+CREATE OR REPLACE PROCEDURE sp_crear_duda(
+    p_clase_id UUID,
+    p_autor_id UUID,
+    p_posicion_segundos INT,
+    p_pregunta TEXT,
+    INOUT p_duda_id UUID DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM clase_grabada WHERE id = p_clase_id) THEN
+        RAISE EXCEPTION 'CLASE_NO_ENCONTRADA: la clase no existe';
+    END IF;
+
+    IF p_autor_id IS NULL THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: autor_id es obligatorio';
+    END IF;
+
+    IF p_posicion_segundos IS NULL OR p_posicion_segundos < 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: posicion_segundos no puede ser negativa';
+    END IF;
+
+    IF p_pregunta IS NULL OR length(trim(p_pregunta)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: la pregunta es obligatoria';
+    END IF;
+
+    INSERT INTO duda_clase (clase_id, autor_id, posicion_segundos, pregunta)
+    VALUES (p_clase_id, p_autor_id, p_posicion_segundos, trim(p_pregunta))
+    RETURNING id INTO p_duda_id;
+END;
+$$;
+
+-- Publica una respuesta dentro del hilo de una duda.
+CREATE OR REPLACE PROCEDURE sp_responder_duda(
+    p_duda_id UUID,
+    p_autor_id UUID,
+    p_contenido TEXT,
+    INOUT p_respuesta_id UUID DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM duda_clase WHERE id = p_duda_id) THEN
+        RAISE EXCEPTION 'DUDA_NO_ENCONTRADA: la duda no existe';
+    END IF;
+
+    IF p_autor_id IS NULL THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: autor_id es obligatorio';
+    END IF;
+
+    IF p_contenido IS NULL OR length(trim(p_contenido)) = 0 THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: el contenido de la respuesta es obligatorio';
+    END IF;
+
+    INSERT INTO respuesta_duda (duda_id, autor_id, contenido)
+    VALUES (p_duda_id, p_autor_id, trim(p_contenido))
+    RETURNING id INTO p_respuesta_id;
+END;
+$$;
+
+-- Marca una respuesta como verificada. Solo puede existir una "Respuesta
+-- Correcta / Verificada" por hilo: se desmarcan las demás y la duda pasa
+-- a estado "resuelta". La autorización (autor de la duda o personal
+-- docente) se valida en la capa de aplicación.
+CREATE OR REPLACE PROCEDURE sp_marcar_respuesta_verificada(
+    p_respuesta_id UUID,
+    p_verificador_id UUID,
+    INOUT p_actualizado BOOLEAN DEFAULT FALSE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_duda_id UUID;
+BEGIN
+    SELECT duda_id INTO v_duda_id FROM respuesta_duda WHERE id = p_respuesta_id;
+    IF v_duda_id IS NULL THEN
+        RAISE EXCEPTION 'RESPUESTA_NO_ENCONTRADA: la respuesta no existe';
+    END IF;
+
+    IF p_verificador_id IS NULL THEN
+        RAISE EXCEPTION 'ENTRADA_INVALIDA: verificador_id es obligatorio';
+    END IF;
+
+    UPDATE respuesta_duda
+    SET es_verificada = FALSE, verificada_por = NULL
+    WHERE duda_id = v_duda_id;
+
+    UPDATE respuesta_duda
+    SET es_verificada = TRUE, verificada_por = p_verificador_id
+    WHERE id = p_respuesta_id;
+
+    UPDATE duda_clase SET resuelta = TRUE WHERE id = v_duda_id;
+
+    p_actualizado := TRUE;
+END;
+$$;
