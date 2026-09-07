@@ -19,14 +19,19 @@ import {
   EliminarMaterialResult,
   CrearCapituloInput,
   ActualizarCapituloInput,
+  CrearDudaInput,
+  ResponderDudaInput,
+  MarcarRespuestaVerificadaInput,
 } from '../ports/catalog-repository';
 import {
   Capitulo,
   ClaseDetalle,
   CursoAdmin,
   CursoCatalogo,
+  DudaForo,
   EscuelaAdmin,
   MaterialAdjunto,
+  RespuestaDuda,
   SemestreAdmin,
   SemestreResumen,
 } from '../../domain/entities/clase';
@@ -45,6 +50,9 @@ import {
   agregarVersionMaterialSchema,
   crearCapituloSchema,
   actualizarCapituloSchema,
+  crearDudaSchema,
+  responderDudaSchema,
+  marcarRespuestaVerificadaSchema,
 } from '../dto/catalog-schemas';
 
 function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
@@ -71,6 +79,26 @@ function traducirErrorCapitulo(err: any): never {
   }
   if (message.includes('CONFLICTO') || message.includes('duplicate key')) {
     throw new DomainError('CONFLICTO', 'El rango u orden del capitulo entra en conflicto con otro capitulo', 409);
+  }
+  if (message.includes('ENTRADA_INVALIDA')) {
+    throw new DomainError('ENTRADA_INVALIDA', message.replace(/^.*ENTRADA_INVALIDA:\s*/, ''), 400);
+  }
+  throw err;
+}
+
+function traducirErrorDuda(err: any): never {
+  if (err instanceof DomainError) {
+    throw err;
+  }
+  const message = String(err?.message ?? '');
+  if (message.includes('DUDA_NO_ENCONTRADA')) {
+    throw new DomainError('DUDA_NO_ENCONTRADA', 'La duda no existe', 404);
+  }
+  if (message.includes('RESPUESTA_NO_ENCONTRADA')) {
+    throw new DomainError('RESPUESTA_NO_ENCONTRADA', 'La respuesta no existe', 404);
+  }
+  if (message.includes('CLASE_NO_ENCONTRADA')) {
+    throw new DomainError('CLASE_NO_ENCONTRADA', 'Clase no encontrada', 404);
   }
   if (message.includes('ENTRADA_INVALIDA')) {
     throw new DomainError('ENTRADA_INVALIDA', message.replace(/^.*ENTRADA_INVALIDA:\s*/, ''), 400);
@@ -346,6 +374,81 @@ export class CatalogService {
     } catch (err: any) {
       if (err instanceof DomainError) throw err;
       traducirErrorCapitulo(err);
+    }
+  }
+
+  // ---- Foro de dudas anclado al minuto del video ----
+
+  async crearDuda(raw: CrearDudaInput): Promise<DudaForo> {
+    const input = parse(crearDudaSchema, raw);
+    try {
+      const duda = await this.repository.crearDuda(input);
+      if (!duda) {
+        throw new DomainError('ENTRADA_INVALIDA', 'No se pudo crear la duda', 400);
+      }
+      return duda;
+    } catch (err: any) {
+      traducirErrorDuda(err);
+    }
+  }
+
+  async listarDudas(claseId: string): Promise<DudaForo[]> {
+    if (!claseId) {
+      throw new DomainError('ENTRADA_INVALIDA', 'claseId es obligatorio', 400);
+    }
+    return this.repository.listarDudas(claseId);
+  }
+
+  async responderDuda(raw: ResponderDudaInput): Promise<RespuestaDuda> {
+    const input = parse(responderDudaSchema, raw);
+    try {
+      const respuesta = await this.repository.responderDuda(input);
+      if (!respuesta) {
+        throw new DomainError('ENTRADA_INVALIDA', 'No se pudo registrar la respuesta', 400);
+      }
+      return respuesta;
+    } catch (err: any) {
+      traducirErrorDuda(err);
+    }
+  }
+
+  async marcarRespuestaVerificada(raw: MarcarRespuestaVerificadaInput): Promise<DudaForo> {
+    const input = parse(marcarRespuestaVerificadaSchema, raw);
+
+    const respuesta = await this.repository.obtenerRespuesta(input.respuestaId);
+    if (!respuesta) {
+      throw new DomainError('RESPUESTA_NO_ENCONTRADA', 'La respuesta no existe', 404);
+    }
+    const duda = await this.repository.obtenerDuda(respuesta.dudaId);
+    if (!duda) {
+      throw new DomainError('DUDA_NO_ENCONTRADA', 'La duda no existe', 404);
+    }
+
+    // Solo el autor de la duda o el personal docente (catedrático/auxiliar/admin).
+    const esAutor = duda.autorId === input.verificadorId;
+    if (!esAutor && !input.puedeVerificarComoDocente) {
+      throw new DomainError(
+        'SIN_AUTORIZACION',
+        'Solo el autor de la duda o el personal docente puede marcar la respuesta como verificada',
+        403,
+      );
+    }
+
+    try {
+      const actualizada = await this.repository.marcarRespuestaVerificada(
+        respuesta.respuestaId,
+        input.verificadorId,
+      );
+      if (!actualizada) {
+        throw new DomainError('RESPUESTA_NO_ENCONTRADA', 'La respuesta no existe', 404);
+      }
+      const hiloActualizado = await this.repository.obtenerDuda(respuesta.dudaId);
+      if (!hiloActualizado) {
+        throw new DomainError('DUDA_NO_ENCONTRADA', 'La duda no existe', 404);
+      }
+      return hiloActualizado;
+    } catch (err: any) {
+      traducirErrorDuda(err);
     }
   }
 }
