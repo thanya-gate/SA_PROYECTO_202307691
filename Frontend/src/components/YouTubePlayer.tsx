@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Capitulo } from '../api/catalog';
-import { PlayerProgressBar, type ApunteBarra } from './PlayerProgressBar';
+import { PlayerProgressBar, type ApunteBarra, type DudaBarra } from './PlayerProgressBar';
 
 export const YT_STATE = {
   ENDED: 0,
@@ -64,6 +64,8 @@ interface YouTubePlayerProps {
   capitulos?: Capitulo[];
   apuntes?: ApunteBarra[];
   onAbrirApunte?: (apunteId: string | null, seconds: number) => void;
+  dudas?: DudaBarra[];
+  onAbrirDuda?: (dudaId: string, seconds: number) => void;
 }
 
 export function YouTubePlayer({
@@ -75,6 +77,8 @@ export function YouTubePlayer({
   capitulos,
   apuntes,
   onAbrirApunte,
+  dudas,
+  onAbrirDuda,
 }: YouTubePlayerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -175,6 +179,8 @@ export function YouTubePlayer({
         capitulos={capitulos}
         apuntes={apuntes}
         onAbrirApunte={onAbrirApunte}
+        dudas={dudas}
+        onAbrirDuda={onAbrirDuda}
       />
     </div>
   );

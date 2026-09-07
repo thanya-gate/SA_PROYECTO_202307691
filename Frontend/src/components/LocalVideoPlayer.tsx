@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Capitulo } from '../api/catalog';
 import { YT_STATE } from './YouTubePlayer';
-import { PlayerProgressBar, type ApunteBarra } from './PlayerProgressBar';
+import { PlayerProgressBar, type ApunteBarra, type DudaBarra } from './PlayerProgressBar';
 
 export interface LocalPlayer {
   getCurrentTime: () => number;
@@ -20,6 +20,8 @@ interface LocalVideoPlayerProps {
   capitulos?: Capitulo[];
   apuntes?: ApunteBarra[];
   onAbrirApunte?: (apunteId: string | null, seconds: number) => void;
+  dudas?: DudaBarra[];
+  onAbrirDuda?: (dudaId: string, seconds: number) => void;
 }
 
 export function LocalVideoPlayer({
@@ -31,6 +33,8 @@ export function LocalVideoPlayer({
   capitulos,
   apuntes,
   onAbrirApunte,
+  dudas,
+  onAbrirDuda,
 }: LocalVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const startRef = useRef(startSeconds);
@@ -138,6 +142,8 @@ export function LocalVideoPlayer({
         capitulos={capitulos}
         apuntes={apuntes}
         onAbrirApunte={onAbrirApunte}
+        dudas={dudas}
+        onAbrirDuda={onAbrirDuda}
       />
     </div>
   );

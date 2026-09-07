@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { catalogApi, type ClaseDetalle, type ClaseResumen } from '../api/catalog';
+import {
+  catalogApi,
+  type ClaseDetalle,
+  type ClaseResumen,
+  type DudaForo,
+  type RespuestaDuda,
+} from '../api/catalog';
 import { reproduccionApi, type Apunte, type Checkpoint, type HistorialItem } from '../api/reproduccion';
 import { mediaApi } from '../api/media';
 import { useAuth } from '../auth/auth-context';
@@ -9,6 +15,8 @@ import { MaterialesPanel } from '../components/MaterialesPanel';
 import { ChapterManager } from '../components/ChapterManager';
 import { ChapterTimeline, type ApunteTimeline } from '../components/ChapterTimeline';
 import { ApunteEditor } from '../components/ApunteEditor';
+import { ForoDudas } from '../components/ForoDudas';
+import type { DudaBarra } from '../components/PlayerProgressBar';
 import { YT_STATE, YouTubePlayer } from '../components/YouTubePlayer';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { Alert } from '../components/ui/Alert';
@@ -54,6 +62,9 @@ export default function ClasePage() {
   const [apuntes, setApuntes] = useState<Apunte[]>([]);
   const [editorAbierto, setEditorAbierto] = useState(false);
   const [apunteEditando, setApunteEditando] = useState<Apunte | null>(null);
+
+  // Foro de dudas anclado al minuto del video
+  const [dudas, setDudas] = useState<DudaForo[]>([]);
 
   // Edición / eliminación de la clase (CRUD)
   const [eliminando, setEliminando] = useState(false);
@@ -122,6 +133,7 @@ export default function ClasePage() {
     setEditorAbierto(false);
     setApunteEditando(null);
     setApuntes([]);
+    setDudas([]);
     if (!tokenActual || !claseId) return;
     let active = true;
     reproduccionApi
@@ -130,10 +142,71 @@ export default function ClasePage() {
         if (active) setApuntes(res.apuntes ?? []);
       })
       .catch(() => {});
+    catalogApi
+      .listarDudas(claseId, tokenActual)
+      .then((res) => {
+        if (active) setDudas(res.dudas ?? []);
+      })
+      .catch(() => {});
     return () => {
       active = false;
     };
   }, [claseId, tokenActual]);
+
+  const dudasTimeline: DudaBarra[] = dudas
+    .map((duda) => ({
+      dudaId: duda.dudaId,
+      posicion: duda.posicionSegundos,
+      pregunta: duda.pregunta,
+      totalRespuestas: duda.totalRespuestas,
+      resuelta: duda.resuelta,
+    }))
+    .filter((duda) => duda.posicion >= 0);
+
+  useEffect(() => {
+    if (!claseId) return;
+    const onSeekEvent = (event: Event) => {
+      const detail = (event as CustomEvent<number>).detail;
+      if (typeof detail === 'number') handleSeek(detail);
+    };
+    window.addEventListener('clase:seek', onSeekEvent);
+    return () => window.removeEventListener('clase:seek', onSeekEvent);
+  }, [claseId, handleSeek]);
+
+  const manejarAbrirDuda = useCallback(
+    (_dudaId: string, seconds: number) => {
+      handleSeek(seconds);
+      window.setTimeout(() => {
+        document.getElementById('clase__foro')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+    },
+    [handleSeek],
+  );
+
+  const dudaCreada = useCallback((duda: DudaForo) => {
+    setDudas((prev) => {
+      const existe = prev.some((d) => d.dudaId === duda.dudaId);
+      return existe ? prev.map((d) => (d.dudaId === duda.dudaId ? duda : d)) : [...prev, duda];
+    });
+  }, []);
+
+  const respuestaPublicada = useCallback((dudaId: string, respuesta: RespuestaDuda) => {
+    setDudas((prev) =>
+      prev.map((d) =>
+        d.dudaId === dudaId
+          ? {
+              ...d,
+              respuestas: [...d.respuestas, respuesta],
+              totalRespuestas: d.totalRespuestas + 1,
+            }
+          : d,
+      ),
+    );
+  }, []);
+
+  const dudaVerificada = useCallback((duda: DudaForo) => {
+    setDudas((prev) => prev.map((d) => (d.dudaId === duda.dudaId ? duda : d)));
+  }, []);
 
   const posicionDeApunte = useCallback((apunte: Apunte): number | null => {
     if (typeof apunte.posicionSegundos === 'number' && apunte.posicionSegundos > 0) {
@@ -392,6 +465,8 @@ export default function ClasePage() {
                   capitulos={clase.capitulos ?? []}
                   apuntes={apuntesTimeline}
                   onAbrirApunte={manejarAbrirApunte}
+                  dudas={dudasTimeline}
+                  onAbrirDuda={manejarAbrirDuda}
                 />
               ) : videoLocal ? (
                 <LocalVideoPlayer
@@ -405,6 +480,8 @@ export default function ClasePage() {
                   capitulos={clase.capitulos ?? []}
                   apuntes={apuntesTimeline}
                   onAbrirApunte={manejarAbrirApunte}
+                  dudas={dudasTimeline}
+                  onAbrirDuda={manejarAbrirDuda}
                 />
               ) : (
                 <p className="clase__sin-video">No hay video disponible para esta clase.</p>
@@ -577,6 +654,18 @@ export default function ClasePage() {
               claseId={clase.claseId}
               materialesIniciales={clase.materiales ?? []}
               puedeGestionar={puedeGestionarContenido}
+            />
+
+            <ForoDudas
+              claseId={clase.claseId}
+              token={tokenActual}
+              currentSeconds={currentSeconds}
+              dudas={dudas}
+              userId={user?.userId ?? ''}
+              roles={user?.roles ?? []}
+              onDudaCreada={dudaCreada}
+              onRespuestaPublicada={respuestaPublicada}
+              onDudaVerificada={dudaVerificada}
             />
 
             <div className="clase__participantes">
