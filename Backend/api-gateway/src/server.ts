@@ -930,6 +930,97 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
     },
   );
 
+  // Foro de dudas anclado al minuto del video. La lectura es abierta para
+  // usuarios autenticados; la escritura sigue las reglas de roles del aula:
+  // estudiantes, catedráticos, auxiliares y administradores participan, y la
+  // verificación de respuestas se autoriza en el catalog-service (autor de la
+  // duda o personal docente).
+  app.get('/catalog/classes/:claseId/dudas', authenticate, async (req, res, next) => {
+    try {
+      const result = await catalogGrpc.listarDudas(req.params.claseId);
+      res.json({ dudas: result.dudas ?? [] });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post(
+    '/catalog/classes/:claseId/dudas',
+    authenticate,
+    requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const body = req.body as Record<string, unknown>;
+        const posicionSegundos = Number(body.posicionSegundos);
+        if (
+          typeof body.pregunta !== 'string' ||
+          body.pregunta.trim().length === 0 ||
+          !Number.isInteger(posicionSegundos) ||
+          posicionSegundos < 0
+        ) {
+          throw new DomainError(
+            'ENTRADA_INVALIDA',
+            'pregunta y posicionSegundos (segundo del video) son obligatorios',
+            400,
+          );
+        }
+        const result = await catalogGrpc.crearDuda({
+          claseId: req.params.claseId,
+          autorId: req.context!.userId,
+          posicionSegundos,
+          pregunta: body.pregunta.trim(),
+        });
+        res.status(201).json({ message: 'Duda publicada', duda: result.duda });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  app.post(
+    '/catalog/dudas/:dudaId/respuestas',
+    authenticate,
+    requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const body = req.body as Record<string, unknown>;
+        if (typeof body.contenido !== 'string' || body.contenido.trim().length === 0) {
+          throw new DomainError('ENTRADA_INVALIDA', 'contenido es obligatorio', 400);
+        }
+        const result = await catalogGrpc.responderDuda({
+          dudaId: req.params.dudaId,
+          autorId: req.context!.userId,
+          contenido: body.contenido.trim(),
+        });
+        res.status(201).json({ message: 'Respuesta publicada', respuesta: result.respuesta });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  app.post(
+    '/catalog/respuestas/:respuestaId/verificar',
+    authenticate,
+    requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_CATEDRATICO', 'ROLE_ADMIN', 'ROLE_AUXILIAR'),
+    async (req, res, next) => {
+      try {
+        const roles = (req.context!.roles ?? []) as string[];
+        const puedeVerificarComoDocente = roles.includes('ROLE_CATEDRATICO') ||
+          roles.includes('ROLE_AUXILIAR') ||
+          roles.includes('ROLE_ADMIN');
+        const result = await catalogGrpc.marcarRespuestaVerificada({
+          respuestaId: req.params.respuestaId,
+          verificadorId: req.context!.userId,
+          puedeVerificarComoDocente,
+        });
+        res.json({ message: 'Respuesta marcada como verificada', duda: result.duda });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
   app.patch('/catalog/classes/:claseId', authenticate, requireAnyRole('ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR'), async (req, res, next) => {
     try {
       const body = req.body as Record<string, unknown>;

@@ -155,4 +155,16 @@ export const catalogGrpc = {
     orden?: number;
   }) => unary('ActualizarCapitulo', req),
   eliminarCapitulo: (capituloId: string) => unary('EliminarCapitulo', { capituloId }),
+
+  // Foro de dudas anclado al minuto del video
+  crearDuda: (req: { claseId: string; autorId: string; posicionSegundos: number; pregunta: string }) =>
+    unary('CrearDuda', req),
+  listarDudas: (claseId: string) => unary('ListarDudas', { claseId }),
+  responderDuda: (req: { dudaId: string; autorId: string; contenido: string }) =>
+    unary('ResponderDuda', req),
+  marcarRespuestaVerificada: (req: {
+    respuestaId: string;
+    verificadorId: string;
+    puedeVerificarComoDocente: boolean;
+  }) => unary('MarcarRespuestaVerificada', req),
 };
