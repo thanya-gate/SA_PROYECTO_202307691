@@ -420,6 +420,72 @@ message EliminarCursoRequest {
 }
 message EliminarCursoResponse {}
 
+// =====================================================================
+// Foro de Dudas anclado al minuto del video (Práctica 5)
+// =====================================================================
+message RespuestaDuda {
+  string respuesta_id = 1;
+  string duda_id = 2;
+  string autor_id = 3;
+  string contenido = 4;
+  bool es_verificada = 5;
+  string verificada_por = 6;
+  string fecha_creacion = 7;
+}
+
+message DudaForo {
+  string duda_id = 1;
+  string clase_id = 2;
+  string autor_id = 3;
+  int32 posicion_segundos = 4;
+  string pregunta = 5;
+  bool resuelta = 6;
+  string fecha_creacion = 7;
+  int32 total_respuestas = 8;
+  int32 total_verificadas = 9;
+  repeated RespuestaDuda respuestas = 10;
+}
+
+message CrearDudaRequest {
+  string clase_id = 1;
+  string autor_id = 2;
+  int32 posicion_segundos = 3;
+  string pregunta = 4;
+}
+
+message CrearDudaResponse {
+  DudaForo duda = 1;
+}
+
+message ListarDudasRequest {
+  string clase_id = 1;
+}
+
+message ListarDudasResponse {
+  repeated DudaForo dudas = 1;
+}
+
+message ResponderDudaRequest {
+  string duda_id = 1;
+  string autor_id = 2;
+  string contenido = 3;
+}
+
+message ResponderDudaResponse {
+  RespuestaDuda respuesta = 1;
+}
+
+message MarcarRespuestaVerificadaRequest {
+  string respuesta_id = 1;
+  string verificador_id = 2;
+  // true cuando el usuario tiene rol CATEDRATICO/AUXILIAR/ADMIN de la clase.
+  bool puede_verificar_como_docente = 3;
+}
+
+message MarcarRespuestaVerificadaResponse {
+  DudaForo duda = 1;
+}
+
 message HealthRequest {}
 
 message HealthResponse {
@@ -473,6 +539,12 @@ service CatalogoService {
   rpc CrearCapitulo(CrearCapituloRequest) returns (CrearCapituloResponse);
   rpc ActualizarCapitulo(ActualizarCapituloRequest) returns (ActualizarCapituloResponse);
   rpc EliminarCapitulo(EliminarCapituloRequest) returns (EliminarCapituloResponse);
+
+  // --- Foro de Dudas (Práctica 5) ---
+  rpc CrearDuda(CrearDudaRequest) returns (CrearDudaResponse);
+  rpc ListarDudas(ListarDudasRequest) returns (ListarDudasResponse);
+  rpc ResponderDuda(ResponderDudaRequest) returns (ResponderDudaResponse);
+  rpc MarcarRespuestaVerificada(MarcarRespuestaVerificadaRequest) returns (MarcarRespuestaVerificadaResponse);
 
   rpc Health(HealthRequest) returns (HealthResponse);
 }

@@ -28,6 +28,29 @@ export interface Capitulo {
   fechaActualizacion: string;
 }
 
+export interface RespuestaDuda {
+  respuestaId: string;
+  dudaId: string;
+  autorId: string;
+  contenido: string;
+  esVerificada: boolean;
+  verificadaPor: string;
+  fechaCreacion: string;
+}
+
+export interface DudaForo {
+  dudaId: string;
+  claseId: string;
+  autorId: string;
+  posicionSegundos: number;
+  pregunta: string;
+  resuelta: boolean;
+  fechaCreacion: string;
+  totalRespuestas: number;
+  totalVerificadas: number;
+  respuestas: RespuestaDuda[];
+}
+
 export interface ClaseDetalle {
   claseId: string;
   codigo: string;
@@ -222,6 +245,37 @@ export const catalogApi = {
   eliminarCapitulo: (capituloId: string, token: string): Promise<{ message: string; claseId: string }> =>
     apiFetch<{ message: string; claseId: string }>(`/catalog/chapters/${capituloId}`, {
       method: 'DELETE',
+      token,
+    }),
+
+  listarDudas: (claseId: string, token: string): Promise<{ dudas: DudaForo[] }> =>
+    apiFetch<{ dudas: DudaForo[] }>(`/catalog/classes/${encodeURIComponent(claseId)}/dudas`, { token }),
+
+  crearDuda: (
+    claseId: string,
+    input: { posicionSegundos: number; pregunta: string },
+    token: string,
+  ): Promise<{ message: string; duda: DudaForo }> =>
+    apiFetch<{ message: string; duda: DudaForo }>(`/catalog/classes/${encodeURIComponent(claseId)}/dudas`, {
+      method: 'POST',
+      body: input,
+      token,
+    }),
+
+  responderDuda: (
+    dudaId: string,
+    contenido: string,
+    token: string,
+  ): Promise<{ message: string; respuesta: RespuestaDuda }> =>
+    apiFetch<{ message: string; respuesta: RespuestaDuda }>(`/catalog/dudas/${dudaId}/respuestas`, {
+      method: 'POST',
+      body: { contenido },
+      token,
+    }),
+
+  marcarRespuestaVerificada: (respuestaId: string, token: string): Promise<{ message: string; duda: DudaForo }> =>
+    apiFetch<{ message: string; duda: DudaForo }>(`/catalog/respuestas/${respuestaId}/verificar`, {
+      method: 'POST',
       token,
     }),
 };

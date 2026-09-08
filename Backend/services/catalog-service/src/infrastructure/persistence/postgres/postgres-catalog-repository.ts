@@ -20,15 +20,19 @@ import {
   EliminarMaterialResult,
   CrearCapituloInput,
   ActualizarCapituloInput,
+  CrearDudaInput,
+  ResponderDudaInput,
 } from '../../../application/ports/catalog-repository';
 import {
   Capitulo,
   ClaseDetalle,
   CursoAdmin,
   CursoCatalogo,
+  DudaForo,
   EscuelaAdmin,
   MaterialAdjunto,
   Participante,
+  RespuestaDuda,
   SemestreAdmin,
   SemestreResumen,
 } from '../../../domain/entities/clase';
@@ -155,6 +159,55 @@ function mapCapitulo(r: CapituloRow): Capitulo {
     orden: Number(r.orden),
     fechaCreacion: new Date(r.fecha_creacion).toISOString(),
     fechaActualizacion: new Date(r.fecha_actualizacion).toISOString(),
+  };
+}
+
+interface DudaRow {
+  duda_id: string;
+  clase_id: string;
+  autor_id: string;
+  posicion_segundos: number;
+  pregunta: string;
+  resuelta: boolean;
+  fecha_creacion: Date;
+  total_respuestas: number;
+  total_verificadas: number;
+}
+
+interface RespuestaRow {
+  respuesta_id: string;
+  duda_id: string;
+  autor_id: string;
+  contenido: string;
+  es_verificada: boolean;
+  verificada_por: string | null;
+  fecha_creacion: Date;
+}
+
+function mapRespuesta(r: RespuestaRow): RespuestaDuda {
+  return {
+    respuestaId: r.respuesta_id,
+    dudaId: r.duda_id,
+    autorId: r.autor_id,
+    contenido: r.contenido,
+    esVerificada: Boolean(r.es_verificada),
+    verificadaPor: r.verificada_por ?? null,
+    fechaCreacion: new Date(r.fecha_creacion).toISOString(),
+  };
+}
+
+function mapDuda(r: DudaRow, respuestas: RespuestaDuda[] = []): DudaForo {
+  return {
+    dudaId: r.duda_id,
+    claseId: r.clase_id,
+    autorId: r.autor_id,
+    posicionSegundos: Number(r.posicion_segundos),
+    pregunta: r.pregunta,
+    resuelta: Boolean(r.resuelta),
+    fechaCreacion: new Date(r.fecha_creacion).toISOString(),
+    totalRespuestas: Number(r.total_respuestas ?? 0),
+    totalVerificadas: Number(r.total_verificadas ?? 0),
+    respuestas,
   };
 }
 
@@ -704,5 +757,119 @@ export class PostgresCatalogRepository implements CatalogRepository {
       eliminado: Boolean(res.rows[0]?.p_eliminado),
       claseId: res.rows[0]?.p_clase_id ?? null,
     };
+  }
+
+  async crearDuda(input: CrearDudaInput): Promise<DudaForo> {
+    const res = await query<{ p_duda_id: string | null }>(
+      'CALL sp_crear_duda($1, $2, $3, $4, NULL)',
+      [input.claseId, input.autorId, input.posicionSegundos, input.pregunta],
+    );
+    if (!res.rows[0]?.p_duda_id) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se pudo crear la duda', 400);
+    }
+    const duda = await this.obtenerDuda(res.rows[0].p_duda_id);
+    if (!duda) {
+      throw new DomainError('DUDA_NO_ENCONTRADA', 'La duda no existe tras crearla', 404);
+    }
+    return duda;
+  }
+
+  async listarDudas(claseId: string): Promise<DudaForo[]> {
+    const dudas = await query<DudaRow>(
+      `SELECT duda_id, clase_id, autor_id, posicion_segundos, pregunta,
+              resuelta, fecha_creacion, total_respuestas, total_verificadas
+       FROM vw_dudas_clase
+       WHERE clase_id = $1
+       ORDER BY posicion_segundos ASC, fecha_creacion ASC`,
+      [claseId],
+    );
+    if (dudas.rows.length === 0) return [];
+
+    const ids = dudas.rows.map((r) => r.duda_id);
+    const respuestas = await query<RespuestaRow>(
+      `SELECT respuesta_id, duda_id, autor_id, contenido, es_verificada,
+              verificada_por, fecha_creacion
+       FROM vw_respuestas_duda
+       WHERE duda_id = ANY($1::uuid[])
+       ORDER BY fecha_creacion ASC`,
+      [ids],
+    );
+
+    const porDuda = new Map<string, RespuestaDuda[]>();
+    for (const r of respuestas.rows) {
+      const arr = porDuda.get(r.duda_id) ?? [];
+      arr.push(mapRespuesta(r));
+      porDuda.set(r.duda_id, arr);
+    }
+
+    return dudas.rows.map((row) => mapDuda(row, porDuda.get(row.duda_id) ?? []));
+  }
+
+  async obtenerDuda(dudaId: string): Promise<DudaForo | null> {
+    const dudas = await query<DudaRow>(
+      `SELECT duda_id, clase_id, autor_id, posicion_segundos, pregunta,
+              resuelta, fecha_creacion, total_respuestas, total_verificadas
+       FROM vw_dudas_clase
+       WHERE duda_id = $1`,
+      [dudaId],
+    );
+    if (dudas.rows.length === 0) return null;
+
+    const respuestas = await query<RespuestaRow>(
+      `SELECT respuesta_id, duda_id, autor_id, contenido, es_verificada,
+              verificada_por, fecha_creacion
+       FROM vw_respuestas_duda
+       WHERE duda_id = $1
+       ORDER BY fecha_creacion ASC`,
+      [dudaId],
+    );
+    return mapDuda(dudas.rows[0], respuestas.rows.map(mapRespuesta));
+  }
+
+  async responderDuda(input: ResponderDudaInput): Promise<RespuestaDuda> {
+    const res = await query<{ p_respuesta_id: string | null }>(
+      'CALL sp_responder_duda($1, $2, $3, NULL)',
+      [input.dudaId, input.autorId, input.contenido],
+    );
+    if (!res.rows[0]?.p_respuesta_id) {
+      throw new DomainError('ENTRADA_INVALIDA', 'No se pudo registrar la respuesta', 400);
+    }
+    const respuestas = await query<RespuestaRow>(
+      `SELECT respuesta_id, duda_id, autor_id, contenido, es_verificada,
+              verificada_por, fecha_creacion
+       FROM vw_respuestas_duda
+       WHERE respuesta_id = $1`,
+      [res.rows[0].p_respuesta_id],
+    );
+    if (respuestas.rows.length === 0) {
+      throw new DomainError('RESPUESTA_NO_ENCONTRADA', 'La respuesta no existe tras crearla', 404);
+    }
+    return mapRespuesta(respuestas.rows[0]);
+  }
+
+  async obtenerRespuesta(respuestaId: string): Promise<RespuestaDuda | null> {
+    const res = await query<RespuestaRow>(
+      `SELECT respuesta_id, duda_id, autor_id, contenido, es_verificada,
+              verificada_por, fecha_creacion
+       FROM vw_respuestas_duda
+       WHERE respuesta_id = $1`,
+      [respuestaId],
+    );
+    return res.rows.length > 0 ? mapRespuesta(res.rows[0]) : null;
+  }
+
+  async marcarRespuestaVerificada(respuestaId: string, verificadorId: string): Promise<RespuestaDuda> {
+    const res = await query<{ p_actualizado: boolean }>(
+      'CALL sp_marcar_respuesta_verificada($1, $2, NULL)',
+      [respuestaId, verificadorId],
+    );
+    if (!res.rows[0]?.p_actualizado) {
+      throw new DomainError('RESPUESTA_NO_ENCONTRADA', 'La respuesta no existe', 404);
+    }
+    const actualizada = await this.obtenerRespuesta(respuestaId);
+    if (!actualizada) {
+      throw new DomainError('RESPUESTA_NO_ENCONTRADA', 'La respuesta no existe tras marcarla', 404);
+    }
+    return actualizada;
   }
 }

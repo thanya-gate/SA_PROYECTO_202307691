@@ -180,3 +180,27 @@ export const actualizarCapituloSchema = validarRangoCapitulo(
   }),
 );
 export type ActualizarCapituloInputDto = z.infer<typeof actualizarCapituloSchema>;
+
+// ---- Foro de dudas ----
+
+export const crearDudaSchema = z.object({
+  claseId: z.string().uuid('claseId inválido'),
+  autorId: z.string().uuid('autorId inválido'),
+  posicionSegundos: z.number().int().min(0, 'posicionSegundos no puede ser negativo'),
+  pregunta: z.string().trim().min(1, 'la pregunta es obligatoria').max(2000, 'la pregunta no puede exceder 2000 caracteres'),
+});
+export type CrearDudaInputDto = z.infer<typeof crearDudaSchema>;
+
+export const responderDudaSchema = z.object({
+  dudaId: z.string().uuid('dudaId inválido'),
+  autorId: z.string().uuid('autorId inválido'),
+  contenido: z.string().trim().min(1, 'el contenido es obligatorio').max(2000, 'el contenido no puede exceder 2000 caracteres'),
+});
+export type ResponderDudaInputDto = z.infer<typeof responderDudaSchema>;
+
+export const marcarRespuestaVerificadaSchema = z.object({
+  respuestaId: z.string().uuid('respuestaId inválido'),
+  verificadorId: z.string().uuid('verificadorId inválido'),
+  puedeVerificarComoDocente: z.boolean().default(false),
+});
+export type MarcarRespuestaVerificadaInputDto = z.infer<typeof marcarRespuestaVerificadaSchema>;

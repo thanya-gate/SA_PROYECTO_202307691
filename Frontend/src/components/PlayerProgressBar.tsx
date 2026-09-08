@@ -8,6 +8,14 @@ export interface ApunteBarra {
   titulo: string;
 }
 
+export interface DudaBarra {
+  dudaId: string;
+  posicion: number;
+  pregunta: string;
+  totalRespuestas: number;
+  resuelta: boolean;
+}
+
 interface PlayerProgressBarProps {
   currentSeconds: number;
   duracion: number;
@@ -17,6 +25,8 @@ interface PlayerProgressBarProps {
   capitulos?: Capitulo[];
   apuntes?: ApunteBarra[];
   onAbrirApunte?: (apunteId: string | null, seconds: number) => void;
+  dudas?: DudaBarra[];
+  onAbrirDuda?: (dudaId: string, seconds: number) => void;
 }
 
 const UMBRAL_APUNTE_SEGUNDOS = 8;
@@ -44,6 +54,26 @@ function LapizIcon({ size = 14 }: { size?: number }) {
   );
 }
 
+function DudaIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
 export function PlayerProgressBar({
   currentSeconds,
   duracion,
@@ -53,9 +83,12 @@ export function PlayerProgressBar({
   capitulos,
   apuntes,
   onAbrirApunte,
+  dudas,
+  onAbrirDuda,
 }: PlayerProgressBarProps) {
   const barraRef = useRef<HTMLButtonElement>(null);
   const [hoverSegundos, setHoverSegundos] = useState<number | null>(null);
+  const [hoverDudaId, setHoverDudaId] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
 
   function limpiarTimeoutHover() {
@@ -87,6 +120,14 @@ export function PlayerProgressBar({
     (apunte) => apunte.posicion >= 0 && apunte.posicion <= duracion,
   );
 
+  const pinesDuda = (dudas ?? []).filter(
+    (duda) => duda.posicion >= 0 && duda.posicion <= duracion,
+  );
+
+  const dudaEnHover = hoverDudaId !== null
+    ? pinesDuda.find((duda) => duda.dudaId === hoverDudaId) ?? null
+    : null;
+
   function apunteCercano(segundos: number): ApunteBarra | null {
     let mejor: ApunteBarra | null = null;
     for (const apunte of pinesApunte) {
@@ -110,6 +151,7 @@ export function PlayerProgressBar({
 
   function manejarSeek(clientX: number) {
     if (duracion <= 0) return;
+    setHoverDudaId(null);
     onSeek(segundosDesdeEvento(clientX));
   }
 
@@ -137,7 +179,9 @@ export function PlayerProgressBar({
         aria-valuemax={Math.max(0, Math.floor(duracion))}
         aria-valuenow={Math.max(0, Math.floor(currentSeconds))}
         onMouseMove={(e) => {
-          if (!onAbrirApunte || duracion <= 0) return;
+          if (duracion <= 0) return;
+          setHoverDudaId(null);
+          if (!onAbrirApunte) return;
           fijarHover(segundosDesdeEvento(e.clientX));
         }}
         onMouseLeave={() => fijarHover(null)}
@@ -194,6 +238,40 @@ export function PlayerProgressBar({
             <LapizIcon size={14} />
           </button>
         ))}
+
+      {duracion > 0 &&
+        pinesDuda.map((duda) => (
+          <button
+            key={duda.dudaId}
+            type="button"
+            className={`clase__barra-pin clase__barra-pin--duda${duda.resuelta ? ' clase__barra-pin--resuelta' : ''}`}
+            style={{ left: `${Math.min(100, Math.max(0, (duda.posicion / duracion) * 100))}%` }}
+            title={`Duda en ${formatSegundos(duda.posicion)}`}
+            aria-label={`Duda en ${formatSegundos(duda.posicion)}: ${duda.pregunta}. Ver hilo.`}
+            onMouseEnter={() => setHoverDudaId(duda.dudaId)}
+            onMouseLeave={() => setHoverDudaId(null)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setHoverDudaId(null);
+              onAbrirDuda?.(duda.dudaId, duda.posicion);
+            }}
+          >
+            <DudaIcon size={14} />
+          </button>
+        ))}
+
+      {dudaEnHover !== null && duracion > 0 && (
+        <div
+          className="clase__barra-tooltip clase__barra-tooltip--duda"
+          role="tooltip"
+          style={{ left: `${Math.min(100, Math.max(0, (dudaEnHover.posicion / duracion) * 100))}%` }}
+          onMouseEnter={() => setHoverDudaId(dudaEnHover.dudaId)}
+          onMouseLeave={() => setHoverDudaId(null)}
+        >
+          <span className="clase__barra-tooltip-tiempo">{formatSegundos(dudaEnHover.posicion)}</span>
+          <span className="clase__barra-tooltip-pregunta">{dudaEnHover.pregunta}</span>
+        </div>
+      )}
 
       {onAbrirApunte && hoverSegundos !== null && duracion > 0 && (
         <div
