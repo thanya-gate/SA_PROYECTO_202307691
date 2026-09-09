@@ -1,0 +1,6 @@
+# Perfil de validaciÃ³n para la VM pÃºblica de la PrÃ¡ctica 6.
+# Se accede por http://IP_PUBLICA mientras no exista un DNS administrado.
+:80 {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8081
+}

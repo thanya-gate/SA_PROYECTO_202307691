@@ -19,6 +19,11 @@ name: yousac-cloud
 x-yousac-env: &yousac-env
   NODE_ENV: production
 
+# Las imágenes de la aplicación se consumen desde Artifact Registry. La VM no
+# debe compilar código: el pipeline publica la imagen y el operador selecciona
+# la etiqueta mediante IMAGE_TAG antes de ejecutar `docker compose pull`.
+# El valor por defecto corresponde al proyecto usado para la Práctica 6.
+
 services:
   # ---------------------------------------------------------------------------
   # Caddy — Reverse proxy TLS (Let's Encrypt + DuckDNS)
@@ -34,7 +39,7 @@ services:
       ACME_EMAIL: "${ACME_EMAIL:-yousac-ads@gmail.com}"
       DOMAIN: "${DOMAIN:-yousac-thany.duckdns.org}"
     volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/${CADDYFILE:-Caddyfile}:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     restart: unless-stopped
@@ -51,7 +56,7 @@ services:
     image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
     container_name: yousac-auth-db-proxy
     command:
-      - "--address=0.0.0.0"
+      - "--address=127.0.0.1"
       - "--port=5432"
       - "${CLOUD_SQL_CONNECTION_NAME_AUTH}"
     network_mode: "host"
@@ -61,7 +66,7 @@ services:
     image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
     container_name: yousac-catalog-db-proxy
     command:
-      - "--address=0.0.0.0"
+      - "--address=127.0.0.1"
       - "--port=15432"
       - "${CLOUD_SQL_CONNECTION_NAME_CATALOG}"
     network_mode: "host"
@@ -71,7 +76,7 @@ services:
     image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
     container_name: yousac-reproduccion-db-proxy
     command:
-      - "--address=0.0.0.0"
+      - "--address=127.0.0.1"
       - "--port=15433"
       - "${CLOUD_SQL_CONNECTION_NAME_REPRODUCCION}"
     network_mode: "host"
@@ -81,7 +86,7 @@ services:
     image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
     container_name: yousac-analitica-db-proxy
     command:
-      - "--address=0.0.0.0"
+      - "--address=127.0.0.1"
       - "--port=15434"
       - "${CLOUD_SQL_CONNECTION_NAME_ANALITICA}"
     network_mode: "host"
@@ -91,7 +96,7 @@ services:
     image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
     container_name: yousac-inscripcion-db-proxy
     command:
-      - "--address=0.0.0.0"
+      - "--address=127.0.0.1"
       - "--port=15435"
       - "${CLOUD_SQL_CONNECTION_NAME_INSCRIPCION}"
     network_mode: "host"
@@ -101,7 +106,7 @@ services:
     image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
     container_name: yousac-notificaciones-db-proxy
     command:
-      - "--address=0.0.0.0"
+      - "--address=127.0.0.1"
       - "--port=15436"
       - "${CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES}"
     network_mode: "host"
@@ -111,9 +116,8 @@ services:
   # Auth Service (TypeScript)
   # ---------------------------------------------------------------------------
   auth-service:
-    build:
-      context: ./Backend
-      dockerfile: services/auth-service/Dockerfile
+    image: "${REGISTRY_BASE:-us-central1-docker.pkg.dev/yousac-202300396-2026/yousac}/auth-service:${IMAGE_TAG:-main}"
+    pull_policy: always
     container_name: yousac-auth-service
     env_file:
       - .env.cloud
@@ -122,7 +126,8 @@ services:
       <<: *yousac-env
       GRPC_PORT: 50051
       JWT_SECRET: "${JWT_SECRET}"
-      COOKIE_SECURE: "true"
+      COOKIE_SECURE: "${COOKIE_SECURE:-true}"
+      COOKIE_SAME_SITE: "${COOKIE_SAME_SITE:-strict}"
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
       SEED_DEMO: "${SEED_DEMO:-false}"
       OAUTH_PROVIDER: "${OAUTH_PROVIDER:-google}"
@@ -151,13 +156,13 @@ services:
   # Catalog Service (TypeScript)
   # ---------------------------------------------------------------------------
   catalog-service:
-    build:
-      context: ./Backend
-      dockerfile: services/catalog-service/Dockerfile
+    image: "${REGISTRY_BASE:-us-central1-docker.pkg.dev/yousac-202300396-2026/yousac}/catalog-service:${IMAGE_TAG:-main}"
+    pull_policy: always
     container_name: yousac-catalog-service
     network_mode: "host"
     environment:
       <<: *yousac-env
+      NODE_ENV: "${CATALOG_NODE_ENV:-production}"
       GRPC_PORT: 50052
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15432/${CATALOG_DB:-yousac_catalog}"
       NOTIFICACIONES_GRPC_ADDR: 127.0.0.1:50056
@@ -177,9 +182,8 @@ services:
   # Reproducción Service (Go)
   # ---------------------------------------------------------------------------
   reproduccion-service:
-    build:
-      context: ./Backend/services/reproduccion-service
-      dockerfile: Dockerfile
+    image: "${REGISTRY_BASE:-us-central1-docker.pkg.dev/yousac-202300396-2026/yousac}/reproduccion-service:${IMAGE_TAG:-main}"
+    pull_policy: always
     container_name: yousac-reproduccion-service
     network_mode: "host"
     environment:
@@ -200,15 +204,14 @@ services:
   # Analítica Service (Python) — Tendencias, Recomendaciones, Cache Redis
   # ---------------------------------------------------------------------------
   analitica-service:
-    build:
-      context: ./Backend/services/analitica-service
-      dockerfile: Dockerfile
+    image: "${REGISTRY_BASE:-us-central1-docker.pkg.dev/yousac-202300396-2026/yousac}/analitica-service:${IMAGE_TAG:-main}"
+    pull_policy: always
     container_name: yousac-analitica-service
     network_mode: "host"
     environment:
       GRPC_PORT: 50054
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15434/${ANALITICA_DB:-yousac_analitica}"
-      REDIS_URL: "redis://${REDIS_HOST:-10.210.16.3}:${REDIS_PORT:-6379}/0"
+      REDIS_URL: "redis://${REDIS_HOST:-127.0.0.1}:${REDIS_PORT:-6379}/0"
       REDIS_PASSWORD: "${REDIS_PASSWORD}"
       CACHE_TTL_SEGUNDOS: "600"
     depends_on:
@@ -225,13 +228,13 @@ services:
   # Inscripción Service (TypeScript)
   # ---------------------------------------------------------------------------
   inscripcion-service:
-    build:
-      context: ./Backend
-      dockerfile: services/inscripcion-service/Dockerfile
+    image: "${REGISTRY_BASE:-us-central1-docker.pkg.dev/yousac-202300396-2026/yousac}/inscripcion-service:${IMAGE_TAG:-main}"
+    pull_policy: always
     container_name: yousac-inscripcion-service
     network_mode: "host"
     environment:
       <<: *yousac-env
+      SEED_DEMO: "${SEED_DEMO:-false}"
       GRPC_PORT: 50055
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15435/${INSCRIPCION_DB:-yousac_inscripcion}"
     depends_on:
@@ -248,9 +251,8 @@ services:
   # Notificaciones Service (TypeScript) — Emails institucionales + SMTP
   # ---------------------------------------------------------------------------
   notificaciones-service:
-    build:
-      context: ./Backend
-      dockerfile: services/notificaciones-service/Dockerfile
+    image: "${REGISTRY_BASE:-us-central1-docker.pkg.dev/yousac-202300396-2026/yousac}/notificaciones-service:${IMAGE_TAG:-main}"
+    pull_policy: always
     container_name: yousac-notificaciones-service
     env_file:
       - .env.cloud
@@ -276,9 +278,8 @@ services:
   # API Gateway (TypeScript) — Punto de entrada único (north-south)
   # ---------------------------------------------------------------------------
   api-gateway:
-    build:
-      context: ./Backend
-      dockerfile: api-gateway/Dockerfile
+    image: "${REGISTRY_BASE:-us-central1-docker.pkg.dev/yousac-202300396-2026/yousac}/api-gateway:${IMAGE_TAG:-main}"
+    pull_policy: always
     container_name: yousac-api-gateway
     env_file:
       - .env.cloud
@@ -294,8 +295,8 @@ services:
       NOTIFICACIONES_GRPC_ADDR: 127.0.0.1:50056
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
       SESSION_COOKIE_NAME: yousac_session
-      COOKIE_SECURE: "true"
-      COOKIE_SAME_SITE: strict
+      COOKIE_SECURE: "${COOKIE_SECURE:-true}"
+      COOKIE_SAME_SITE: "${COOKIE_SAME_SITE:-strict}"
       COOKIE_PATH: /
       SESSION_TTL_MS: "3600000"
       OAUTH_PROVIDER: "${OAUTH_PROVIDER:-google}"
@@ -337,15 +338,15 @@ services:
   # Frontend Web (React + nginx)
   # ---------------------------------------------------------------------------
   web:
-    build:
-      context: ./Frontend
+    image: "${REGISTRY_BASE:-us-central1-docker.pkg.dev/yousac-202300396-2026/yousac}/frontend:${IMAGE_TAG:-main}"
+    pull_policy: always
     container_name: yousac-web
     network_mode: "host"
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
       NGINX_PORT: "8081"
       BACKEND_URL: http://127.0.0.1:8080
-      FORWARD_PROTO: https
+      FORWARD_PROTO: "${FORWARD_PROTO:-https}"
     depends_on:
       api-gateway:
         condition: service_healthy

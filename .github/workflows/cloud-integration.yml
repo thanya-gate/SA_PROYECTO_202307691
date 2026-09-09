@@ -1,0 +1,64 @@
+name: Integración y paridad — servidor Cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud_base_url:
+        description: URL pública de la VM (dominio o IP)
+        required: true
+        type: string
+      cloud_class_id:
+        description: UUID de la clase que se usará en los flujos integrados
+        required: false
+        type: string
+      write_tests:
+        description: Ejecutar checkpoint, cuaderno y foro (usa datos de prueba)
+        required: true
+        default: true
+        type: boolean
+      require_sample_data:
+        description: Exigir capítulos, materiales y dudas de muestra
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Validar contrato Cloud y paridad
+    runs-on: ubuntu-latest
+    env:
+      CLOUD_BASE_URL: ${{ inputs.cloud_base_url }}
+      CLOUD_CLASS_ID: ${{ inputs.cloud_class_id || vars.CLOUD_CLASS_ID }}
+      CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
+      CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
+      CLOUD_WRITE_TESTS: ${{ inputs.write_tests }}
+      CLOUD_FORUM_WRITE_TESTS: ${{ inputs.write_tests }}
+      CLOUD_REQUIRE_SAMPLE_DATA: ${{ inputs.require_sample_data }}
+      CLOUD_API_BASE_URL: ${{ vars.CLOUD_API_BASE_URL }}
+      REFERENCE_BASE_URL: ${{ vars.REFERENCE_BASE_URL }}
+      REFERENCE_API_BASE_URL: ${{ vars.REFERENCE_API_BASE_URL }}
+      REFERENCE_TEST_EMAIL: ${{ secrets.REFERENCE_TEST_EMAIL }}
+      REFERENCE_TEST_PASSWORD: ${{ secrets.REFERENCE_TEST_PASSWORD }}
+      CLOUD_REPORT_FILE: artifacts/cloud-parity.json
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Ejecutar pruebas de integración
+        run: node tests/integration/cloud-parity.mjs
+
+      - name: Publicar reporte de integración
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-parity-report
+          path: artifacts/cloud-parity.json
+          if-no-files-found: ignore

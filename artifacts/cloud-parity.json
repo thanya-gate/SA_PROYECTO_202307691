@@ -1,0 +1,172 @@
+{
+  "generatedAt": "2026-09-09T16:47:39.195Z",
+  "writeTests": true,
+  "requireSampleData": true,
+  "parity": null,
+  "targets": [
+    {
+      "label": "cloud",
+      "base": "http://136.119.139.125",
+      "webBase": "http://136.119.139.125",
+      "apiBase": "http://136.119.139.125/api",
+      "classId": "bc23d3d0-16bb-4fb7-af76-f5cef462fa4b",
+      "roles": [
+        "ROLE_ESTUDIANTE"
+      ],
+      "ok": true,
+      "error": null,
+      "results": [
+        {
+          "name": "frontend público /healthz",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 239
+        },
+        {
+          "name": "gateway /health y dependencias gRPC",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 231
+        },
+        {
+          "name": "auth login institucional",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 459
+        },
+        {
+          "name": "auth sesión /auth/me",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 122
+        },
+        {
+          "name": "auth perfiles /profiles/me",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 121
+        },
+        {
+          "name": "catálogo listar clases",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 126
+        },
+        {
+          "name": "catálogo detalle de clase",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 125
+        },
+        {
+          "name": "capítulos listar y validar intervalos",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 117
+        },
+        {
+          "name": "materiales listar y validar contrato",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 117
+        },
+        {
+          "name": "foro de dudas listar y validar timestamps",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 115
+        },
+        {
+          "name": "notificaciones bandeja autenticada",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 135
+        },
+        {
+          "name": "analítica consulta integrada",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 118
+        },
+        {
+          "name": "inscripción panel del estudiante",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 172
+        },
+        {
+          "name": "apuntes listar por clase",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 118
+        },
+        {
+          "name": "reproducción checkpoint de integración",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 129
+        },
+        {
+          "name": "reproducción historial reciente",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 118
+        },
+        {
+          "name": "apuntes exportar Markdown",
+          "status": "skipped",
+          "ok": true,
+          "reason": "no hay apuntes existentes; activa CLOUD_WRITE_TESTS para ejercitar crear/actualizar/exportar/eliminar"
+        },
+        {
+          "name": "reproducción guardar y consultar checkpoint",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 252
+        },
+        {
+          "name": "apuntes crear",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 134
+        },
+        {
+          "name": "apuntes actualizar",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 122
+        },
+        {
+          "name": "apuntes exportar contenido actualizado",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 125
+        },
+        {
+          "name": "apuntes eliminar y limpiar",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 118
+        },
+        {
+          "name": "foro crear duda con timestamp",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 145
+        },
+        {
+          "name": "foro responder duda",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 127
+        },
+        {
+          "name": "foro verificar respuesta",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 142
+        }
+      ]
+    }
+  ]
+}

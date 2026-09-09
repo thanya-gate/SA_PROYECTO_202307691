@@ -1,0 +1,54 @@
+steps:
+  - id: build-frontend
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-t', '${_REGISTRY}/frontend:${_TAG}', 'Frontend']
+
+  - id: build-api-gateway
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-f', 'Backend/api-gateway/Dockerfile', '-t', '${_REGISTRY}/api-gateway:${_TAG}', 'Backend']
+
+  - id: build-auth
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-f', 'Backend/services/auth-service/Dockerfile', '-t', '${_REGISTRY}/auth-service:${_TAG}', 'Backend']
+
+  - id: build-catalog
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-f', 'Backend/services/catalog-service/Dockerfile', '-t', '${_REGISTRY}/catalog-service:${_TAG}', 'Backend']
+
+  - id: build-inscripcion
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-f', 'Backend/services/inscripcion-service/Dockerfile', '-t', '${_REGISTRY}/inscripcion-service:${_TAG}', 'Backend']
+
+  - id: build-notificaciones
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-f', 'Backend/services/notificaciones-service/Dockerfile', '-t', '${_REGISTRY}/notificaciones-service:${_TAG}', 'Backend']
+
+  - id: build-reproduccion
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-t', '${_REGISTRY}/reproduccion-service:${_TAG}', 'Backend/services/reproduccion-service']
+
+  - id: build-analitica
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-t', '${_REGISTRY}/analitica-service:${_TAG}', 'Backend/services/analitica-service']
+
+images:
+  - '${_REGISTRY}/frontend:${_TAG}'
+  - '${_REGISTRY}/api-gateway:${_TAG}'
+  - '${_REGISTRY}/auth-service:${_TAG}'
+  - '${_REGISTRY}/catalog-service:${_TAG}'
+  - '${_REGISTRY}/inscripcion-service:${_TAG}'
+  - '${_REGISTRY}/notificaciones-service:${_TAG}'
+  - '${_REGISTRY}/reproduccion-service:${_TAG}'
+  - '${_REGISTRY}/analitica-service:${_TAG}'
+
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
