@@ -2,14 +2,20 @@
 
 > Práctica 5 — Software Avanzado, 2do Semestre 2026
 
+Para la Práctica 6 se agregó `.github/workflows/cloud-integration.yml`,
+ejecutable manualmente, que corre la batería de integración contra la URL
+pública de la VM y adjunta el reporte de paridad. La VM consume las imágenes
+publicadas en Artifact Registry; no compila el código del repositorio.
+
 ## 1. Descripción general
 
-El repositorio cuenta con dos workflows en `.github/workflows/`:
+El repositorio cuenta con tres workflows en `.github/workflows/`:
 
 | Workflow | Archivo | Disparadores | Función |
 |---|---|---|---|
 | Pruebas unitarias | `unit-tests.yml` | push/PR a `main`, `develop` | Ejecuta las suites de pruebas de los 8 servicios. |
 | CI/CD completo | `ci-cd.yml` | push a `main`, tags `v*`, PR a `main`, manual | Pruebas → build → publicación de imágenes en el Registry. |
+| Integración Cloud | `cloud-integration.yml` | ejecución manual | Valida la VM pública y compara opcionalmente contra un entorno de referencia. |
 
 ### Flujo del pipeline CI/CD
 
@@ -183,3 +189,36 @@ docker build -f api-gateway/Dockerfile -t api-gateway:ci ./Backend
 2. Resumen generado por el pipeline (`GITHUB_STEP_SUMMARY`) con las etiquetas de cada imagen.
 3. Enlace al perfil del repositorio en Artifact Registry con las imágenes versionadas.
 4. Captura de un pull request donde las pruebas bloquean la publicación.
+
+## 8. Actualización de la VM sin compilar en el servidor
+
+`docker-compose.cloud.yml` referencia las ocho imágenes del Registry con
+`REGISTRY_BASE` e `IMAGE_TAG`. En la VM se debe copiar `.env.cloud.example` a
+`.env.cloud`, completar sus valores y ejecutar:
+
+```bash
+docker login us-central1-docker.pkg.dev
+docker compose -f docker-compose.cloud.yml pull
+docker compose -f docker-compose.cloud.yml up -d --no-build --remove-orphans
+```
+
+### 8.1 ValidaciÃ³n ejecutada en GCP
+
+La validaciÃ³n de la PrÃ¡ctica 6 se ejecutÃ³ el 9 de septiembre de 2026 en:
+
+- VM `yousac-vm-nube`, tipo `e2-medium`, zona `us-central1-a`.
+- Cloud SQL PostgreSQL 16 `yousac-p6-db`, con seis bases independientes.
+- Redis `7-alpine` en la VM para el servicio de AnalÃ­tica.
+- ImÃ¡genes de los ocho servicios con la etiqueta `vm-nube-ca31976`.
+- Borde pÃºblico: `http://136.119.139.125`.
+
+El reporte `artifacts/cloud-parity.json` registra el resultado de 25
+comprobaciones: 24 aprobadas y una omisiÃ³n esperada de lectura previa a la
+creaciÃ³n del apunte. Las operaciones de escritura posteriores aprobaron
+checkpoint, apuntes, exportaciÃ³n Markdown, pregunta, respuesta y verificaciÃ³n
+del foro.
+
+El `--no-build` y la ausencia de bloques `build:` en el compose garantizan la
+restricción de la práctica: la actualización llega desde Artifact Registry y
+no se recompila en la VM. Después de que el gateway esté saludable, ejecutar
+`tests/integration/cloud-parity.mjs` contra el dominio o IP pública.

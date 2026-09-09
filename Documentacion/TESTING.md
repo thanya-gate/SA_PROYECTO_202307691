@@ -337,3 +337,85 @@ Cualquier comando de pruebas que termine con un código diferente de cero bloque
 - **Aparecen mensajes `console.error` en notificaciones:** algunos casos prueban deliberadamente fallos SMTP y pueden escribir el error esperado aunque la suite termine aprobada.
 - **Pytest muestra una advertencia de Protobuf:** actualmente no hace fallar la suite; debe revisarse cuando se regeneren los contratos protobuf.
 - **`npm audit` reporta vulnerabilidades:** es un reporte de dependencias y no implica por sí solo que las pruebas hayan fallado. No ejecutar `npm audit fix --force` sin revisar los cambios incompatibles que podría introducir.
+
+## Integración y paridad del servidor Cloud
+
+La prueba de integración de la Práctica 6 está en
+`tests/integration/cloud-parity.mjs`. Es una batería HTTP sin dependencias
+adicionales que utiliza Node 20 para validar la URL pública de la VM. Comprueba
+`/healthz` del frontend, `/health` del gateway y que Auth, Catálogo,
+Reproducción, Analítica, Inscripción y Notificaciones respondan como
+dependencias gRPC disponibles. Luego ejercita autenticación, detalle de clase,
+capítulos, materiales, foro, bandeja de notificaciones, analítica,
+inscripción, checkpoint, historial y cuaderno de apuntes.
+
+### Ejecución manual contra la VM
+
+Desde la raíz del repositorio, en PowerShell:
+
+```powershell
+$env:CLOUD_BASE_URL = 'https://DOMINIO_O_IP_PUBLICO'
+$env:CLOUD_TEST_EMAIL = 'usuario-de-prueba@ingenieria.usac.edu.gt'
+$env:CLOUD_TEST_PASSWORD = 'contraseña-de-prueba'
+$env:CLOUD_CLASS_ID = 'UUID_DE_CLASE' # opcional
+$env:CLOUD_WRITE_TESTS = 'true'
+$env:CLOUD_FORUM_WRITE_TESTS = 'true'
+$env:CLOUD_REQUIRE_SAMPLE_DATA = 'true'
+$env:CLOUD_REPORT_FILE = 'artifacts/cloud-parity.json'
+node tests/integration/cloud-parity.mjs
+```
+
+`CLOUD_BASE_URL` debe apuntar al borde público (Caddy/nginx). Por defecto, el
+gateway se consulta en `${CLOUD_BASE_URL}/api`; si tiene otra URL, definir
+`CLOUD_WEB_BASE_URL` y `CLOUD_API_BASE_URL`. La cuenta debe tener rol de
+estudiante, auxiliar o administrador para las operaciones de reproducción y
+escritura. El apunte temporal se limpia al finalizar; el foro no dispone de
+endpoint de borrado, por lo que su prueba deja una duda temporal identificada
+en la salida. Para una ejecución de solo lectura, omitir `CLOUD_WRITE_TESTS`.
+
+`CLOUD_REQUIRE_SAMPLE_DATA=true` exige al menos un capítulo, material y duda
+para la clase seleccionada. Esto debe usarse en la evidencia final después de
+cargar datos de prueba en la base Cloud.
+
+### EjecuciÃ³n verificada en GCP
+
+El 9 de septiembre de 2026 se ejecutÃ³ la baterÃ­a completa contra la VM
+pÃºblica de validaciÃ³n:
+
+| Recurso | Valor |
+|---|---|
+| Proyecto | `yousac-202300396-2026` |
+| VM | `yousac-vm-nube` (`e2-medium`, `us-central1-a`) |
+| URL pÃºblica | `http://136.119.139.125` |
+| Imagen de aplicaciÃ³n | `vm-nube-ca31976` |
+| Persistencia | Cloud SQL PostgreSQL 16 (`yousac-p6-db`) y Redis en la VM |
+| Datos | clases demo, dos capÃ­tulos, material PDF y foro con timestamps |
+
+Comando ejecutado:
+
+```powershell
+$env:CLOUD_BASE_URL = 'http://136.119.139.125'
+$env:CLOUD_TEST_EMAIL = 'estudiante@ingenieria.usac.edu.gt'
+$env:CLOUD_TEST_PASSWORD = 'Estudiante2026!'
+$env:CLOUD_CLASS_ID = 'bc23d3d0-16bb-4fb7-af76-f5cef462fa4b'
+$env:CLOUD_WRITE_TESTS = 'true'
+$env:CLOUD_FORUM_WRITE_TESTS = 'true'
+$env:CLOUD_REQUIRE_SAMPLE_DATA = 'true'
+$env:CLOUD_REPORT_FILE = 'artifacts/cloud-parity.json'
+node tests/integration/cloud-parity.mjs
+```
+
+Resultado: `24 passed`, `1 skipped` esperado y cÃ³digo de salida `0`. El detalle
+reproducible queda en `artifacts/cloud-parity.json`; la duda temporal del foro
+se conserva porque el contrato actual no expone endpoint de borrado.
+
+### Comparación con el entorno de referencia
+
+La misma batería se ejecuta también cuando se define `REFERENCE_BASE_URL` (por
+ejemplo, el entorno local). La prueba compara el resultado de cada comprobación
+y termina con código distinto de cero si Cloud falla o si su contrato difiere
+del referente. El workflow manual
+`.github/workflows/cloud-integration.yml` acepta la URL pública y publica
+`cloud-parity.json` como artefacto. Las credenciales se leen de secretos de
+GitHub (`CLOUD_TEST_EMAIL` y `CLOUD_TEST_PASSWORD`); nunca se escriben en el
+reporte.

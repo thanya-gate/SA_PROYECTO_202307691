@@ -1,0 +1,130 @@
+{
+  "generatedAt": "2026-09-09T16:46:12.290Z",
+  "writeTests": false,
+  "requireSampleData": false,
+  "parity": null,
+  "targets": [
+    {
+      "label": "cloud",
+      "base": "http://136.119.139.125",
+      "webBase": "http://136.119.139.125",
+      "apiBase": "http://136.119.139.125/api",
+      "classId": "bc23d3d0-16bb-4fb7-af76-f5cef462fa4b",
+      "roles": [
+        "ROLE_ESTUDIANTE"
+      ],
+      "ok": true,
+      "error": null,
+      "results": [
+        {
+          "name": "frontend público /healthz",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 229
+        },
+        {
+          "name": "gateway /health y dependencias gRPC",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 233
+        },
+        {
+          "name": "auth login institucional",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 542
+        },
+        {
+          "name": "auth sesión /auth/me",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 144
+        },
+        {
+          "name": "auth perfiles /profiles/me",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 127
+        },
+        {
+          "name": "catálogo listar clases",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 168
+        },
+        {
+          "name": "catálogo detalle de clase",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 170
+        },
+        {
+          "name": "capítulos listar y validar intervalos",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 122
+        },
+        {
+          "name": "materiales listar y validar contrato",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 128
+        },
+        {
+          "name": "foro de dudas listar y validar timestamps",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 130
+        },
+        {
+          "name": "notificaciones bandeja autenticada",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 127
+        },
+        {
+          "name": "analítica consulta integrada",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 137
+        },
+        {
+          "name": "inscripción panel del estudiante",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 159
+        },
+        {
+          "name": "apuntes listar por clase",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 129
+        },
+        {
+          "name": "reproducción checkpoint de integración",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 135
+        },
+        {
+          "name": "reproducción historial reciente",
+          "status": "passed",
+          "ok": true,
+          "durationMs": 129
+        },
+        {
+          "name": "apuntes exportar Markdown",
+          "status": "skipped",
+          "ok": true,
+          "reason": "no hay apuntes existentes; activa CLOUD_WRITE_TESTS para ejercitar crear/actualizar/exportar/eliminar"
+        },
+        {
+          "name": "flujos mutables checkpoint/apuntes/foro",
+          "status": "skipped",
+          "ok": true,
+          "reason": "CLOUD_WRITE_TESTS no está habilitado"
+        }
+      ]
+    }
+  ]
+}
