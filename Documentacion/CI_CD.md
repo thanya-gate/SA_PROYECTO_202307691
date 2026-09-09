@@ -14,14 +14,14 @@ El repositorio cuenta con tres workflows en `.github/workflows/`:
 | Workflow | Archivo | Disparadores | Función |
 |---|---|---|---|
 | Pruebas unitarias | `unit-tests.yml` | push/PR a `main`, `develop` | Ejecuta las suites de pruebas de los 8 servicios. |
-| CI/CD completo | `ci-cd.yml` | push a `main`, tags `v*`, PR a `main`, manual | Pruebas → build → publicación de imágenes en el Registry. |
+| CI/CD completo | `ci-cd.yml` | push a `main`, tags `v*`/`V*`, PR a `main`, manual | Pruebas → build → publicación de imágenes en el Registry. |
 | Integración Cloud | `cloud-integration.yml` | ejecución manual | Valida la VM pública y compara opcionalmente contra un entorno de referencia. |
 
 ### Flujo del pipeline CI/CD
 
 ```mermaid
 flowchart LR
-    A[Push a main / Tag v* / PR] --> B{Job: tests}
+    A[Push a main / Tag v* o V* / PR] --> B{Job: tests}
     B -->|Jest x6| C[Node 20]
     B -->|go test| D[Go 1.24]
     B -->|pytest| E[Python 3.12]
@@ -64,14 +64,16 @@ Implementado con `docker/metadata-action@v5`:
 
 | Evento | Etiquetas generadas por servicio |
 |---|---|
-| Tag de Git `v1.2.0` | `<servicio>:1.2.0` y `<servicio>:latest` |
+| Tag de Git `v1.3.0` o `V1.3.0` | `<servicio>:1.3.0` y `<servicio>:latest` |
 | Push a `main` | `<servicio>:main` y `<servicio>:sha-<hash-corto>` |
 
-Esto cumple el requisito de la práctica `<nombre_del_servicio>:<Tag_de_la_rama_release>` y el entregable de crear el tag **V1.2.0** en el repositorio:
+El workflow acepta ambas convenciones de tag Git (`v` y `V`) y normaliza la etiqueta
+de la imagen a la versión semántica sin prefijo. Esto cumple el requisito de la
+práctica `<nombre_del_servicio>:<Tag_de_la_rama_release>`:
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag V1.3.0
+git push origin V1.3.0
 ```
 
 ## 4. Repository Secrets requeridos
