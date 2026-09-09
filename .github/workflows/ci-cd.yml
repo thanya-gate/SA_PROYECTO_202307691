@@ -10,7 +10,8 @@ name: CI/CD — Pruebas y publicación de imágenes
 on:
   push:
     branches: [main]
-    tags: ['v*']
+    # Se aceptan ambas convenciones históricas de tags de release.
+    tags: ['v*', 'V*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -181,8 +182,10 @@ jobs:
         with:
           images: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ matrix.name }}
           tags: |
-            # Tag de release: v1.2.0 -> :1.2.0 (+ :latest automático)
+            # Tag de release estándar: v1.3.0 -> :1.3.0 (+ :latest automático)
             type=semver,pattern={{version}}
+            # Tag de release histórico: V1.3.0 -> :1.3.0 (+ :latest automático)
+            type=match,pattern=V(\d+\.\d+\.\d+),group=1
             # Push a rama: main -> :main
             type=ref,event=branch
             # SHA del commit para trazabilidad: :sha-<hash>
