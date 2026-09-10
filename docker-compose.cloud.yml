@@ -357,8 +357,9 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      # Servir videos directamente desde Cloud Storage (montado via gcsfuse)
-      - /mnt/media/videos:/usr/share/nginx/html/media/videos:ro
+      # Servir el almacenamiento local bajo la misma ruta /media que devuelve
+      # el API (/media/clases, /media/materiales y /media/thumbnails).
+      - /mnt/media/videos:/usr/share/nginx/html/media:ro
 
 volumes:
   caddy_data:
