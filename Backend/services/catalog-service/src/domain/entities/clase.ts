@@ -93,3 +93,26 @@ export interface CursoAdmin {
   nombre: string;
   escuela: string;
 }
+
+export interface RespuestaDuda {
+  respuestaId: string;
+  dudaId: string;
+  autorId: string;
+  contenido: string;
+  esVerificada: boolean;
+  verificadaPor: string | null;
+  fechaCreacion: string;
+}
+
+export interface DudaForo {
+  dudaId: string;
+  claseId: string;
+  autorId: string;
+  posicionSegundos: number;
+  pregunta: string;
+  resuelta: boolean;
+  fechaCreacion: string;
+  totalRespuestas: number;
+  totalVerificadas: number;
+  respuestas: RespuestaDuda[];
+}

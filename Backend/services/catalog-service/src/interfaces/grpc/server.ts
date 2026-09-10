@@ -8,7 +8,9 @@ import {
   Capitulo,
   ClaseDetalle,
   ClaseResumen,
+  DudaForo,
   MaterialAdjunto,
+  RespuestaDuda,
   SemestreResumen,
 } from '../../domain/entities/clase';
 
@@ -99,6 +101,33 @@ function semestreToProto(s: SemestreResumen) {
   };
 }
 
+function respuestaDudaToProto(r: RespuestaDuda) {
+  return {
+    respuestaId: r.respuestaId,
+    dudaId: r.dudaId,
+    autorId: r.autorId,
+    contenido: r.contenido,
+    esVerificada: r.esVerificada,
+    verificadaPor: r.verificadaPor ?? '',
+    fechaCreacion: r.fechaCreacion,
+  };
+}
+
+function dudaForoToProto(d: DudaForo) {
+  return {
+    dudaId: d.dudaId,
+    claseId: d.claseId,
+    autorId: d.autorId,
+    posicionSegundos: d.posicionSegundos,
+    pregunta: d.pregunta,
+    resuelta: d.resuelta,
+    fechaCreacion: d.fechaCreacion,
+    totalRespuestas: d.totalRespuestas,
+    totalVerificadas: d.totalVerificadas,
+    respuestas: d.respuestas.map(respuestaDudaToProto),
+  };
+}
+
 const domainErrorToGrpcCode: Record<string, number> = {
   CLASE_NO_ENCONTRADA: 5, 
   CURSO_NO_ENCONTRADO: 5, 
@@ -107,12 +136,15 @@ const domainErrorToGrpcCode: Record<string, number> = {
   DOCENTE_NO_ENCONTRADO: 5,
   MATERIAL_NO_ENCONTRADO: 5,
   CAPITULO_NO_ENCONTRADO: 5,
+  DUDA_NO_ENCONTRADA: 5,
+  RESPUESTA_NO_ENCONTRADA: 5,
   ENTRADA_INVALIDA: 3, 
   CONFLICTO: 6,
   CURSO_CODIGO_DUPLICADO: 6,
   SEMESTRE_EN_USO: 9,
   ESCUELA_EN_USO: 9,
   CURSO_EN_USO: 9,
+  SIN_AUTORIZACION: 7,
 };
 
 export function mapError(err: any): grpc.ServiceError {
@@ -616,6 +648,57 @@ export function createGrpcServer(dependencies: CatalogGrpcDependencies = {}): gr
       try {
         const result = await catalogService.eliminarCapitulo(call.request.capituloId);
         callback(null, { claseId: result.claseId ?? '' });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    // ---- Foro de dudas anclado al minuto del video ----
+
+    CrearDuda: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const duda = await catalogService.crearDuda({
+          claseId: call.request.claseId,
+          autorId: call.request.autorId,
+          posicionSegundos: Number(call.request.posicionSegundos ?? 0),
+          pregunta: call.request.pregunta,
+        });
+        callback(null, { duda: dudaForoToProto(duda) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ListarDudas: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const dudas = await catalogService.listarDudas(call.request.claseId);
+        callback(null, { dudas: dudas.map(dudaForoToProto) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    ResponderDuda: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const respuesta = await catalogService.responderDuda({
+          dudaId: call.request.dudaId,
+          autorId: call.request.autorId,
+          contenido: call.request.contenido,
+        });
+        callback(null, { respuesta: respuestaDudaToProto(respuesta) });
+      } catch (err: any) {
+        callback(mapError(err));
+      }
+    },
+
+    MarcarRespuestaVerificada: async (call: GrpcCall<any, any>, callback: GrpcCallback<any>) => {
+      try {
+        const duda = await catalogService.marcarRespuestaVerificada({
+          respuestaId: call.request.respuestaId,
+          verificadorId: call.request.verificadorId,
+          puedeVerificarComoDocente: Boolean(call.request.puedeVerificarComoDocente),
+        });
+        callback(null, { duda: dudaForoToProto(duda) });
       } catch (err: any) {
         callback(mapError(err));
       }

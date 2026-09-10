@@ -1,0 +1,12 @@
+.git/
+.github/
+Documentacion/
+tests/
+*.pdf
+**/node_modules/
+**/dist/
+**/.venv/
+**/__pycache__/
+**/coverage/
+**/.pytest_cache/
+*.log

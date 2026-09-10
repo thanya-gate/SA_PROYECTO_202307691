@@ -4634,3 +4634,257 @@ body {
   }
 }
 
+/* ================================================================
+   Foro de dudas anclado al minuto del video (Práctica 5)
+   ================================================================ */
+
+/* Marcador de duda sobre la barra de progreso: usa el color success para
+   distinguirlo del pin de apuntes (color accent). */
+.clase__barra-pin--duda {
+  color: var(--color-success, #166534);
+  bottom: 0.85rem;
+}
+
+.clase__barra-pin--duda:hover {
+  transform: translateX(-50%) scale(1.25);
+}
+
+.clase__barra-pin--resuelta {
+  color: var(--color-success);
+  opacity: 0.9;
+}
+
+.clase__barra-tooltip--duda {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-width: min(19rem, 80vw);
+}
+
+.clase__barra-tooltip-pregunta {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.clase__foro {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.clase__foro-desc {
+  color: var(--color-text-muted);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.clase__foro-tiempo {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.5rem;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.clase__foro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.clase__foro-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 3.2rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
+  color: inherit;
+  font: inherit;
+  font-size: 0.92rem;
+}
+
+.clase__foro-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary-dark);
+}
+
+.clase__foro-acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clase__foro-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.clase__foro-duda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
+}
+
+.clase__foro-duda-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.clase__foro-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.clase__foro-badge--resuelta {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.clase__foro-minuto {
+  margin-left: auto;
+  padding: 0.18rem 0.5rem;
+  border-radius: 0.45rem;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.clase__foro-pregunta {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.clase__foro-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.clase__foro-meta .btn {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.6rem;
+  min-height: 0;
+}
+
+.clase__foro-minuto-btn {
+  margin-left: auto;
+}
+
+.clase__foro-hilo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.35rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.clase__foro-respuestas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.clase__foro-respuesta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.clase__foro-respuesta-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.clase__foro-respuesta-tiempo {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.clase__foro-verificada {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.5rem;
+  border-radius: 0.45rem;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.clase__foro-respuesta-contenido {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.clase__foro-verificar-btn {
+  align-self: flex-start;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.6rem;
+  min-height: 0;
+}
+
+.clase__foro-responder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.clase__foro-responder .btn {
+  align-self: flex-end;
+}
+

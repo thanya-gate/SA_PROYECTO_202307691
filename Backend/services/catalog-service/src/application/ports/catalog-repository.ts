@@ -4,9 +4,11 @@ import {
   Capitulo,
   CursoAdmin,
   CursoCatalogo,
+  DudaForo,
   EscuelaAdmin,
   MaterialAdjunto,
   Participante,
+  RespuestaDuda,
   SemestreAdmin,
   SemestreResumen,
 } from '../../domain/entities/clase';
@@ -136,6 +138,25 @@ export interface ActualizarCapituloInput extends CrearCapituloInput {
   capituloId: string;
 }
 
+export interface CrearDudaInput {
+  claseId: string;
+  autorId: string;
+  posicionSegundos: number;
+  pregunta: string;
+}
+
+export interface ResponderDudaInput {
+  dudaId: string;
+  autorId: string;
+  contenido: string;
+}
+
+export interface MarcarRespuestaVerificadaInput {
+  respuestaId: string;
+  verificadorId: string;
+  puedeVerificarComoDocente: boolean;
+}
+
 export interface CatalogRepository {
   buscar(criteria: SearchCriteria): Promise<BuscarResult>;
   getClase(claseId: string): Promise<ClaseDetalle | null>;
@@ -178,4 +199,12 @@ export interface CatalogRepository {
   crearCapitulo(input: CrearCapituloInput): Promise<Capitulo>;
   actualizarCapitulo(input: ActualizarCapituloInput): Promise<Capitulo | null>;
   eliminarCapitulo(capituloId: string): Promise<{ eliminado: boolean; claseId: string | null }>;
+
+  // ---- Foro de dudas ----
+  crearDuda(input: CrearDudaInput): Promise<DudaForo>;
+  listarDudas(claseId: string): Promise<DudaForo[]>;
+  obtenerDuda(dudaId: string): Promise<DudaForo | null>;
+  responderDuda(input: ResponderDudaInput): Promise<RespuestaDuda>;
+  obtenerRespuesta(respuestaId: string): Promise<RespuestaDuda | null>;
+  marcarRespuestaVerificada(respuestaId: string, verificadorId: string): Promise<RespuestaDuda>;
 }

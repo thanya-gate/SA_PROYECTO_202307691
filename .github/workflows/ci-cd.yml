@@ -1,16 +1,17 @@
-name: CI/CD — Pruebas y publicación de imágenes
+name: CI/CD — Pruebas, publicación y despliegue
 
-# Pipeline de Integración Continua (Práctica 5):
+# Pipeline de Integración Continua y Despliegue Continuo (Práctica 6):
 # 1. Ejecuta las suites de pruebas unitarias ante cada PR / push.
 # 2. Si todas pasan, construye y publica las imágenes Docker de los
 #    8 servicios en GCP Artifact Registry con versionamiento semántico.
-# 3. Si una prueba falla, el pipeline cortocircuita y NINGUNA imagen
-#    se sube al registry.
+# 3. En main o en un tag de release, actualiza la VM mediante SSH usando
+#    docker compose pull; la VM nunca compila las imágenes.
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
+    # Se aceptan ambas convenciones históricas de tags de release.
+    tags: ['v*', 'V*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -101,16 +102,51 @@ jobs:
           python3 -m pytest -v
 
   # ------------------------------------------------------------------
-  # 2. Build y publicación de imágenes en GCP Artifact Registry
+  # 2. Resolver la etiqueta que consumirá la VM
+  # ------------------------------------------------------------------
+  resolve-image-tag:
+    name: Resolver etiqueta de despliegue
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.resolve.outputs.image_tag }}
+    steps:
+      - name: Resolver referencia
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$REF_NAME" != "main" ]]; then
+              echo "::error::workflow_dispatch solo puede desplegar desde main. Referencia recibida: $REF_NAME"
+              exit 1
+            fi
+            image_tag="main"
+          elif [[ "$REF_NAME" == "main" ]]; then
+            image_tag="main"
+          elif [[ "$REF_NAME" =~ ^[vV]([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            image_tag="${BASH_REMATCH[1]}"
+          else
+            echo "::error::La referencia no corresponde a main ni a un tag semántico vX.Y.Z/VX.Y.Z: $REF_NAME"
+            exit 1
+          fi
+
+          echo "image_tag=$image_tag" >> "$GITHUB_OUTPUT"
+          echo "Etiqueta de imagen seleccionada: $image_tag"
+
+  # ------------------------------------------------------------------
+  # 3. Build y publicación de imágenes en GCP Artifact Registry
   # ------------------------------------------------------------------
   publish:
     name: Publicar — ${{ matrix.name }}
-    needs: tests
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [tests, resolve-image-tag]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.resolve-image-tag.result == 'success'
     runs-on: ubuntu-latest
     env:
       # Credenciales definidas como Repository Secrets.
-      # Mientras no existan, el job termina con éxito sin publicar.
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       GCP_REGION: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}
       GCP_REPOSITORY: ${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}
@@ -149,21 +185,25 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verificar credenciales del Registry
-        id: guard
         env:
           SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
-          if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$GCP_REPOSITORY" ] || [ -z "$SA_KEY" ]; then
-            echo "::warning::Faltan los Repository Secrets de GCP (GCP_PROJECT_ID, GCP_ARTIFACT_REGISTRY_REGION, GCP_ARTIFACT_REGISTRY_REPOSITORY, GCP_SA_KEY). La publicación se omite."
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          missing=()
+          [[ -n "$GCP_PROJECT_ID" ]] || missing+=(GCP_PROJECT_ID)
+          [[ -n "$GCP_REGION" ]] || missing+=(GCP_ARTIFACT_REGISTRY_REGION)
+          [[ -n "$GCP_REPOSITORY" ]] || missing+=(GCP_ARTIFACT_REGISTRY_REPOSITORY)
+          [[ -n "$SA_KEY" ]] || missing+=(GCP_SA_KEY)
+
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Faltan Repository Secrets de GCP: ${missing[*]}"
+            exit 1
           fi
+          echo "Repository Secrets de GCP presentes; la publicación continuará."
 
       # Autenticación con el patrón oficial de Artifact Registry:
       # usuario "_json_key" + la llave JSON de la Service Account como password.
       - name: Login en Artifact Registry
-        if: steps.guard.outputs.enabled == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
@@ -171,32 +211,32 @@ jobs:
           password: ${{ secrets.GCP_SA_KEY }}
 
       - name: Configurar Docker Buildx
-        if: steps.guard.outputs.enabled == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Calcular etiquetas de imagen
-        if: steps.guard.outputs.enabled == 'true'
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ matrix.name }}
           tags: |
-            # Tag de release: v1.2.0 -> :1.2.0 (+ :latest automático)
+            # Tag de release estándar: v1.3.0 -> :1.3.0 (+ :latest automático)
             type=semver,pattern={{version}}
+            # Tag de release histórico: V1.3.0 -> :1.3.0 (+ :latest automático)
+            type=match,pattern=V(\d+\.\d+\.\d+),group=1
             # Push a rama: main -> :main
             type=ref,event=branch
+            # Garantiza una etiqueta explícita también en workflow_dispatch.
+            type=raw,value=${{ needs.resolve-image-tag.outputs.image_tag }}
             # SHA del commit para trazabilidad: :sha-<hash>
             type=sha
 
       - name: Build y push de la imagen
-        if: steps.guard.outputs.enabled == 'true'
         uses: docker/build-push-action@v6
         with:
           # Rutas absolutas: evita la ambigüedad de si buildx resuelve `file`
           # relativo al context o al directorio de trabajo del runner.
           context: ${{ github.workspace }}/${{ matrix.context }}
           file: ${{ github.workspace }}/${{ matrix.context }}/${{ matrix.dockerfile }}
-          # El paso solo corre cuando el guard detectó credenciales.
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -207,11 +247,205 @@ jobs:
         run: |
           {
             echo "### Imagen \`${{ matrix.name }}\`"
-            if [ -n "${{ steps.meta.outputs.tags }}" ]; then
-              echo '```'
-              echo "${{ steps.meta.outputs.tags }}"
-              echo '```'
-            else
-              echo "_Publicación omitida: faltan los Repository Secrets de GCP._"
-            fi
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # ------------------------------------------------------------------
+  # 4. Despliegue continuo a la VM de desarrollo
+  # ------------------------------------------------------------------
+  deploy:
+    name: Deploy — VM de desarrollo
+    needs: [publish, resolve-image-tag]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.publish.result == 'success' && needs.resolve-image-tag.result == 'success'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: yousac-development-vm
+      cancel-in-progress: false
+    env:
+      DEPLOY_DIR: /opt/yousac
+      IMAGE_TAG: ${{ needs.resolve-image-tag.outputs.image_tag }}
+      REGISTRY_HOST: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
+      REGISTRY_BASE: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}
+      VM_HOST: ${{ secrets.VM_HOST }}
+      VM_USER: ${{ secrets.VM_USER }}
+      CLOUD_BASE_URL: ${{ vars.CLOUD_BASE_URL }}
+
+    steps:
+      - name: Obtener código para el despliegue
+        uses: actions/checkout@v4
+
+      - name: Verificar configuración de despliegue
+        env:
+          VM_KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "$VM_HOST" ]] || missing+=(VM_HOST)
+          [[ -n "$VM_USER" ]] || missing+=(VM_USER)
+          [[ -n "$VM_KNOWN_HOSTS" ]] || missing+=(VM_KNOWN_HOSTS)
+          [[ -n "$CLOUD_BASE_URL" ]] || missing+=(CLOUD_BASE_URL)
+          [[ -n "$REGISTRY_HOST" ]] || missing+=(GCP_ARTIFACT_REGISTRY_REGION)
+          [[ -n "$REGISTRY_BASE" ]] || missing+=(GCP_PROJECT_ID/GCP_ARTIFACT_REGISTRY_REPOSITORY)
+
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Falta configuración de CD: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Configurar clave SSH y host keys
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          [[ -n "$SSH_PRIVATE_KEY" ]] || { echo "::error::Falta VM_SSH_KEY"; exit 1; }
+          [[ -n "$SSH_KNOWN_HOSTS" ]] || { echo "::error::Falta VM_KNOWN_HOSTS"; exit 1; }
+
+          umask 077
+          SSH_KEY_PATH="$RUNNER_TEMP/yousac-deploy-key"
+          KNOWN_HOSTS_PATH="$RUNNER_TEMP/yousac-known-hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_KEY_PATH"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$KNOWN_HOSTS_PATH"
+          chmod 600 "$SSH_KEY_PATH" "$KNOWN_HOSTS_PATH"
+
+          ssh-keygen -y -f "$SSH_KEY_PATH" > /dev/null
+          test -s "$KNOWN_HOSTS_PATH"
+          echo "SSH_KEY_PATH=$SSH_KEY_PATH" >> "$GITHUB_ENV"
+          echo "KNOWN_HOSTS_PATH=$KNOWN_HOSTS_PATH" >> "$GITHUB_ENV"
+
+      - name: Copiar manifiestos de despliegue a la VM
+        run: |
+          set -euo pipefail
+          SSH_OPTS=(
+            -i "$SSH_KEY_PATH"
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$KNOWN_HOSTS_PATH"
+            -o ConnectTimeout=15
+          )
+          REMOTE_STAGING_DIR="/tmp/yousac-deploy-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          ssh "${SSH_OPTS[@]}" "$VM_USER@$VM_HOST" \
+            bash -s -- "$REMOTE_STAGING_DIR" <<'REMOTE_PREPARE'
+          set -euo pipefail
+          remote_staging_dir="$1"
+          mkdir -p "$remote_staging_dir/deploy"
+          REMOTE_PREPARE
+          scp "${SSH_OPTS[@]}" docker-compose.cloud.yml \
+            "$VM_USER@$VM_HOST:$REMOTE_STAGING_DIR/"
+          scp "${SSH_OPTS[@]}" deploy/Caddyfile deploy/Caddyfile.vm \
+            "$VM_USER@$VM_HOST:$REMOTE_STAGING_DIR/deploy/"
+
+          echo "REMOTE_STAGING_DIR=$REMOTE_STAGING_DIR" >> "$GITHUB_ENV"
+
+      - name: Ejecutar despliegue remoto sin compilación
+        run: |
+          set -euo pipefail
+          SSH_OPTS=(
+            -i "$SSH_KEY_PATH"
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$KNOWN_HOSTS_PATH"
+            -o ConnectTimeout=15
+          )
+
+          ssh "${SSH_OPTS[@]}" "$VM_USER@$VM_HOST" \
+            bash -s -- "$REMOTE_STAGING_DIR" "$DEPLOY_DIR" "$IMAGE_TAG" "$REGISTRY_HOST" "$REGISTRY_BASE" <<'REMOTE_SCRIPT'
+          set -euo pipefail
+
+          REMOTE_STAGING_DIR="$1"
+          DEPLOY_DIR="$2"
+          IMAGE_TAG="$3"
+          REGISTRY_HOST="$4"
+          REGISTRY_BASE="$5"
+
+          : "${REMOTE_STAGING_DIR:?Falta el directorio temporal remoto}"
+          : "${DEPLOY_DIR:?Falta el directorio de despliegue}"
+          : "${IMAGE_TAG:?Falta la etiqueta de imagen}"
+          : "${REGISTRY_HOST:?Falta el host del Registry}"
+          : "${REGISTRY_BASE:?Falta la base del Registry}"
+
+          sudo -n true
+          command -v docker >/dev/null
+          sudo docker compose version >/dev/null
+          command -v gcloud >/dev/null
+          command -v curl >/dev/null
+          test -s "$DEPLOY_DIR/.env.cloud"
+
+          sudo install -d -m 0755 "$DEPLOY_DIR" "$DEPLOY_DIR/deploy"
+          sudo install -m 0644 "$REMOTE_STAGING_DIR/docker-compose.cloud.yml" \
+            "$DEPLOY_DIR/docker-compose.cloud.yml"
+          sudo install -m 0644 "$REMOTE_STAGING_DIR/deploy/Caddyfile" \
+            "$DEPLOY_DIR/deploy/Caddyfile"
+          sudo install -m 0644 "$REMOTE_STAGING_DIR/deploy/Caddyfile.vm" \
+            "$DEPLOY_DIR/deploy/Caddyfile.vm"
+
+          # La identidad adjunta a Compute Engine obtiene permisos de lectura
+          # sobre Artifact Registry; no se instala ninguna llave JSON en la VM.
+          sudo gcloud auth configure-docker "$REGISTRY_HOST" --quiet
+
+          COMPOSE=(
+            sudo env "REGISTRY_BASE=$REGISTRY_BASE" "IMAGE_TAG=$IMAGE_TAG"
+            docker compose
+            --env-file "$DEPLOY_DIR/.env.cloud"
+            -f "$DEPLOY_DIR/docker-compose.cloud.yml"
+          )
+
+          "${COMPOSE[@]}" config --quiet
+          "${COMPOSE[@]}" pull
+          "${COMPOSE[@]}" up -d --no-build --remove-orphans
+
+          for attempt in {1..24}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8080/health >/dev/null \
+              && curl --fail --silent --show-error http://127.0.0.1:8081/healthz >/dev/null; then
+              echo "Gateway y frontend saludables después del despliegue."
+              "${COMPOSE[@]}" ps
+              exit 0
+            fi
+            echo "Esperando servicios saludables (intento $attempt/24)..."
+            sleep 5
+          done
+
+          "${COMPOSE[@]}" ps
+          echo "::error::La VM no alcanzó los health checks después del despliegue."
+          exit 1
+          REMOTE_SCRIPT
+
+      - name: Validar endpoint público
+        run: |
+          set -euo pipefail
+          PUBLIC_HEALTH_URL="${CLOUD_BASE_URL%/}/api/health"
+          curl --fail --silent --show-error --retry 12 --retry-delay 5 \
+            --retry-all-errors "$PUBLIC_HEALTH_URL"
+          echo
+          echo "Endpoint público saludable: $PUBLIC_HEALTH_URL"
+
+      - name: Resumen del despliegue
+        run: |
+          {
+            echo "### Deploy automático a la VM"
+            echo "- Etiqueta de imagen: \`$IMAGE_TAG\`"
+            echo "- Registro: \`$REGISTRY_BASE\`"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Validación pública: \`${CLOUD_BASE_URL%/}/api/health\`"
+            echo "- Actualización realizada con \`docker compose pull\` y \`up --no-build\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Limpiar archivos temporales de la VM
+        if: always()
+        run: |
+          set -euo pipefail
+          if [[ -z "${REMOTE_STAGING_DIR:-}" || -z "${SSH_KEY_PATH:-}" || -z "${KNOWN_HOSTS_PATH:-}" ]]; then
+            exit 0
+          fi
+          SSH_OPTS=(
+            -i "$SSH_KEY_PATH"
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$KNOWN_HOSTS_PATH"
+            -o ConnectTimeout=10
+          )
+          ssh "${SSH_OPTS[@]}" "$VM_USER@$VM_HOST" \
+            rm -rf -- "$REMOTE_STAGING_DIR" || true

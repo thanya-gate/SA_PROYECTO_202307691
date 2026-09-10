@@ -1,21 +1,31 @@
-# Pipeline CI/CD — GitHub Actions + GCP Artifact Registry
+# Pipeline CI/CD — GitHub Actions + GCP Artifact Registry + VM
 
-> Práctica 5 — Software Avanzado, 2do Semestre 2026
+> Práctica 6 — Software Avanzado, 2do Semestre 2026
+
+Para la Práctica 6 se agregó el despliegue continuo hacia la VM mediante
+`.github/workflows/ci-cd.yml`. Después de que las pruebas pasan y las ocho
+imágenes se publican en Artifact Registry, el job `deploy` se conecta por SSH,
+actualiza los manifiestos de Compose y ejecuta `docker compose pull` seguido de
+`docker compose up -d --no-build`. La VM consume las imágenes publicadas y no
+compila el código del repositorio. El workflow independiente
+`.github/workflows/cloud-integration.yml` permite ejecutar posteriormente la
+batería de integración contra la URL pública.
 
 ## 1. Descripción general
 
-El repositorio cuenta con dos workflows en `.github/workflows/`:
+El repositorio cuenta con tres workflows en `.github/workflows/`:
 
 | Workflow | Archivo | Disparadores | Función |
 |---|---|---|---|
 | Pruebas unitarias | `unit-tests.yml` | push/PR a `main`, `develop` | Ejecuta las suites de pruebas de los 8 servicios. |
-| CI/CD completo | `ci-cd.yml` | push a `main`, tags `v*`, PR a `main`, manual | Pruebas → build → publicación de imágenes en el Registry. |
+| CI/CD completo | `ci-cd.yml` | push a `main`, tags `v*`/`V*`, PR a `main`, manual | Pruebas → build → publicación → despliegue automático a la VM. |
+| Integración Cloud | `cloud-integration.yml` | ejecución manual | Valida la VM pública y compara opcionalmente contra un entorno de referencia. |
 
 ### Flujo del pipeline CI/CD
 
 ```mermaid
 flowchart LR
-    A[Push a main / Tag v* / PR] --> B{Job: tests}
+    A[Push a main / Tag v* o V* / PR] --> B{Job: tests}
     B -->|Jest x6| C[Node 20]
     B -->|go test| D[Go 1.24]
     B -->|pytest| E[Python 3.12]
@@ -23,13 +33,19 @@ flowchart LR
     D --> F
     E --> F
     F -->|No| G[Pipeline cortocircuitado:\nninguna imagen se publica]
-    F -->|Sí| H{Job: publish\n¿Secrets GCP configurados?}
-    H -->|No| I[Job verde, publicación omitida\ncon warning]
-    H -->|Sí| J[Login en Artifact Registry\nService Account JSON]
-    J --> K[Build y push de 8 imágenes\ncon versionamiento semántico]
+    F -->|Sí| H[Job: resolve-image-tag]
+    H --> I[Job: publish\nLogin en Artifact Registry]
+    I --> J[Build y push de 8 imágenes\ncon versionamiento semántico]
+    J --> K{Job: deploy\n¿Secrets SSH configurados?}
+    K -->|No| L[Pipeline fallido]
+    K -->|Sí| M[SSH a la VM\nCompose pull + up --no-build]
+    M --> N[Health checks locales y públicos]
 ```
 
-**Requisito de cortocircuito:** el job `publish` depende de `tests` (`needs: tests`), por lo que si **una sola prueba falla**, la construcción y publicación de imágenes no se ejecuta. Además, la estrategia `fail-fast: true` detiene la matriz al primer fallo.
+**Requisito de cortocircuito:** el job `publish` depende de `tests` y
+`resolve-image-tag`, por lo que si **una sola prueba falla**, la construcción y
+publicación de imágenes no se ejecuta. Además, la estrategia `fail-fast: true`
+detiene la matriz al primer fallo.
 
 ## 2. Imágenes publicadas
 
@@ -58,14 +74,17 @@ Implementado con `docker/metadata-action@v5`:
 
 | Evento | Etiquetas generadas por servicio |
 |---|---|
-| Tag de Git `v1.2.0` | `<servicio>:1.2.0` y `<servicio>:latest` |
+| Tag de Git `v1.3.0` o `V1.3.0` | `<servicio>:1.3.0` y `<servicio>:latest` |
 | Push a `main` | `<servicio>:main` y `<servicio>:sha-<hash-corto>` |
+| Ejecución manual desde `main` | `<servicio>:main` y `<servicio>:sha-<hash-corto>` |
 
-Esto cumple el requisito de la práctica `<nombre_del_servicio>:<Tag_de_la_rama_release>` y el entregable de crear el tag **V1.2.0** en el repositorio:
+El workflow acepta ambas convenciones de tag Git (`v` y `V`) y normaliza la etiqueta
+de la imagen a la versión semántica sin prefijo. Esto cumple el requisito de la
+práctica `<nombre_del_servicio>:<Tag_de_la_rama_release>`:
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag V1.3.0
+git push origin V1.3.0
 ```
 
 ## 4. Repository Secrets requeridos
@@ -80,15 +99,15 @@ La práctica exige el uso de **Repository Secrets** para las credenciales del Re
 | `GCP_ARTIFACT_REGISTRY_REPOSITORY` | Nombre del repositorio de Artifact Registry | `yousac` |
 | `GCP_SA_KEY` | JSON completo de la llave de la Service Account | `{"type": "service_account", ...}` |
 
-> **Modo degradado:** mientras los secrets no estén configurados, el job `publish`
-> detecta su ausencia y termina **con éxito sin publicar** (emite un `::warning::`).
-> Así el pipeline queda listo y no falla en verde antes de tener las credenciales.
+> **Validación estricta:** en ejecuciones de publicación y despliegue, la ausencia
+> de cualquiera de estos secrets hace fallar el pipeline. Esto evita reportar una
+> ejecución verde cuando no se publicaron imágenes.
 
 La autenticación contra Artifact Registry usa el patrón oficial de GCP con
 `docker/login-action`: usuario `_json_key` y la llave JSON de la Service Account
 (`GCP_SA_KEY`) como password. No se generan ni dependen de access tokens.
 
-## 5. Configuración en GCP (cuando haya credenciales)
+## 5. Configuración en GCP y credenciales
 
 ### 5.0 Guía con la Consola Web (console.cloud.google.com)
 
@@ -120,7 +139,7 @@ La autenticación contra Artifact Registry usa el patrón oficial de GCP con
 - Crear los 4 secrets con los nombres exactos de la tabla de la sección 4.
 
 **6. Verificar el pipeline**
-- Pestaña *Actions* → workflow "CI/CD — Pruebas y publicación de imágenes" → **Run workflow**.
+- Pestaña *Actions* → workflow "CI/CD — Pruebas, publicación y despliegue" → **Run workflow**.
 - Al finalizar, en *Artifact Registry → `yousac`* deben listarse las 8 imágenes con sus etiquetas.
 
 ### 5.1 Crear el repositorio de Artifact Registry (gcloud)
@@ -163,6 +182,78 @@ gh secret set GCP_SA_KEY < sa-key.json
 > de imágenes es **100 % automática** desde el pipeline (prohibida la subida manual
 > según los requisitos de la práctica).
 
+### 5.4 Identidad de la VM para leer Artifact Registry
+
+La VM debe tener una Service Account adjunta con permiso mínimo de lectura en el
+repositorio. Esta identidad es independiente de `GCP_SA_KEY`, que solo usa
+GitHub Actions para publicar imágenes. No se crea ni se copia una llave JSON en
+la VM.
+
+En la Consola Web:
+
+1. En *IAM & Admin → Service Accounts*, crear o seleccionar una cuenta para la VM.
+2. En *Artifact Registry → Repositories → yousac → Permissions*, otorgarle
+   **Artifact Registry Reader**.
+3. En *Compute Engine → VM instances → yousac-vm-nube → Edit*, seleccionar esa
+   cuenta como **Service account** y conservar un alcance que permita acceder a
+   las APIs de Google Cloud, normalmente `cloud-platform`.
+
+Equivalente con `gcloud`:
+
+```bash
+PROJECT_ID=<GCP_PROJECT_ID>
+REGION=us-central1
+REPOSITORY=yousac
+VM_NAME=yousac-vm-nube
+ZONE=us-central1-a
+VM_SA="yousac-vm-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
+
+gcloud iam service-accounts create yousac-vm-runtime \
+  --display-name="YoUSAC VM - Artifact Registry Reader" \
+  --project="$PROJECT_ID"
+
+gcloud artifacts repositories add-iam-policy-binding "$REPOSITORY" \
+  --location="$REGION" \
+  --project="$PROJECT_ID" \
+  --member="serviceAccount:$VM_SA" \
+  --role="roles/artifactregistry.reader"
+
+gcloud compute instances set-service-account "$VM_NAME" \
+  --zone="$ZONE" \
+  --service-account="$VM_SA" \
+  --scopes=cloud-platform
+```
+
+Si la VM ya tiene una cuenta de servicio, primero debe inspeccionarse y
+conservarse si ya cuenta con el permiso requerido; `set-service-account` puede
+reemplazar la identidad configurada.
+
+### 5.5 Secretos SSH y variable de la URL pública
+
+Generar una llave Ed25519 fuera del repositorio y agregar la clave pública en
+*Compute Engine → VM instances → Edit → SSH Keys* con el formato
+`usuario:clave_publica`. También puede agregarse con metadata:
+
+```bash
+gcloud compute instances add-metadata "$VM_NAME" \
+  --zone="$ZONE" \
+  --metadata-from-file=ssh-keys=<archivo-con-usuario-y-clave-publica>
+```
+
+Crear en GitHub, en *Settings → Secrets and variables → Actions*:
+
+| Nombre | Contenido |
+|---|---|
+| `VM_HOST` | IP pública o hostname SSH de la VM |
+| `VM_USER` | Usuario Linux que tiene `sudo` sin contraseña |
+| `VM_SSH_KEY` | Contenido de la clave privada Ed25519 |
+| `VM_KNOWN_HOSTS` | Host key verificada de la VM |
+
+Crear además la variable de repositorio `CLOUD_BASE_URL`, por ejemplo
+`http://136.119.139.125` o el dominio público configurado. La host key debe
+verificarse previamente por un canal confiable; el workflow usa
+`StrictHostKeyChecking=yes` y nunca desactiva la validación SSH.
+
 ## 6. Verificación local
 
 Validar la sintaxis de los workflows (requiere [`actionlint`](https://github.com/rhysd/actionlint)):
@@ -179,7 +270,85 @@ docker build -f api-gateway/Dockerfile -t api-gateway:ci ./Backend
 
 ## 7. Evidencias para el Informe Técnico
 
-1. Ejecución del workflow `ci-cd.yml` en verde (pestaña *Actions* de GitHub).
-2. Resumen generado por el pipeline (`GITHUB_STEP_SUMMARY`) con las etiquetas de cada imagen.
+1. Ejecución del workflow `ci-cd.yml` en verde, incluyendo `deploy` (pestaña *Actions* de GitHub).
+2. Resumen generado por el pipeline (`GITHUB_STEP_SUMMARY`) con las etiquetas y el endpoint validado.
 3. Enlace al perfil del repositorio en Artifact Registry con las imágenes versionadas.
-4. Captura de un pull request donde las pruebas bloquean la publicación.
+4. Evidencia de la VM actualizada con `docker compose pull` y `up --no-build`.
+5. Captura de un pull request donde las pruebas bloquean la publicación.
+
+### 7.1 Validación registrada del despliegue `V1.2.1`
+
+La primera prueba completa del CD hacia la VM se ejecutó mediante el tag
+`V1.2.1`, que el workflow normalizó a la etiqueta de imagen `1.2.1`.
+
+| Dato | Resultado |
+|---|---|
+| Ejecución | [GitHub Actions — run 34423627304](https://github.com/thanya-gate/SA_PROYECTO_202307691/actions/runs/34423627304) |
+| Evento | Push del tag `V1.2.1` |
+| Commit | `65463635c644dadd50f7b272e5052bd103f66099` |
+| Pruebas unitarias | 8 jobs aprobados |
+| Publicación | 8 imágenes publicadas en Artifact Registry |
+| Despliegue | Job `Deploy — VM de desarrollo` aprobado |
+| VM | `yousac-vm-nube`, zona `us-central1-a` |
+| URL pública | `http://136.119.139.125` |
+| Imagen desplegada | Servicios de aplicación con etiqueta `1.2.1` |
+
+La ejecución confirmó la secuencia `docker compose pull` y
+`docker compose up -d --no-build --remove-orphans`. Los health checks del
+Gateway (`127.0.0.1:8080/health`), frontend (`127.0.0.1:8081/healthz`) y
+endpoint público (`/api/health`) respondieron correctamente. La VM no recibió
+`.env.cloud` y no ejecutó `docker build`.
+
+![Resumen del pipeline CI/CD `V1.2.1`](img/ci-cd-v1.2.1-resumen.png)
+
+![Detalle del job `Deploy — VM de desarrollo`](img/ci-cd-v1.2.1-deploy.png)
+
+## 8. Actualización automática de la VM sin compilar en el servidor
+
+`docker-compose.cloud.yml` referencia las ocho imágenes del Registry con
+`REGISTRY_BASE` e `IMAGE_TAG`. El job `deploy` copia únicamente el Compose y los
+archivos públicos de Caddy; `.env.cloud` debe existir previamente en
+`/opt/yousac` y nunca se almacena en GitHub.
+
+Para cada push a `main` o tag `vX.Y.Z`/`VX.Y.Z`, después de publicar las imágenes,
+el workflow ejecuta remotamente:
+
+```bash
+sudo gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+sudo docker compose --env-file /opt/yousac/.env.cloud \
+  -f /opt/yousac/docker-compose.cloud.yml config --quiet
+sudo docker compose --env-file /opt/yousac/.env.cloud \
+  -f /opt/yousac/docker-compose.cloud.yml pull
+sudo docker compose --env-file /opt/yousac/.env.cloud \
+  -f /opt/yousac/docker-compose.cloud.yml up -d --no-build --remove-orphans
+```
+
+El workflow verifica después los endpoints locales `127.0.0.1:8080/health` y
+`127.0.0.1:8081/healthz`, y finalmente `${CLOUD_BASE_URL}/api/health`. Si fallan
+las pruebas, la publicación, SSH o los health checks, el job `deploy` no se
+considera exitoso. La VM no ejecuta `docker build`.
+
+### 8.1 Validación técnica del despliegue en GCP
+
+La validación técnica del despliegue `V1.2.1` se realizó sobre:
+
+- VM `yousac-vm-nube`, tipo `e2-medium`, zona `us-central1-a`.
+- Cloud SQL PostgreSQL 16 `yousac-p6-db`, con seis bases independientes.
+- Redis `7-alpine` en la VM para el servicio de AnalÃ­tica.
+- Imágenes de los ocho servicios con la etiqueta `1.2.1`.
+- Borde pÃºblico: `http://136.119.139.125`.
+
+Los ocho servicios de aplicación quedaron activos y saludables en la VM:
+`frontend`, `api-gateway`, `auth-service`, `catalog-service`,
+`inscripcion-service`, `notificaciones-service`, `reproduccion-service` y
+`analitica-service`.
+
+El reporte `artifacts/cloud-parity.json` registra una validación de paridad
+anterior, realizada con la imagen histórica `vm-nube-ca31976`. Ese reporte se
+conserva como antecedente funcional y no sustituye la evidencia del despliegue
+CD `V1.2.1` registrada en la sección 7.1.
+
+El `--no-build` y la ausencia de bloques `build:` en el compose garantizan la
+restricción de la práctica: la actualización llega desde Artifact Registry y
+no se recompila en la VM. Después de que el gateway esté saludable, ejecutar
+`tests/integration/cloud-parity.mjs` contra el dominio o IP pública.
