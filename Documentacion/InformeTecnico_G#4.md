@@ -1,7 +1,8 @@
-# Informe Técnico — YoUSAC (Práctica 5)
+# Informe Técnico — YoUSAC (Prácticas 5 y 6)
 
 - **Proyecto:** YoUSAC
 - **Práctica:** 5 — Fase 2
+- **Anexo:** 6 — Pipeline de CD hacia servidor de desarrollo (VM)
 - **GRUPO:** No.4
 - **Curso:** Software Avanzado
 - **Semestre:** 2.º semestre de 2026
@@ -9,11 +10,12 @@
 
 ## Índice
 
-- [Informe Técnico — YoUSAC (Práctica 5)](#informe-técnico--yousac-práctica-5)
+- [Informe Técnico — YoUSAC (Prácticas 5 y 6)](#informe-técnico--yousac-prácticas-5-y-6)
   - [Índice](#índice)
   - [1. Introducción](#1-introducción)
   - [2. Objetivo, alcance y componentes](#2-objetivo-alcance-y-componentes)
   - [3. Evidencias del pipeline CI/CD](#3-evidencias-del-pipeline-cicd)
+    - [3.1 Despliegue continuo hacia la VM](#31-despliegue-continuo-hacia-la-vm)
   - [4. Registry de imágenes](#4-registry-de-imágenes)
     - [Imágenes publicadas](#imágenes-publicadas)
   - [5. Funcionalidad del cuaderno de apuntes](#5-funcionalidad-del-cuaderno-de-apuntes)
@@ -28,7 +30,7 @@
 
 Este informe documenta la implementación y verificación del cuaderno de apuntes de la Fase 2 de YoUSAC. La funcionalidad permite crear y mantener varios apuntes por clase, escribir contenido en Markdown, asociar marcadores de tiempo con la reproducción de un video y exportar el cuaderno en formatos PDF y Markdown.
 
-También se presentan las evidencias del pipeline de integración y entrega continua. El pipeline ejecuta las suites de pruebas del proyecto y, únicamente cuando estas finalizan correctamente, construye y publica las ocho imágenes Docker en Google Cloud Artifact Registry.
+También se presentan las evidencias del pipeline de integración y entrega continua. El pipeline ejecuta las suites de pruebas del proyecto y, únicamente cuando estas finalizan correctamente, construye y publica las ocho imágenes Docker en Google Cloud Artifact Registry. Para la Práctica 6 se documenta además el despliegue automático de esas imágenes hacia la VM de desarrollo.
 
 ## 2. Objetivo, alcance y componentes
 
@@ -43,24 +45,55 @@ La solución involucra los siguientes componentes:
 
 ## 3. Evidencias del pipeline CI/CD
 
-El workflow se encuentra en [`.github/workflows/ci-cd.yml`](https://github.com/thanya-gate/SA_PROYECTO_202307691/blob/main/.github/workflows/ci-cd.yml). Su flujo está compuesto por dos matrices consecutivas:
+El workflow se encuentra en [`.github/workflows/ci-cd.yml`](https://github.com/thanya-gate/SA_PROYECTO_202307691/blob/main/.github/workflows/ci-cd.yml). Su flujo está compuesto por tres etapas consecutivas:
 
 1. Ejecución de pruebas unitarias para los servicios TypeScript, el frontend, el microservicio Go y el servicio Python.
 2. Construcción y publicación de las ocho imágenes Docker. Esta etapa depende del éxito de todas las pruebas, por lo que una falla impide cualquier publicación en el Registry.
+3. Conexión segura por SSH a la VM, descarga de las imágenes mediante Compose y actualización de los contenedores sin compilación en el servidor.
 
-La [ejecución completa CI/CD #2](https://github.com/thanya-gate/SA_PROYECTO_202307691/actions/runs/33590017007), disparada mediante un `push` a `main`, presentó el siguiente resultado:
+La ejecución de prueba del CD [V1.2.1 — GitHub Actions run 34423627304](https://github.com/thanya-gate/SA_PROYECTO_202307691/actions/runs/34423627304), disparada mediante un `push` del tag, presentó el siguiente resultado:
 
 | Dato | Resultado |
 |---|---|
 | Estado | `Success` |
-| Commit | `b824804` |
-| Rama | `main` |
-| Duración | 1 minuto 47 segundos |
+| Commit | `65463635c644dadd50f7b272e5052bd103f66099` |
+| Referencia | `V1.2.1` |
 | Trabajos de pruebas | 8 completados correctamente |
 | Trabajos de publicación | 8 completados correctamente |
-| Artefactos de construcción | 8 |
+| Trabajo de despliegue | 1 completado correctamente |
 
-![Ejecución exitosa del pipeline CI/CD con las matrices de pruebas y publicación](img/workflow_verde.png)
+![Ejecución histórica exitosa del pipeline CI/CD con las matrices de pruebas y publicación](img/workflow_verde.png)
+
+La evidencia actual y el detalle de la etapa `deploy` se encuentran en el
+enlace de la ejecución `V1.2.1`. La imagen anterior se conserva como evidencia
+histórica de las etapas de pruebas y publicación.
+
+![Resumen del pipeline CI/CD `V1.2.1` con las pruebas, publicaciones y despliegue exitosos](img/ci-cd-v1.2.1-resumen.png)
+
+![Detalle del job `Deploy — VM de desarrollo` ejecutado correctamente](img/ci-cd-v1.2.1-deploy.png)
+
+### 3.1 Despliegue continuo hacia la VM
+
+El tag Git `V1.2.1` se normalizó a la etiqueta de imágenes `1.2.1`. El job
+`deploy` se conectó mediante SSH utilizando la host key fijada en
+`VM_KNOWN_HOSTS`, sin copiar la configuración privada `.env.cloud`.
+
+La VM utilizada fue `yousac-vm-nube`, en la zona `us-central1-a`, con borde
+público en `http://136.119.139.125`. El despliegue ejecutó las siguientes
+operaciones remotas:
+
+```bash
+docker compose --env-file /opt/yousac/.env.cloud \
+  -f /opt/yousac/docker-compose.cloud.yml pull
+
+docker compose --env-file /opt/yousac/.env.cloud \
+  -f /opt/yousac/docker-compose.cloud.yml up -d --no-build --remove-orphans
+```
+
+Después del despliegue, los ocho servicios de aplicación quedaron activos con
+imágenes `:1.2.1`. El Gateway, el frontend y el endpoint público `/api/health`
+respondieron con HTTP 200. La VM no ejecutó `docker build`; únicamente consumió
+imágenes de Artifact Registry.
 
 Las pruebas ampliadas del cuaderno de apuntes, correspondientes al commit `c8c9c90`, también finalizaron correctamente en las ejecuciones [CI/CD #3](https://github.com/thanya-gate/SA_PROYECTO_202307691/actions/runs/33698438294) y [Pruebas unitarias #16](https://github.com/thanya-gate/SA_PROYECTO_202307691/actions/runs/33698438311).
 
@@ -100,12 +133,14 @@ us-central1-docker.pkg.dev/yousac-202300396-2026/yousac
 
 ![Listado de las ocho imágenes Docker publicadas en Google Cloud Artifact Registry](img/enlaces_registry.png)
 
-Cada imagen publicada desde `main` queda identificada mediante la etiqueta `main` y una etiqueta inmutable asociada al commit, por ejemplo `sha-b824804`. El workflow también está preparado para generar etiquetas semánticas al ejecutar una versión Git compatible con el patrón configurado.
+La prueba `V1.2.1` publicó las ocho imágenes con las etiquetas `1.2.1`,
+`latest` y `sha-6546363`. El workflow también conserva las etiquetas de rama y
+está preparado para generar etiquetas semánticas para la entrega `V1.3.0`.
 
 Ejemplo para descargar la imagen del frontend:
 
 ```bash
-docker pull us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/frontend:main
+docker pull us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/frontend:1.2.1
 ```
 
 El acceso al repositorio y a sus imágenes está sujeto a los permisos IAM configurados en el proyecto de Google Cloud.
@@ -164,3 +199,4 @@ La instalación de dependencias, los comandos por módulo y la ejecución conjun
 - Las pruebas automatizadas cubren la interacción del frontend, el contrato HTTP del API Gateway y las reglas de dominio y persistencia del microservicio de reproducción.
 - El pipeline aplica el cortocircuito requerido: las imágenes solamente se construyen y publican cuando las ocho suites de la matriz concluyen correctamente.
 - Google Cloud Artifact Registry contiene las ocho imágenes del sistema, identificadas por rama y por commit para mantener la trazabilidad de cada construcción.
+- El despliegue continuo hacia la VM se verificó con el tag `V1.2.1`: la aplicación se actualizó mediante `docker compose pull` y `up -d --no-build`, sin compilar en el servidor.

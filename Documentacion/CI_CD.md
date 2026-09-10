@@ -107,7 +107,7 @@ La autenticación contra Artifact Registry usa el patrón oficial de GCP con
 `docker/login-action`: usuario `_json_key` y la llave JSON de la Service Account
 (`GCP_SA_KEY`) como password. No se generan ni dependen de access tokens.
 
-## 5. Configuración en GCP (cuando haya credenciales)
+## 5. Configuración en GCP y credenciales
 
 ### 5.0 Guía con la Consola Web (console.cloud.google.com)
 
@@ -276,6 +276,33 @@ docker build -f api-gateway/Dockerfile -t api-gateway:ci ./Backend
 4. Evidencia de la VM actualizada con `docker compose pull` y `up --no-build`.
 5. Captura de un pull request donde las pruebas bloquean la publicación.
 
+### 7.1 Validación registrada del despliegue `V1.2.1`
+
+La primera prueba completa del CD hacia la VM se ejecutó mediante el tag
+`V1.2.1`, que el workflow normalizó a la etiqueta de imagen `1.2.1`.
+
+| Dato | Resultado |
+|---|---|
+| Ejecución | [GitHub Actions — run 34423627304](https://github.com/thanya-gate/SA_PROYECTO_202307691/actions/runs/34423627304) |
+| Evento | Push del tag `V1.2.1` |
+| Commit | `65463635c644dadd50f7b272e5052bd103f66099` |
+| Pruebas unitarias | 8 jobs aprobados |
+| Publicación | 8 imágenes publicadas en Artifact Registry |
+| Despliegue | Job `Deploy — VM de desarrollo` aprobado |
+| VM | `yousac-vm-nube`, zona `us-central1-a` |
+| URL pública | `http://136.119.139.125` |
+| Imagen desplegada | Servicios de aplicación con etiqueta `1.2.1` |
+
+La ejecución confirmó la secuencia `docker compose pull` y
+`docker compose up -d --no-build --remove-orphans`. Los health checks del
+Gateway (`127.0.0.1:8080/health`), frontend (`127.0.0.1:8081/healthz`) y
+endpoint público (`/api/health`) respondieron correctamente. La VM no recibió
+`.env.cloud` y no ejecutó `docker build`.
+
+![Resumen del pipeline CI/CD `V1.2.1`](img/ci-cd-v1.2.1-resumen.png)
+
+![Detalle del job `Deploy — VM de desarrollo`](img/ci-cd-v1.2.1-deploy.png)
+
 ## 8. Actualización automática de la VM sin compilar en el servidor
 
 `docker-compose.cloud.yml` referencia las ocho imágenes del Registry con
@@ -301,21 +328,25 @@ El workflow verifica después los endpoints locales `127.0.0.1:8080/health` y
 las pruebas, la publicación, SSH o los health checks, el job `deploy` no se
 considera exitoso. La VM no ejecuta `docker build`.
 
-### 8.1 ValidaciÃ³n ejecutada en GCP
+### 8.1 Validación técnica del despliegue en GCP
 
-La validaciÃ³n de la PrÃ¡ctica 6 se ejecutÃ³ el 9 de septiembre de 2026 en:
+La validación técnica del despliegue `V1.2.1` se realizó sobre:
 
 - VM `yousac-vm-nube`, tipo `e2-medium`, zona `us-central1-a`.
 - Cloud SQL PostgreSQL 16 `yousac-p6-db`, con seis bases independientes.
 - Redis `7-alpine` en la VM para el servicio de AnalÃ­tica.
-- ImÃ¡genes de los ocho servicios con la etiqueta `vm-nube-ca31976`.
+- Imágenes de los ocho servicios con la etiqueta `1.2.1`.
 - Borde pÃºblico: `http://136.119.139.125`.
 
-El reporte `artifacts/cloud-parity.json` registra el resultado de 25
-comprobaciones: 24 aprobadas y una omisiÃ³n esperada de lectura previa a la
-creaciÃ³n del apunte. Las operaciones de escritura posteriores aprobaron
-checkpoint, apuntes, exportaciÃ³n Markdown, pregunta, respuesta y verificaciÃ³n
-del foro.
+Los ocho servicios de aplicación quedaron activos y saludables en la VM:
+`frontend`, `api-gateway`, `auth-service`, `catalog-service`,
+`inscripcion-service`, `notificaciones-service`, `reproduccion-service` y
+`analitica-service`.
+
+El reporte `artifacts/cloud-parity.json` registra una validación de paridad
+anterior, realizada con la imagen histórica `vm-nube-ca31976`. Ese reporte se
+conserva como antecedente funcional y no sustituye la evidencia del despliegue
+CD `V1.2.1` registrada en la sección 7.1.
 
 El `--no-build` y la ausencia de bloques `build:` en el compose garantizan la
 restricción de la práctica: la actualización llega desde Artifact Registry y

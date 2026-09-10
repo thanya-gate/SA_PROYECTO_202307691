@@ -379,6 +379,12 @@ cargar datos de prueba en la base Cloud.
 
 ### EjecuciÃ³n verificada en GCP
 
+La ejecución descrita en esta sección corresponde a una validación de paridad
+anterior al despliegue CD `V1.2.1`. La evidencia actual del pipeline y de la
+actualización automática de la VM está registrada en
+[`Documentacion/CI_CD.md`](CI_CD.md) y en el [informe técnico de las Prácticas
+5 y 6](InformeTecnico_G%234.md).
+
 El 9 de septiembre de 2026 se ejecutÃ³ la baterÃ­a completa contra la VM
 pÃºblica de validaciÃ³n:
 
@@ -387,7 +393,7 @@ pÃºblica de validaciÃ³n:
 | Proyecto | `yousac-202300396-2026` |
 | VM | `yousac-vm-nube` (`e2-medium`, `us-central1-a`) |
 | URL pÃºblica | `http://136.119.139.125` |
-| Imagen de aplicaciÃ³n | `vm-nube-ca31976` |
+| Imagen de aplicaciÃ³n | `vm-nube-ca31976` (validación histórica) |
 | Persistencia | Cloud SQL PostgreSQL 16 (`yousac-p6-db`) y Redis en la VM |
 | Datos | clases demo, dos capÃ­tulos, material PDF y foro con timestamps |
 
