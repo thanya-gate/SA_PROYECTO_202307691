@@ -47,6 +47,16 @@ const ClockIcon = () => (
     <polyline points="12 7 12 12 15 14" />
   </Icon>
 );
+const PlaylistIcon = () => (
+  <Icon>
+    <path d="M9 18h5" />
+    <path d="M9 13h9" />
+    <path d="M9 8h9" />
+    <circle cx="4.5" cy="8" r="1" />
+    <circle cx="4.5" cy="13" r="1" />
+    <circle cx="4.5" cy="18" r="1" />
+  </Icon>
+);
 const ChartIcon = () => (
   <Icon>
     <line x1="5" y1="20" x2="5" y2="12" />
@@ -131,6 +141,7 @@ const NAV_ITEMS: NavItem[] = [
     description: 'Revisar las notificaciones del sistema',
   },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
+  { to: '/playlists', label: 'Playlists', icon: <PlaylistIcon /> },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];
@@ -177,6 +188,7 @@ const AUXILIAR_NAV_ITEMS: NavItem[] = [
     description: 'Revisar las notificaciones del sistema',
   },
   { to: '/historial', label: 'Historial', icon: <ClockIcon /> },
+  { to: '/playlists', label: 'Playlists', icon: <PlaylistIcon /> },
   { to: '/analitica', label: 'Analítica', icon: <ChartIcon /> },
   { to: '/perfil', label: 'Mi perfil', icon: <SettingsIcon /> },
 ];

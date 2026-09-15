@@ -1450,6 +1450,163 @@ body {
   font-size: 0.8rem;
 }
 
+/* ===== Tarjeta de playlist (misma forma que las tarjetas de video) ===== */
+.playlist-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.playlist-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
+}
+
+.playlist-card__link {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.playlist-card__thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background:
+    linear-gradient(135deg, rgba(30, 90, 156, 0.92), rgba(30, 90, 156, 0.85)),
+    radial-gradient(200px 120px at 80% -10%, rgba(247, 181, 0, 0.35), transparent);
+}
+
+.playlist-card__badge {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+}
+
+.playlist-card__badge--publica {
+  color: var(--color-accent);
+}
+
+.playlist-card__body {
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.playlist-card__titulo {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--color-primary-dark);
+  line-height: 1.3;
+}
+
+.playlist-card__tema {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.playlist-card__meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+/* Menú de tres puntos con las opciones de la playlist */
+.playlist-card__menu {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 42;
+}
+
+.playlist-card__menu-boton {
+  position: relative;
+  z-index: 43;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s;
+}
+
+.playlist-card__menu-boton:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.playlist-card__menu-cierre {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  cursor: default;
+}
+
+.playlist-card__menu-pop {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 43;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  padding: 0.35rem;
+}
+
+.playlist-card__menu-accion {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-primary-dark);
+}
+
+.playlist-card__menu-accion:hover {
+  background: var(--color-surface-muted);
+}
+
+.playlist-card__menu-accion--peligro {
+  color: var(--color-danger);
+}
+
 /* ===== Detalle de clase / reproductor ===== */
 .catalogo__volver {
   display: inline-block;
@@ -4886,5 +5043,306 @@ body {
 
 .clase__foro-responder .btn {
   align-self: flex-end;
+}
+
+/* ===== Playlists de repaso (RF-F2-05) ===== */
+.playlists {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.playlists__crear {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
+}
+
+.playlists__crear-campos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.playlists__crear-campos > .text-field {
+  flex: 1 1 260px;
+}
+
+.playlists__visibilidad {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.4rem;
+  cursor: pointer;
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+}
+
+.playlists__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.playlists__tarjeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.15rem;
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.playlists__tarjeta:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-primary-light);
+}
+
+.playlists__principal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-decoration: none;
+  color: inherit;
+  flex: 1 1 220px;
+  min-width: 220px;
+}
+
+.playlists__badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.18rem 0.55rem;
+  border-radius: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.playlists__badge--publica {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.playlists__badge--privada {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.playlists__nombre {
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--color-primary-dark);
+  line-height: 1.3;
+}
+
+.playlists__meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.playlists__acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.playlists__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: flex-start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
+}
+
+.playlists__hero-titulo {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--color-primary-dark);
+  line-height: 1.3;
+}
+
+.playlists__editar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.8rem;
+  width: 100%;
+}
+
+.playlists__editar > .text-field {
+  flex: 1 1 260px;
+}
+
+.playlists__editar-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.playlists__buscar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.playlists__buscar > .text-field {
+  flex: 1 1 280px;
+}
+
+.playlists__resultados {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.playlists__resultado {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+}
+
+.playlists__resultado--vacio {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.playlists__resultado-thumb,
+.playlists__item-thumb {
+  flex-shrink: 0;
+  width: 96px;
+  height: 54px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-video-bg);
+}
+
+.playlists__resultado-info {
+  flex: 1;
+}
+
+.playlists__resultado-titulo,
+.playlists__item-titulo {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+}
+
+.playlists__resultado-meta,
+.playlists__item-meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.playlists__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.playlists__item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+}
+
+.playlists__item-orden {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.playlists__item-info {
+  flex: 1 1 180px;
+  min-width: 180px;
+}
+
+.playlists__item-fragmento {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.playlists__item-acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-left: auto;
+}
+
+/* Panel "Agregar a playlist de repaso" en la página de la clase */
+.clase__playlist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-top: 0.9rem;
+}
+
+.clase__playlist-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+  max-width: 520px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  box-shadow: 0 4px 14px rgba(30, 90, 156, 0.08);
+}
+
+.clase__playlist-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
 }
 
