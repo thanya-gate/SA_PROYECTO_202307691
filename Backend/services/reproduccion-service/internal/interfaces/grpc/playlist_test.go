@@ -14,11 +14,11 @@ import (
 
 func TestServerPlaylistsExponeRespuestasYMapeaErrores(t *testing.T) {
 	repo := &grpcFakeRepository{
-		playlist: &domain.Playlist{PlaylistID: "playlist-1", EstudianteID: "est-1", Nombre: "Repaso", EsPublica: true, EnlacePublico: "enlace-1", CantidadItems: 1},
+		playlist: &domain.Playlist{PlaylistID: "playlist-1", EstudianteID: "est-1", Nombre: "Repaso", EsPublica: true, EnlacePublico: "enlace-1", CantidadItems: 1, ClasePortada: "clase-portada"},
 		items: []domain.PlaylistItem{
 			{PlaylistItemID: "item-1", ClaseID: "clase-1", Orden: 0, SegundoInicio: 0},
 		},
-		playlists: []domain.Playlist{{PlaylistID: "playlist-1", EstudianteID: "est-1", Nombre: "Repaso", EnlacePublico: "enlace-1"}},
+		playlists: []domain.Playlist{{PlaylistID: "playlist-1", EstudianteID: "est-1", Nombre: "Repaso", EnlacePublico: "enlace-1", ClasePortada: "clase-portada"}},
 	}
 	server := New(service.New(repo), "test-version")
 
@@ -30,18 +30,18 @@ func TestServerPlaylistsExponeRespuestasYMapeaErrores(t *testing.T) {
 	}
 
 	lista, err := server.ListarPlaylists(context.Background(), &reproduccionv1.ListarPlaylistsRequest{EstudianteId: "est-1"})
-	if err != nil || len(lista.GetPlaylists()) != 1 || lista.GetPlaylists()[0].GetPlaylistId() != "playlist-1" {
+	if err != nil || len(lista.GetPlaylists()) != 1 || lista.GetPlaylists()[0].GetPlaylistId() != "playlist-1" || lista.GetPlaylists()[0].GetClasePortada() != "clase-portada" {
 		t.Fatalf("ListarPlaylists() = %#v, %v", lista, err)
 	}
 
 	publicas, err := server.ListarPlaylistsPublicas(context.Background(), &reproduccionv1.ListarPlaylistsPublicasRequest{EstudianteId: "est-1"})
 	if err != nil || len(publicas.GetPlaylists()) != 1 ||
-		publicas.GetPlaylists()[0].GetPlaylistId() != "playlist-1" || publicas.GetPlaylists()[0].GetEnlacePublico() != "enlace-1" {
+		publicas.GetPlaylists()[0].GetPlaylistId() != "playlist-1" || publicas.GetPlaylists()[0].GetEnlacePublico() != "enlace-1" || publicas.GetPlaylists()[0].GetClasePortada() != "clase-portada" {
 		t.Fatalf("ListarPlaylistsPublicas() = %#v, %v", publicas, err)
 	}
 
 	detalle, err := server.ObtenerPlaylist(context.Background(), &reproduccionv1.ObtenerPlaylistRequest{EstudianteId: "est-1", PlaylistId: "playlist-1"})
-	if err != nil || detalle.GetPlaylist().GetPlaylistId() != "playlist-1" || len(detalle.GetItems()) != 1 || detalle.GetItems()[0].GetClaseId() != "clase-1" {
+	if err != nil || detalle.GetPlaylist().GetPlaylistId() != "playlist-1" || detalle.GetPlaylist().GetClasePortada() != "clase-portada" || len(detalle.GetItems()) != 1 || detalle.GetItems()[0].GetClaseId() != "clase-1" {
 		t.Fatalf("ObtenerPlaylist() = %#v, %v", detalle, err)
 	}
 

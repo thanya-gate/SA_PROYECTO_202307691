@@ -120,6 +120,48 @@ func TestListarPlaylistsPublicasExcluyePropiasYFiltraPublicas(t *testing.T) {
 	}
 }
 
+func TestListarPlaylistsPortadaEsPrimerElemento(t *testing.T) {
+	tests := []struct {
+		name   string
+		metodo func(*ReproduccionRepository) ([]domain.Playlist, error)
+	}{
+		{
+			name: "propias",
+			metodo: func(r *ReproduccionRepository) ([]domain.Playlist, error) {
+				return r.ListarPlaylists(context.Background(), "estudiante-1")
+			},
+		},
+		{
+			name: "públicas",
+			metodo: func(r *ReproduccionRepository) ([]domain.Playlist, error) {
+				return r.ListarPlaylistsPublicas(context.Background(), "estudiante-1")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var consulta string
+			db := &dbFalsa{query: func(_ context.Context, sql string, args ...any) (pgx.Rows, error) {
+				consulta = sql
+				return nuevasFilasFalsas(valoresPlaylistCompleta("enlace-1", int32(2))), nil
+			}}
+			repositorio := NewReproduccionRepository(db)
+
+			playlists, err := tt.metodo(repositorio)
+			if err != nil {
+				t.Fatalf("%s: error = %v", tt.name, err)
+			}
+			if len(playlists) != 1 || playlists[0].ClasePortada != "clase-1" {
+				t.Fatalf("%s: ClasePortada no mapeada: %#v", tt.name, playlists)
+			}
+			// La portada debe ser la clase del primer elemento (menor orden).
+			if !strings.Contains(consulta, "ORDER BY pi.orden ASC LIMIT 1") || !strings.Contains(consulta, "AS clase_portada") {
+				t.Fatalf("%s: consulta sin portada del primer elemento: %q", tt.name, consulta)
+			}
+		})
+	}
+}
+
 func TestObtenerPlaylistMapeaAusenciaYListaItems(t *testing.T) {
 	db := &dbFalsa{queryRow: func(_ context.Context, sql string, args ...any) pgx.Row {
 		if strings.Contains(sql, "FROM playlist p") {
@@ -139,7 +181,7 @@ func TestObtenerPlaylistMapeaAusenciaYListaItems(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ObtenerPlaylist() error = %v", err)
 	}
-	if playlist.PlaylistID != "playlist-1" || len(items) != 1 || items[0].SegundoInicio != 90 {
+	if playlist.PlaylistID != "playlist-1" || playlist.ClasePortada != "clase-1" || len(items) != 1 || items[0].SegundoInicio != 90 {
 		t.Fatalf("ObtenerPlaylist() = %#v, %#v", playlist, items)
 	}
 
