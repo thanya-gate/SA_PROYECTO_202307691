@@ -29,6 +29,7 @@ module.exports = {
     'src/components/ChapterManager.tsx',
     'src/components/ChapterTimeline.tsx',
     'src/components/PlayerProgressBar.tsx',
+    'src/components/PlaylistCard.tsx',
     '!src/main.tsx',
   ],
   coverageDirectory: 'coverage',

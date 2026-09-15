@@ -1808,6 +1808,205 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
     }
   });
 
+// ===== Playlists de repaso (RF-F2-05) =====
+  // Adjunta el contexto del catálogo (curso, tema, miniatura, semestre) a un
+  // elemento de playlist o a la portada de una playlist.
+  async function enriquecerConClase(claseId: string): Promise<Record<string, unknown>> {
+    const contexto: Record<string, unknown> = {};
+    try {
+      const clase = await catalogGrpc.getClase(claseId);
+      contexto.codigo = clase.clase?.codigo ?? '';
+      contexto.curso = clase.clase?.curso ?? '';
+      contexto.escuela = clase.clase?.escuela ?? '';
+      contexto.unidad = clase.clase?.unidad ?? '';
+      contexto.tema = clase.clase?.tema ?? '';
+      contexto.semestre = clase.clase?.semestre ?? '';
+      contexto.anio = clase.clase?.anio ?? 0;
+      contexto.urlVideo = clase.clase?.urlVideo ?? '';
+    } catch {
+    }
+    return contexto;
+  }
+
+  // La miniatura de una playlist es la del primer video agregado (clase_portada).
+  async function enriquecerPlaylistPortada(playlist: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const clasePortada = String(playlist.clasePortada ?? '');
+    if (!clasePortada) return playlist;
+    const contexto = await enriquecerConClase(clasePortada);
+    return { ...playlist, claseId: clasePortada, ...contexto };
+  }
+
+  // Lista las playlists del estudiante autenticado.
+  app.get('/reproduccion/playlists', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.listarPlaylists({ estudianteId: req.context!.userId });
+      const playlists = await Promise.all((result.playlists ?? []).map(enriquecerPlaylistPortada));
+      res.json({ playlists });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Crea una playlist de repaso. Si esPublica es verdadero, el microservicio
+  // genera un enlace único para compartir la colección con compañeros.
+  app.post('/reproduccion/playlists', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const { nombre, esPublica } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string' || nombre.trim().length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre es obligatorio', 400);
+      }
+      const result = await reproductionGrpc.crearPlaylist({
+        estudianteId: req.context!.userId,
+        nombre: nombre.trim(),
+        esPublica: esPublica === true,
+      });
+      res.status(201).json({ message: 'Playlist creada', playlist: result.playlist });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Apartado de playlists compartidas: lista las playlists públicas de otros
+  // estudiantes (excluye las propias) para descubrirlas desde la página.
+  app.get('/reproduccion/playlists/publicas', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.listarPlaylistsPublicas({ estudianteId: req.context!.userId });
+      const playlists = await Promise.all((result.playlists ?? []).map(enriquecerPlaylistPortada));
+      res.json({ playlists });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Playlist pública compartida mediante enlace único: la consulta cualquier
+  // usuario autenticado con el enlace, incluso si no es el propietario.
+  app.get('/reproduccion/playlists/publicas/:enlace', authenticate, async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.obtenerPlaylistPublica({ enlacePublico: req.params.enlace });
+      if (!result.playlist) {
+        res.json({ playlist: null, items: [] });
+        return;
+      }
+      const items = await Promise.all(
+        (result.items ?? []).map(async (item: Record<string, unknown>) => ({
+          ...item,
+          ...(await enriquecerConClase(String(item.claseId))),
+        })),
+      );
+      res.json({ playlist: result.playlist, items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Detalle de una playlist propia con sus elementos enriquecidos con el
+  // catálogo (curso, tema, miniatura y semestre).
+  app.get('/reproduccion/playlists/:playlistId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.obtenerPlaylist({
+        estudianteId: req.context!.userId,
+        playlistId: req.params.playlistId,
+      });
+      const items = await Promise.all(
+        (result.items ?? []).map(async (item: Record<string, unknown>) => ({
+          ...item,
+          ...(await enriquecerConClase(String(item.claseId))),
+        })),
+      );
+      res.json({ playlist: result.playlist ?? null, items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Actualiza nombre y visibilidad (privada/pública) de una playlist propia.
+  app.patch('/reproduccion/playlists/:playlistId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const { nombre, esPublica } = req.body as Record<string, unknown>;
+      if (typeof nombre !== 'string' || nombre.trim().length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'nombre es obligatorio', 400);
+      }
+      const result = await reproductionGrpc.actualizarPlaylist({
+        estudianteId: req.context!.userId,
+        playlistId: req.params.playlistId,
+        nombre: nombre.trim(),
+        esPublica: esPublica === true,
+      });
+      res.json({ message: 'Playlist actualizada', playlist: result.playlist });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Elimina una playlist propia (y sus elementos en cascada).
+  app.delete('/reproduccion/playlists/:playlistId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.eliminarPlaylist({
+        estudianteId: req.context!.userId,
+        playlistId: req.params.playlistId,
+      });
+      res.json({ message: 'Playlist eliminada', eliminada: result.eliminada });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Agrega una grabación o fragmento (segundoInicio) a una playlist propia.
+  app.post('/reproduccion/playlists/:playlistId/items', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const { claseId, segundoInicio } = req.body as Record<string, unknown>;
+      if (typeof claseId !== 'string' || claseId.length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'claseId es obligatorio', 400);
+      }
+      const posicion = typeof segundoInicio === 'number' && Number.isFinite(segundoInicio) ? Math.max(0, Math.floor(segundoInicio)) : 0;
+      const result = await reproductionGrpc.agregarItemPlaylist({
+        estudianteId: req.context!.userId,
+        playlistId: req.params.playlistId,
+        claseId,
+        segundoInicio: posicion,
+      });
+      res.status(201).json({ message: 'Elemento agregado', item: result.item, cantidadItems: result.cantidadItems });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Reordena los elementos de una playlist propia (lista de ids en el nuevo orden).
+  app.put('/reproduccion/playlists/:playlistId/items/orden', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const { itemsOrdenados } = req.body as Record<string, unknown>;
+      if (!Array.isArray(itemsOrdenados) || itemsOrdenados.length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'itemsOrdenados debe ser una lista no vacía', 400);
+      }
+      const ids = itemsOrdenados.filter((id): id is string => typeof id === 'string');
+      if (ids.length === 0) {
+        throw new DomainError('ENTRADA_INVALIDA', 'itemsOrdenados debe contener identificadores válidos', 400);
+      }
+      const result = await reproductionGrpc.reordenarPlaylist({
+        estudianteId: req.context!.userId,
+        playlistId: req.params.playlistId,
+        itemsOrdenados: ids,
+      });
+      res.json({ message: 'Playlist reordenada', items: result.items ?? [] });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Retira un elemento de una playlist propia.
+  app.delete('/reproduccion/playlists/:playlistId/items/:playlistItemId', authenticate, requireAnyRole('ROLE_ESTUDIANTE', 'ROLE_ADMIN', 'ROLE_AUXILIAR'), async (req, res, next) => {
+    try {
+      const result = await reproductionGrpc.eliminarItemPlaylist({
+        estudianteId: req.context!.userId,
+        playlistId: req.params.playlistId,
+        playlistItemId: req.params.playlistItemId,
+      });
+      res.json({ message: 'Elemento eliminado', eliminado: result.eliminado, cantidadItems: result.cantidadItems });
+    } catch (err) {
+      next(err);
+    }
+  });
+
 //analitica
   app.get('/analitica/clases-mas-vistas', authenticate, async (req, res, next) => {
     try {

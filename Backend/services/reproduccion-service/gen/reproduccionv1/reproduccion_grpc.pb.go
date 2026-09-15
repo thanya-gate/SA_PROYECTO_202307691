@@ -19,15 +19,25 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ReproduccionService_Health_FullMethodName                = "/yousac.reproduccion.v1.ReproduccionService/Health"
-	ReproduccionService_GuardarCheckpoint_FullMethodName     = "/yousac.reproduccion.v1.ReproduccionService/GuardarCheckpoint"
-	ReproduccionService_ObtenerCheckpoint_FullMethodName     = "/yousac.reproduccion.v1.ReproduccionService/ObtenerCheckpoint"
-	ReproduccionService_HistorialReciente_FullMethodName     = "/yousac.reproduccion.v1.ReproduccionService/HistorialReciente"
-	ReproduccionService_RegistrarCalificacion_FullMethodName = "/yousac.reproduccion.v1.ReproduccionService/RegistrarCalificacion"
-	ReproduccionService_GuardarApunte_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/GuardarApunte"
-	ReproduccionService_ListarApuntes_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/ListarApuntes"
-	ReproduccionService_EliminarApunte_FullMethodName        = "/yousac.reproduccion.v1.ReproduccionService/EliminarApunte"
-	ReproduccionService_ExportarApunteMd_FullMethodName      = "/yousac.reproduccion.v1.ReproduccionService/ExportarApunteMd"
+	ReproduccionService_Health_FullMethodName                  = "/yousac.reproduccion.v1.ReproduccionService/Health"
+	ReproduccionService_GuardarCheckpoint_FullMethodName       = "/yousac.reproduccion.v1.ReproduccionService/GuardarCheckpoint"
+	ReproduccionService_ObtenerCheckpoint_FullMethodName       = "/yousac.reproduccion.v1.ReproduccionService/ObtenerCheckpoint"
+	ReproduccionService_HistorialReciente_FullMethodName       = "/yousac.reproduccion.v1.ReproduccionService/HistorialReciente"
+	ReproduccionService_RegistrarCalificacion_FullMethodName   = "/yousac.reproduccion.v1.ReproduccionService/RegistrarCalificacion"
+	ReproduccionService_GuardarApunte_FullMethodName           = "/yousac.reproduccion.v1.ReproduccionService/GuardarApunte"
+	ReproduccionService_ListarApuntes_FullMethodName           = "/yousac.reproduccion.v1.ReproduccionService/ListarApuntes"
+	ReproduccionService_EliminarApunte_FullMethodName          = "/yousac.reproduccion.v1.ReproduccionService/EliminarApunte"
+	ReproduccionService_ExportarApunteMd_FullMethodName        = "/yousac.reproduccion.v1.ReproduccionService/ExportarApunteMd"
+	ReproduccionService_CrearPlaylist_FullMethodName           = "/yousac.reproduccion.v1.ReproduccionService/CrearPlaylist"
+	ReproduccionService_ListarPlaylists_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/ListarPlaylists"
+	ReproduccionService_ListarPlaylistsPublicas_FullMethodName = "/yousac.reproduccion.v1.ReproduccionService/ListarPlaylistsPublicas"
+	ReproduccionService_ObtenerPlaylist_FullMethodName         = "/yousac.reproduccion.v1.ReproduccionService/ObtenerPlaylist"
+	ReproduccionService_ObtenerPlaylistPublica_FullMethodName  = "/yousac.reproduccion.v1.ReproduccionService/ObtenerPlaylistPublica"
+	ReproduccionService_ActualizarPlaylist_FullMethodName      = "/yousac.reproduccion.v1.ReproduccionService/ActualizarPlaylist"
+	ReproduccionService_EliminarPlaylist_FullMethodName        = "/yousac.reproduccion.v1.ReproduccionService/EliminarPlaylist"
+	ReproduccionService_AgregarItemPlaylist_FullMethodName     = "/yousac.reproduccion.v1.ReproduccionService/AgregarItemPlaylist"
+	ReproduccionService_ReordenarPlaylist_FullMethodName       = "/yousac.reproduccion.v1.ReproduccionService/ReordenarPlaylist"
+	ReproduccionService_EliminarItemPlaylist_FullMethodName    = "/yousac.reproduccion.v1.ReproduccionService/EliminarItemPlaylist"
 )
 
 // ReproduccionServiceClient is the client API for ReproduccionService service.
@@ -49,6 +59,17 @@ type ReproduccionServiceClient interface {
 	EliminarApunte(ctx context.Context, in *EliminarApunteRequest, opts ...grpc.CallOption) (*EliminarApunteResponse, error)
 	// --- Exportación del apunte a archivo Markdown ---
 	ExportarApunteMd(ctx context.Context, in *ExportarApunteMdRequest, opts ...grpc.CallOption) (*ExportarApunteMdResponse, error)
+	// --- Playlists de repaso (RF-F2-05) ---
+	CrearPlaylist(ctx context.Context, in *CrearPlaylistRequest, opts ...grpc.CallOption) (*CrearPlaylistResponse, error)
+	ListarPlaylists(ctx context.Context, in *ListarPlaylistsRequest, opts ...grpc.CallOption) (*ListarPlaylistsResponse, error)
+	ListarPlaylistsPublicas(ctx context.Context, in *ListarPlaylistsPublicasRequest, opts ...grpc.CallOption) (*ListarPlaylistsPublicasResponse, error)
+	ObtenerPlaylist(ctx context.Context, in *ObtenerPlaylistRequest, opts ...grpc.CallOption) (*ObtenerPlaylistResponse, error)
+	ObtenerPlaylistPublica(ctx context.Context, in *ObtenerPlaylistPublicaRequest, opts ...grpc.CallOption) (*ObtenerPlaylistResponse, error)
+	ActualizarPlaylist(ctx context.Context, in *ActualizarPlaylistRequest, opts ...grpc.CallOption) (*ActualizarPlaylistResponse, error)
+	EliminarPlaylist(ctx context.Context, in *EliminarPlaylistRequest, opts ...grpc.CallOption) (*EliminarPlaylistResponse, error)
+	AgregarItemPlaylist(ctx context.Context, in *AgregarItemPlaylistRequest, opts ...grpc.CallOption) (*AgregarItemPlaylistResponse, error)
+	ReordenarPlaylist(ctx context.Context, in *ReordenarPlaylistRequest, opts ...grpc.CallOption) (*ReordenarPlaylistResponse, error)
+	EliminarItemPlaylist(ctx context.Context, in *EliminarItemPlaylistRequest, opts ...grpc.CallOption) (*EliminarItemPlaylistResponse, error)
 }
 
 type reproduccionServiceClient struct {
@@ -149,6 +170,106 @@ func (c *reproduccionServiceClient) ExportarApunteMd(ctx context.Context, in *Ex
 	return out, nil
 }
 
+func (c *reproduccionServiceClient) CrearPlaylist(ctx context.Context, in *CrearPlaylistRequest, opts ...grpc.CallOption) (*CrearPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CrearPlaylistResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_CrearPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) ListarPlaylists(ctx context.Context, in *ListarPlaylistsRequest, opts ...grpc.CallOption) (*ListarPlaylistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListarPlaylistsResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_ListarPlaylists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) ListarPlaylistsPublicas(ctx context.Context, in *ListarPlaylistsPublicasRequest, opts ...grpc.CallOption) (*ListarPlaylistsPublicasResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListarPlaylistsPublicasResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_ListarPlaylistsPublicas_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) ObtenerPlaylist(ctx context.Context, in *ObtenerPlaylistRequest, opts ...grpc.CallOption) (*ObtenerPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ObtenerPlaylistResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_ObtenerPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) ObtenerPlaylistPublica(ctx context.Context, in *ObtenerPlaylistPublicaRequest, opts ...grpc.CallOption) (*ObtenerPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ObtenerPlaylistResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_ObtenerPlaylistPublica_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) ActualizarPlaylist(ctx context.Context, in *ActualizarPlaylistRequest, opts ...grpc.CallOption) (*ActualizarPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ActualizarPlaylistResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_ActualizarPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) EliminarPlaylist(ctx context.Context, in *EliminarPlaylistRequest, opts ...grpc.CallOption) (*EliminarPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EliminarPlaylistResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_EliminarPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) AgregarItemPlaylist(ctx context.Context, in *AgregarItemPlaylistRequest, opts ...grpc.CallOption) (*AgregarItemPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AgregarItemPlaylistResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_AgregarItemPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) ReordenarPlaylist(ctx context.Context, in *ReordenarPlaylistRequest, opts ...grpc.CallOption) (*ReordenarPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReordenarPlaylistResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_ReordenarPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reproduccionServiceClient) EliminarItemPlaylist(ctx context.Context, in *EliminarItemPlaylistRequest, opts ...grpc.CallOption) (*EliminarItemPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EliminarItemPlaylistResponse)
+	err := c.cc.Invoke(ctx, ReproduccionService_EliminarItemPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReproduccionServiceServer is the server API for ReproduccionService service.
 // All implementations must embed UnimplementedReproduccionServiceServer
 // for forward compatibility.
@@ -168,6 +289,17 @@ type ReproduccionServiceServer interface {
 	EliminarApunte(context.Context, *EliminarApunteRequest) (*EliminarApunteResponse, error)
 	// --- Exportación del apunte a archivo Markdown ---
 	ExportarApunteMd(context.Context, *ExportarApunteMdRequest) (*ExportarApunteMdResponse, error)
+	// --- Playlists de repaso (RF-F2-05) ---
+	CrearPlaylist(context.Context, *CrearPlaylistRequest) (*CrearPlaylistResponse, error)
+	ListarPlaylists(context.Context, *ListarPlaylistsRequest) (*ListarPlaylistsResponse, error)
+	ListarPlaylistsPublicas(context.Context, *ListarPlaylistsPublicasRequest) (*ListarPlaylistsPublicasResponse, error)
+	ObtenerPlaylist(context.Context, *ObtenerPlaylistRequest) (*ObtenerPlaylistResponse, error)
+	ObtenerPlaylistPublica(context.Context, *ObtenerPlaylistPublicaRequest) (*ObtenerPlaylistResponse, error)
+	ActualizarPlaylist(context.Context, *ActualizarPlaylistRequest) (*ActualizarPlaylistResponse, error)
+	EliminarPlaylist(context.Context, *EliminarPlaylistRequest) (*EliminarPlaylistResponse, error)
+	AgregarItemPlaylist(context.Context, *AgregarItemPlaylistRequest) (*AgregarItemPlaylistResponse, error)
+	ReordenarPlaylist(context.Context, *ReordenarPlaylistRequest) (*ReordenarPlaylistResponse, error)
+	EliminarItemPlaylist(context.Context, *EliminarItemPlaylistRequest) (*EliminarItemPlaylistResponse, error)
 	mustEmbedUnimplementedReproduccionServiceServer()
 }
 
@@ -204,6 +336,36 @@ func (UnimplementedReproduccionServiceServer) EliminarApunte(context.Context, *E
 }
 func (UnimplementedReproduccionServiceServer) ExportarApunteMd(context.Context, *ExportarApunteMdRequest) (*ExportarApunteMdResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExportarApunteMd not implemented")
+}
+func (UnimplementedReproduccionServiceServer) CrearPlaylist(context.Context, *CrearPlaylistRequest) (*CrearPlaylistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CrearPlaylist not implemented")
+}
+func (UnimplementedReproduccionServiceServer) ListarPlaylists(context.Context, *ListarPlaylistsRequest) (*ListarPlaylistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListarPlaylists not implemented")
+}
+func (UnimplementedReproduccionServiceServer) ListarPlaylistsPublicas(context.Context, *ListarPlaylistsPublicasRequest) (*ListarPlaylistsPublicasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListarPlaylistsPublicas not implemented")
+}
+func (UnimplementedReproduccionServiceServer) ObtenerPlaylist(context.Context, *ObtenerPlaylistRequest) (*ObtenerPlaylistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ObtenerPlaylist not implemented")
+}
+func (UnimplementedReproduccionServiceServer) ObtenerPlaylistPublica(context.Context, *ObtenerPlaylistPublicaRequest) (*ObtenerPlaylistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ObtenerPlaylistPublica not implemented")
+}
+func (UnimplementedReproduccionServiceServer) ActualizarPlaylist(context.Context, *ActualizarPlaylistRequest) (*ActualizarPlaylistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ActualizarPlaylist not implemented")
+}
+func (UnimplementedReproduccionServiceServer) EliminarPlaylist(context.Context, *EliminarPlaylistRequest) (*EliminarPlaylistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EliminarPlaylist not implemented")
+}
+func (UnimplementedReproduccionServiceServer) AgregarItemPlaylist(context.Context, *AgregarItemPlaylistRequest) (*AgregarItemPlaylistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AgregarItemPlaylist not implemented")
+}
+func (UnimplementedReproduccionServiceServer) ReordenarPlaylist(context.Context, *ReordenarPlaylistRequest) (*ReordenarPlaylistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReordenarPlaylist not implemented")
+}
+func (UnimplementedReproduccionServiceServer) EliminarItemPlaylist(context.Context, *EliminarItemPlaylistRequest) (*EliminarItemPlaylistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EliminarItemPlaylist not implemented")
 }
 func (UnimplementedReproduccionServiceServer) mustEmbedUnimplementedReproduccionServiceServer() {}
 func (UnimplementedReproduccionServiceServer) testEmbeddedByValue()                             {}
@@ -388,6 +550,186 @@ func _ReproduccionService_ExportarApunteMd_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReproduccionService_CrearPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CrearPlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).CrearPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_CrearPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).CrearPlaylist(ctx, req.(*CrearPlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_ListarPlaylists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListarPlaylistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).ListarPlaylists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_ListarPlaylists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).ListarPlaylists(ctx, req.(*ListarPlaylistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_ListarPlaylistsPublicas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListarPlaylistsPublicasRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).ListarPlaylistsPublicas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_ListarPlaylistsPublicas_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).ListarPlaylistsPublicas(ctx, req.(*ListarPlaylistsPublicasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_ObtenerPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ObtenerPlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).ObtenerPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_ObtenerPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).ObtenerPlaylist(ctx, req.(*ObtenerPlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_ObtenerPlaylistPublica_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ObtenerPlaylistPublicaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).ObtenerPlaylistPublica(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_ObtenerPlaylistPublica_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).ObtenerPlaylistPublica(ctx, req.(*ObtenerPlaylistPublicaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_ActualizarPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActualizarPlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).ActualizarPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_ActualizarPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).ActualizarPlaylist(ctx, req.(*ActualizarPlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_EliminarPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EliminarPlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).EliminarPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_EliminarPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).EliminarPlaylist(ctx, req.(*EliminarPlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_AgregarItemPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AgregarItemPlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).AgregarItemPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_AgregarItemPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).AgregarItemPlaylist(ctx, req.(*AgregarItemPlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_ReordenarPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReordenarPlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).ReordenarPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_ReordenarPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).ReordenarPlaylist(ctx, req.(*ReordenarPlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReproduccionService_EliminarItemPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EliminarItemPlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReproduccionServiceServer).EliminarItemPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReproduccionService_EliminarItemPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReproduccionServiceServer).EliminarItemPlaylist(ctx, req.(*EliminarItemPlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReproduccionService_ServiceDesc is the grpc.ServiceDesc for ReproduccionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -430,6 +772,46 @@ var ReproduccionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExportarApunteMd",
 			Handler:    _ReproduccionService_ExportarApunteMd_Handler,
+		},
+		{
+			MethodName: "CrearPlaylist",
+			Handler:    _ReproduccionService_CrearPlaylist_Handler,
+		},
+		{
+			MethodName: "ListarPlaylists",
+			Handler:    _ReproduccionService_ListarPlaylists_Handler,
+		},
+		{
+			MethodName: "ListarPlaylistsPublicas",
+			Handler:    _ReproduccionService_ListarPlaylistsPublicas_Handler,
+		},
+		{
+			MethodName: "ObtenerPlaylist",
+			Handler:    _ReproduccionService_ObtenerPlaylist_Handler,
+		},
+		{
+			MethodName: "ObtenerPlaylistPublica",
+			Handler:    _ReproduccionService_ObtenerPlaylistPublica_Handler,
+		},
+		{
+			MethodName: "ActualizarPlaylist",
+			Handler:    _ReproduccionService_ActualizarPlaylist_Handler,
+		},
+		{
+			MethodName: "EliminarPlaylist",
+			Handler:    _ReproduccionService_EliminarPlaylist_Handler,
+		},
+		{
+			MethodName: "AgregarItemPlaylist",
+			Handler:    _ReproduccionService_AgregarItemPlaylist_Handler,
+		},
+		{
+			MethodName: "ReordenarPlaylist",
+			Handler:    _ReproduccionService_ReordenarPlaylist_Handler,
+		},
+		{
+			MethodName: "EliminarItemPlaylist",
+			Handler:    _ReproduccionService_EliminarItemPlaylist_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

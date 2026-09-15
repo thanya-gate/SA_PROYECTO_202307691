@@ -158,9 +158,17 @@ func mapError(err error) error {
 		errors.Is(err, domain.ErrMarcadorTiempoInvalido),
 		errors.Is(err, domain.ErrTituloMuyLargo),
 		errors.Is(err, domain.ErrApunteIDRequerido),
-		errors.Is(err, domain.ErrPosicionInvalida):
+		errors.Is(err, domain.ErrPosicionInvalida),
+		errors.Is(err, domain.ErrPlaylistNombreRequerido),
+		errors.Is(err, domain.ErrPlaylistNombreLargo),
+		errors.Is(err, domain.ErrPlaylistIDRequerido),
+		errors.Is(err, domain.ErrPlaylistItemRequerido),
+		errors.Is(err, domain.ErrOrdenInvalido):
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, domain.ErrApunteNoEncontrado):
+	case errors.Is(err, domain.ErrApunteNoEncontrado),
+		errors.Is(err, domain.ErrPlaylistNoEncontrada),
+		errors.Is(err, domain.ErrPlaylistItemNoEncontrado),
+		errors.Is(err, domain.ErrEnlacePublicoInvalido):
 		return status.Error(codes.NotFound, err.Error())
 	default:
 		log.Printf("[reproduccion-service] error no mapeado: %v", err)

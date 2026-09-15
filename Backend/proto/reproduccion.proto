@@ -144,6 +144,139 @@ message ExportarApunteMdResponse {
   string mime_type = 3;      // "text/markdown; charset=utf-8"
 }
 
+// =====================================================================
+// Playlists de repaso (RF-F2-05)
+// Colecciones personalizadas de grabaciones o fragmentos de distintos
+// cursos y semestres. Cada estudiante puede crear playlists privadas
+// (solo su uso) o públicas (con enlace único para compartir).
+// =====================================================================
+
+message Playlist {
+  string playlist_id       = 1;
+  string estudiante_id     = 2;
+  string nombre            = 3;
+  bool   es_publica        = 4;
+  string enlace_publico    = 5;   // token único; vacío si es privada
+  int32  cantidad_items    = 6;
+  string fecha_creacion    = 7;
+  string fecha_actualizacion = 8;
+  string clase_portada     = 9;   // clase del primer elemento (miniatura)
+}
+
+message PlaylistItem {
+  string playlist_item_id = 1;
+  string clase_id         = 2;
+  int32  orden            = 3;
+  int32  segundo_inicio   = 4;
+  string fecha_agregado   = 5;
+}
+
+message CrearPlaylistRequest {
+  string estudiante_id = 1;
+  string nombre        = 2;
+  bool   es_publica    = 3;
+}
+
+message CrearPlaylistResponse {
+  Playlist playlist = 1;
+}
+
+message ListarPlaylistsRequest {
+  string estudiante_id = 1;
+}
+
+message ListarPlaylistsResponse {
+  repeated Playlist playlists = 1;
+}
+
+// Vista resumida para el apartado de playlists compartidas: solo datos
+// de presentación, sin permitir edición por usuarios ajenos al dueño.
+message PlaylistPublica {
+  string playlist_id         = 1;
+  string estudiante_id       = 2;   // dueño (uuid)
+  string nombre              = 3;
+  int32  cantidad_items      = 4;
+  string fecha_actualizacion = 5;
+  string enlace_publico      = 6;   // token único para abrir el detalle compartido
+  string clase_portada       = 7;   // clase del primer elemento (miniatura)
+}
+
+message ListarPlaylistsPublicasRequest {
+  // Identifica al solicitante para excluir sus propias playlists del apartado.
+  string estudiante_id = 1;
+}
+
+message ListarPlaylistsPublicasResponse {
+  repeated PlaylistPublica playlists = 1;
+}
+
+message ObtenerPlaylistRequest {
+  string estudiante_id = 1;
+  string playlist_id   = 2;
+}
+
+message ObtenerPlaylistPublicaRequest {
+  string enlace_publico = 1;
+}
+
+message ObtenerPlaylistResponse {
+  Playlist playlist = 1;
+  repeated PlaylistItem items = 2;
+}
+
+message ActualizarPlaylistRequest {
+  string estudiante_id = 1;
+  string playlist_id   = 2;
+  string nombre        = 3;
+  bool   es_publica    = 4;
+}
+
+message ActualizarPlaylistResponse {
+  Playlist playlist = 1;
+}
+
+message EliminarPlaylistRequest {
+  string estudiante_id = 1;
+  string playlist_id   = 2;
+}
+
+message EliminarPlaylistResponse {
+  bool eliminada = 1;
+}
+
+message AgregarItemPlaylistRequest {
+  string estudiante_id = 1;
+  string playlist_id   = 2;
+  string clase_id      = 3;
+  int32  segundo_inicio = 4;
+}
+
+message AgregarItemPlaylistResponse {
+  PlaylistItem item = 1;
+  int32 cantidad_items = 2;
+}
+
+message ReordenarPlaylistRequest {
+  string estudiante_id        = 1;
+  string playlist_id          = 2;
+  repeated string items_ordenados = 3; // playlist_item_ids en el nuevo orden
+}
+
+message ReordenarPlaylistResponse {
+  repeated PlaylistItem items = 1;
+}
+
+message EliminarItemPlaylistRequest {
+  string estudiante_id     = 1;
+  string playlist_id       = 2;
+  string playlist_item_id  = 3;
+}
+
+message EliminarItemPlaylistResponse {
+  bool eliminado     = 1;
+  int32 cantidad_items = 2;
+}
+
 service ReproduccionService {
   rpc Health(HealthRequest) returns (HealthResponse);
 
@@ -165,4 +298,16 @@ service ReproduccionService {
 
   // --- Exportación del apunte a archivo Markdown ---
   rpc ExportarApunteMd(ExportarApunteMdRequest) returns (ExportarApunteMdResponse);
+
+  // --- Playlists de repaso (RF-F2-05) ---
+  rpc CrearPlaylist(CrearPlaylistRequest) returns (CrearPlaylistResponse);
+  rpc ListarPlaylists(ListarPlaylistsRequest) returns (ListarPlaylistsResponse);
+  rpc ListarPlaylistsPublicas(ListarPlaylistsPublicasRequest) returns (ListarPlaylistsPublicasResponse);
+  rpc ObtenerPlaylist(ObtenerPlaylistRequest) returns (ObtenerPlaylistResponse);
+  rpc ObtenerPlaylistPublica(ObtenerPlaylistPublicaRequest) returns (ObtenerPlaylistResponse);
+  rpc ActualizarPlaylist(ActualizarPlaylistRequest) returns (ActualizarPlaylistResponse);
+  rpc EliminarPlaylist(EliminarPlaylistRequest) returns (EliminarPlaylistResponse);
+  rpc AgregarItemPlaylist(AgregarItemPlaylistRequest) returns (AgregarItemPlaylistResponse);
+  rpc ReordenarPlaylist(ReordenarPlaylistRequest) returns (ReordenarPlaylistResponse);
+  rpc EliminarItemPlaylist(EliminarItemPlaylistRequest) returns (EliminarItemPlaylistResponse);
 }
