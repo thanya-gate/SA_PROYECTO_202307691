@@ -269,6 +269,20 @@ function toPositiveInt(value: unknown, defaultValue: number): number {
   return defaultValue;
 }
 
+/**
+ * Permite publicar el gateway detrás de un Ingress que reserve `/api` como
+ * prefijo público, manteniendo intactas las rutas HTTP internas existentes.
+ * Solo se elimina un prefijo completo (`/api` o `/api/...`); rutas como
+ * `/apiary` no se modifican.
+ */
+function quitarPrefijoApi(url: string): string {
+  const [pathname, query] = url.split('?', 2);
+  if (pathname !== '/api' && !pathname.startsWith('/api/')) return url;
+
+  const ruta = pathname.slice('/api'.length) || '/';
+  return query === undefined ? ruta : `${ruta}?${query}`;
+}
+
 export interface GatewayDependencies {
   authGrpc?: typeof defaultAuthGrpc;
   catalogGrpc?: typeof defaultCatalogGrpc;
@@ -294,8 +308,19 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 
+  // El Ingress de producción enruta `/api/*` directamente al gateway. El
+  // middleware normaliza ese prefijo antes de resolver las rutas actuales.
+  app.use((req, _res, next) => {
+    req.url = quitarPrefijoApi(req.url);
+    next();
+  });
+
   // IdP institucional simulado (OAuth 2.0 Authorization Code).
   app.use('/mock-oauth', createIdpRouter());
+
+  app.get('/health/live', (_req, res) => {
+    res.status(200).json({ status: 'ok', service: 'api-gateway', version: '1.0.0' });
+  });
 
   app.get('/health', async (_req, res) => {
     let authStatus = 'unknown';
@@ -340,8 +365,17 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
     } catch {
       notificacionesStatus = 'unavailable';
     }
-    res.json({
-      status: 'ok',
+    const healthy = [
+      authStatus,
+      catalogStatus,
+      reproductionStatus,
+      analiticaStatus,
+      inscripcionStatus,
+      notificacionesStatus,
+    ].every((status) => status === 'SERVING');
+
+    res.status(healthy ? 200 : 503).json({
+      status: healthy ? 'ok' : 'degraded',
       service: 'api-gateway',
       version: '1.0.0',
       authService: authStatus,
