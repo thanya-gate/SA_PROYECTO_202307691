@@ -1,0 +1,9 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: yousac-managed-cert
+  labels:
+    app.kubernetes.io/part-of: yousac
+spec:
+  domains:
+    - yousac-thany.duckdns.org

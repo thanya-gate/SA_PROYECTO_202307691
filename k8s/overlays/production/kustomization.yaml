@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: yousac-prod
+
+resources:
+  - ../../base
+  - managed-certificate.yaml
+  - ingress.yaml
+  - hpa.yaml
+
+images:
+  - name: yousac/frontend
+    newName: us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/frontend
+    newTag: main
+  - name: yousac/api-gateway
+    newName: us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/api-gateway
+    newTag: main
+  - name: yousac/auth-service
+    newName: us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/auth-service
+    newTag: main
+  - name: yousac/catalog-service
+    newName: us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/catalog-service
+    newTag: main
+  - name: yousac/reproduccion-service
+    newName: us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/reproduccion-service
+    newTag: main
+  - name: yousac/analitica-service
+    newName: us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/analitica-service
+    newTag: main
+  - name: yousac/inscripcion-service
+    newName: us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/inscripcion-service
+    newTag: main
+  - name: yousac/notificaciones-service
+    newName: us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/notificaciones-service
+    newTag: main
