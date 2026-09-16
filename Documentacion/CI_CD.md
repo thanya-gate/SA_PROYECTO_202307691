@@ -1,15 +1,16 @@
-# Pipeline CI/CD — GitHub Actions + GCP Artifact Registry + VM
+# Pipeline CI/CD — GitHub Actions + Artifact Registry + VM + GKE
 
 > Práctica 6 — Software Avanzado, 2do Semestre 2026
 
-Para la Práctica 6 se agregó el despliegue continuo hacia la VM mediante
-`.github/workflows/ci-cd.yml`. Después de que las pruebas pasan y las ocho
-imágenes se publican en Artifact Registry, el job `deploy` se conecta por SSH,
-actualiza los manifiestos de Compose y ejecuta `docker compose pull` seguido de
-`docker compose up -d --no-build`. La VM consume las imágenes publicadas y no
-compila el código del repositorio. El workflow independiente
-`.github/workflows/cloud-integration.yml` permite ejecutar posteriormente la
-batería de integración contra la URL pública.
+`.github/workflows/ci-cd.yml` conserva dos destinos. Después de que las pruebas
+pasan, publica las ocho imágenes en Artifact Registry con aliases y con el tag
+inmutable `commit-<GITHUB_SHA>`. El job `deploy-k8s` despliega ese tag en el
+cluster GKE Autopilot de producción mediante Workload Identity Federation,
+Kustomize, rollouts y smoke tests HTTPS. El job `deploy` sigue actualizando la
+VM de desarrollo por SSH con `docker compose pull` y
+`docker compose up -d --no-build`; la VM nunca compila el repositorio. El
+workflow independiente `.github/workflows/cloud-integration.yml` permite
+ejecutar posteriormente la batería de integración contra la URL pública.
 
 ## 1. Descripción general
 
@@ -18,7 +19,7 @@ El repositorio cuenta con tres workflows en `.github/workflows/`:
 | Workflow | Archivo | Disparadores | Función |
 |---|---|---|---|
 | Pruebas unitarias | `unit-tests.yml` | push/PR a `main`, `develop` | Ejecuta las suites de pruebas de los 8 servicios. |
-| CI/CD completo | `ci-cd.yml` | push a `main`, tags `v*`/`V*`, PR a `main`, manual | Pruebas → build → publicación → despliegue automático a la VM. |
+| CI/CD completo | `ci-cd.yml` | push a `main`, tags `v*`/`V*`, PR a `main`, manual | Pruebas → build → publicación → GKE en `main` y VM de desarrollo. |
 | Integración Cloud | `cloud-integration.yml` | ejecución manual | Valida la VM pública y compara opcionalmente contra un entorno de referencia. |
 
 ### Flujo del pipeline CI/CD
@@ -34,12 +35,13 @@ flowchart LR
     E --> F
     F -->|No| G[Pipeline cortocircuitado:\nninguna imagen se publica]
     F -->|Sí| H[Job: resolve-image-tag]
-    H --> I[Job: publish\nLogin en Artifact Registry]
-    I --> J[Build y push de 8 imágenes\ncon versionamiento semántico]
-    J --> K{Job: deploy\n¿Secrets SSH configurados?}
-    K -->|No| L[Pipeline fallido]
-    K -->|Sí| M[SSH a la VM\nCompose pull + up --no-build]
-    M --> N[Health checks locales y públicos]
+    H --> I[Job: publish\nWIF + Artifact Registry]
+    I --> J[Build y push de 8 imágenes\naliases + commit-SHA]
+    J --> M[Job: deploy\nSSH a la VM (main/tags)]
+    M --> N[Compose pull + health checks]
+    J --> K{Push a main}
+    K -->|Sí| O[Job: deploy-k8s\nWIF + credenciales GKE]
+    O --> P[Apply Kustomize\nrollouts + smoke HTTPS]
 ```
 
 **Requisito de cortocircuito:** el job `publish` depende de `tests` y
@@ -75,8 +77,8 @@ Implementado con `docker/metadata-action@v5`:
 | Evento | Etiquetas generadas por servicio |
 |---|---|
 | Tag de Git `v1.3.0` o `V1.3.0` | `<servicio>:1.3.0` y `<servicio>:latest` |
-| Push a `main` | `<servicio>:main` y `<servicio>:sha-<hash-corto>` |
-| Ejecución manual desde `main` | `<servicio>:main` y `<servicio>:sha-<hash-corto>` |
+| Push a `main` | `<servicio>:main`, `<servicio>:sha-<hash-corto>` y `<servicio>:commit-<GITHUB_SHA>` |
+| Ejecución manual desde `main` | `<servicio>:main`, `<servicio>:sha-<hash-corto>` y `<servicio>:commit-<GITHUB_SHA>` |
 
 El workflow acepta ambas convenciones de tag Git (`v` y `V`) y normaliza la etiqueta
 de la imagen a la versión semántica sin prefijo. Esto cumple el requisito de la
@@ -97,15 +99,17 @@ La práctica exige el uso de **Repository Secrets** para las credenciales del Re
 | `GCP_PROJECT_ID` | ID del proyecto de Google Cloud | `yousac-123456` |
 | `GCP_ARTIFACT_REGISTRY_REGION` | Región del repositorio de Artifact Registry | `us-central1` |
 | `GCP_ARTIFACT_REGISTRY_REPOSITORY` | Nombre del repositorio de Artifact Registry | `yousac` |
-| `GCP_SA_KEY` | JSON completo de la llave de la Service Account | `{"type": "service_account", ...}` |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Recurso completo del proveedor OIDC de GitHub | `projects/.../providers/github` |
+| `GCP_CICD_SERVICE_ACCOUNT` | GSA usada por GitHub Actions mediante WIF | `github-actions-cicd@...iam.gserviceaccount.com` |
 
 > **Validación estricta:** en ejecuciones de publicación y despliegue, la ausencia
 > de cualquiera de estos secrets hace fallar el pipeline. Esto evita reportar una
 > ejecución verde cuando no se publicaron imágenes.
 
-La autenticación contra Artifact Registry usa el patrón oficial de GCP con
-`docker/login-action`: usuario `_json_key` y la llave JSON de la Service Account
-(`GCP_SA_KEY`) como password. No se generan ni dependen de access tokens.
+La autenticación contra Google Cloud usa Workload Identity Federation: GitHub
+Actions presenta su token OIDC y recibe credenciales temporales para publicar
+en Artifact Registry y administrar el despliegue GKE. No se generan ni se
+almacenan llaves JSON de Service Account.
 
 ## 5. Configuración en GCP y credenciales
 
@@ -124,19 +128,23 @@ La autenticación contra Artifact Registry usa el patrón oficial de GCP con
 - La región y el nombre elegidos son los valores de `GCP_ARTIFACT_REGISTRY_REGION`
   y `GCP_ARTIFACT_REGISTRY_REPOSITORY`.
 
-**4. Crear la Service Account y generar la llave** (`GCP_SA_KEY`)
-- Menú ☰ → *IAM & Admin → Service Accounts → + CREATE SERVICE ACCOUNT*.
-- Nombre: `github-actions-registry`.
-- Rol: *Artifact Registry → Artifact Registry Writer* (permite subir imágenes, no leer secretos ni administrar el proyecto).
-- Abrir la SA → pestaña **KEYS → ADD KEY → Create new key → JSON → Create**.
-- Se descarga un archivo `.json` cuyo contenido completo es el valor de `GCP_SA_KEY`.
+**4. Configurar Workload Identity Federation**
+- En *IAM & Admin → Workload Identity Federation*, crear un pool OIDC para
+  GitHub Actions y un proveedor con issuer
+  `https://token.actions.githubusercontent.com`.
+- Restringir el atributo `attribute.repository` al repositorio
+  `thanya-gate/SA_PROYECTO_202307691`.
+- Crear una GSA para CI con permiso de escritura en Artifact Registry y los
+  permisos Kubernetes descritos en [la guía de GKE](../k8s/README.md).
+- Copiar los nombres completos del proveedor y de la GSA a
+  `GCP_WORKLOAD_IDENTITY_PROVIDER` y `GCP_CICD_SERVICE_ACCOUNT`.
 
-> ⚠️ La llave JSON equivale a una contraseña: nunca se sube al repositorio ni se
-> comparte; solo se pega en el Repository Secret de GitHub.
+> La federación evita guardar llaves JSON de larga duración en GitHub.
 
 **5. Cargar los secrets en GitHub**
 - Repo → *Settings → Secrets and variables → Actions → New repository secret*.
-- Crear los 4 secrets con los nombres exactos de la tabla de la sección 4.
+- Crear los cinco identificadores de GCP/WIF de la tabla de la sección 4 y los
+  secretos runtime listados en [k8s/README.md](../k8s/README.md).
 
 **6. Verificar el pipeline**
 - Pestaña *Actions* → workflow "CI/CD — Pruebas, publicación y despliegue" → **Run workflow**.
@@ -154,40 +162,38 @@ gcloud artifacts repositories create yousac \
 ### 5.2 Crear la Service Account para el pipeline
 
 ```bash
-# Crear la cuenta de servicio
-gcloud iam service-accounts create github-actions-registry \
+# Crear la cuenta de servicio para WIF
+gcloud iam service-accounts create github-actions-cicd \
   --display-name="GitHub Actions - Artifact Registry" \
   --project=<GCP_PROJECT_ID>
 
 # Otorgar permiso de escritura en Artifact Registry
 gcloud projects add-iam-policy-binding <GCP_PROJECT_ID> \
-  --member="serviceAccount:github-actions-registry@<GCP_PROJECT_ID>.iam.gserviceaccount.com" \
+  --member="serviceAccount:github-actions-cicd@<GCP_PROJECT_ID>.iam.gserviceaccount.com" \
   --role="roles/artifactregistry.writer"
 
-# Generar la llave JSON (contenido del secret GCP_SA_KEY)
-gcloud iam service-accounts keys create sa-key.json \
-  --iam-account=github-actions-registry@<GCP_PROJECT_ID>.iam.gserviceaccount.com
+# La autenticación de GitHub se configura mediante WIF; no se genera ninguna
+# llave JSON para el pipeline.
 ```
 
-### 5.3 Cargar los secrets
+### 5.3 Cargar los identificadores de GCP
 
 ```bash
 gh secret set GCP_PROJECT_ID --body "<GCP_PROJECT_ID>"
 gh secret set GCP_ARTIFACT_REGISTRY_REGION --body "us-central1"
 gh secret set GCP_ARTIFACT_REGISTRY_REPOSITORY --body "yousac"
-gh secret set GCP_SA_KEY < sa-key.json
+gh secret set GCP_WORKLOAD_IDENTITY_PROVIDER --body "projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github-actions/providers/github"
+gh secret set GCP_CICD_SERVICE_ACCOUNT --body "github-actions-cicd@<GCP_PROJECT_ID>.iam.gserviceaccount.com"
 ```
 
-> **Seguridad:** la llave `sa-key.json` nunca se sube al repositorio. La publicación
-> de imágenes es **100 % automática** desde el pipeline (prohibida la subida manual
-> según los requisitos de la práctica).
+> **Seguridad:** la publicación de imágenes es **100 % automática** desde el
+> pipeline y usa credenciales temporales federadas.
 
 ### 5.4 Identidad de la VM para leer Artifact Registry
 
 La VM debe tener una Service Account adjunta con permiso mínimo de lectura en el
-repositorio. Esta identidad es independiente de `GCP_SA_KEY`, que solo usa
-GitHub Actions para publicar imágenes. No se crea ni se copia una llave JSON en
-la VM.
+repositorio. Esta identidad es independiente de la GSA federada de GitHub
+Actions. No se crea ni se copia una llave JSON en la VM.
 
 En la Consola Web:
 
@@ -270,7 +276,8 @@ docker build -f api-gateway/Dockerfile -t api-gateway:ci ./Backend
 
 ## 7. Evidencias para el Informe Técnico
 
-1. Ejecución del workflow `ci-cd.yml` en verde, incluyendo `deploy` (pestaña *Actions* de GitHub).
+1. Ejecución del workflow `ci-cd.yml` en verde, incluyendo `deploy-k8s` para
+   `main` y `deploy` para la VM (pestaña *Actions* de GitHub).
 2. Resumen generado por el pipeline (`GITHUB_STEP_SUMMARY`) con las etiquetas y el endpoint validado.
 3. Enlace al perfil del repositorio en Artifact Registry con las imágenes versionadas.
 4. Evidencia de la VM actualizada con `docker compose pull` y `up --no-build`.
@@ -352,3 +359,32 @@ El `--no-build` y la ausencia de bloques `build:` en el compose garantizan la
 restricción de la práctica: la actualización llega desde Artifact Registry y
 no se recompila en la VM. Después de que el gateway esté saludable, ejecutar
 `tests/integration/cloud-parity.mjs` contra el dominio o IP pública.
+
+## 9. Despliegue automático en GKE Autopilot
+
+La producción usa el overlay [Kustomize](../k8s/overlays/production) sobre el
+cluster `yousac-prod` del proyecto `yousac-202300396-2026`, región
+`us-central1`, y namespace `yousac-prod`. En cada push a `main`, el job
+`deploy-k8s`:
+
+1. Se autentica mediante Workload Identity Federation, sin `GCP_SA_KEY`.
+2. Publica ocho imágenes y usa `commit-${GITHUB_SHA}` como referencia que
+   Kubernetes despliega.
+3. Crea/actualiza el Secret `yousac-runtime` a partir de GitHub Secrets.
+4. Renderiza y valida `kubectl kustomize`, rechazando `NodePort`,
+   `LoadBalancer`, placeholders o imágenes fuera del Registry configurado.
+5. Ejecuta `kubectl apply -k`, espera los ocho rollouts y espera que
+   `yousac-managed-cert` llegue a `Active`.
+6. Comprueba `https://yousac-thany.duckdns.org/`, `/healthz` y `/api/health`.
+
+El Ingress nativo de GKE reserva la IP global `yousac-prod-ip`, dirige `/api`
+y `/mock-oauth` al Gateway y el resto al frontend. Todos los Services son
+`ClusterIP`; PostgreSQL, Redis y Cloud Storage permanecen fuera de los pods.
+Los detalles de creación de infraestructura, permisos, secretos y preflight
+están en [k8s/README.md](../k8s/README.md), y el script operativo es
+[`deploy/k8s-deploy.sh`](../deploy/k8s-deploy.sh).
+
+La implementación de manifiestos y workflow queda versionada, pero la
+evidencia de aceptación en GCP (clúster creado, certificado activo, DNS,
+rollouts y URL HTTPS) debe capturarse después de configurar los recursos
+externos. Hasta entonces no se declara el despliegue productivo como validado.
