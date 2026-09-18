@@ -271,13 +271,74 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ------------------------------------------------------------------
-  # 4. Despliegue continuo a GKE (producción)
+  # 4. Preflight de GKE (solo lectura; bloquea el CD si falla)
   # ------------------------------------------------------------------
-  deploy-k8s:
-    name: Deploy — GKE producción
+  preflight-gke:
+    name: Preflight — GKE producción
     needs: [publish, resolve-image-tag]
     if: >-
       needs.publish.result == 'success' &&
+      needs.resolve-image-tag.result == 'success' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'main'))
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: us-central1
+      GKE_CLUSTER_NAME: yousac-prod
+      K8S_NAMESPACE: yousac-prod
+      K8S_DOMAIN: yousac-thany.duckdns.org
+      GKE_STATIC_IP_NAME: yousac-prod-ip
+      REDIS_MODE: vm
+      REDIS_VM_NAME: yousac-vm-nube
+      REDIS_VM_ZONE: us-central1-a
+      REDIS_VM_IP: 10.128.0.3
+      REDIS_VM_PORT: "6379"
+      CLOUD_SQL_CONNECTION_NAME_AUTH: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_AUTH }}
+      CLOUD_SQL_CONNECTION_NAME_CATALOG: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_CATALOG }}
+      CLOUD_SQL_CONNECTION_NAME_REPRODUCCION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_REPRODUCCION }}
+      CLOUD_SQL_CONNECTION_NAME_ANALITICA: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_ANALITICA }}
+      CLOUD_SQL_CONNECTION_NAME_INSCRIPCION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_INSCRIPCION }}
+      CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES }}
+      GCP_WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_CICD_SERVICE_ACCOUNT: ${{ secrets.GCP_CICD_SERVICE_ACCOUNT }}
+
+    steps:
+      - name: Obtener código para el preflight
+        uses: actions/checkout@v4
+
+      - name: Autenticar en Google Cloud mediante WIF
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.GCP_CICD_SERVICE_ACCOUNT }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configurar gcloud y plugin de autenticación GKE
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          install_components: gke-gcloud-auth-plugin
+
+      - name: Obtener credenciales del clúster GKE
+        uses: google-github-actions/get-gke-credentials@v3
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER_NAME }}
+          location: ${{ env.GCP_REGION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Ejecutar preflight de solo lectura
+        run: bash deploy/gke-preflight.sh
+
+  # ------------------------------------------------------------------
+  # 5. Despliegue continuo a GKE (producción)
+  # ------------------------------------------------------------------
+  deploy-k8s:
+    name: Deploy — GKE producción
+    needs: [publish, preflight-gke, resolve-image-tag]
+    if: >-
+      needs.publish.result == 'success' &&
+      needs.preflight-gke.result == 'success' &&
       needs.resolve-image-tag.result == 'success' &&
       ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.ref_name == 'main'))
