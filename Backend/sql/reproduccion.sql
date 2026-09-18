@@ -38,10 +38,36 @@ CREATE TABLE apunte (
     fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+--Playlists de repaso (RF-F2-05): colecciones personalizadas de grabaciones o
+--fragmentos de distintos cursos y semestres, privadas o públicas. La privacidad
+--la controla es_publica; cuando es pública, enlace_publico es un token único
+--que se comparte para consultarla sin exponer las listas privadas.
+CREATE TABLE playlist (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    estudiante_id       UUID NOT NULL,
+    nombre              VARCHAR(120) NOT NULL,
+    es_publica          BOOLEAN NOT NULL DEFAULT FALSE,
+    enlace_publico      UUID UNIQUE,
+    fecha_creacion      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE playlist_item (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    playlist_id    UUID NOT NULL REFERENCES playlist(id) ON DELETE CASCADE,
+    clase_id       UUID NOT NULL,
+    orden          INT NOT NULL DEFAULT 0,
+    segundo_inicio INT NOT NULL DEFAULT 0,
+    fecha_agregado TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (playlist_id, orden)
+);
+
 CREATE INDEX idx_historial_estudiante ON historial_reproduccion (estudiante_id);
 CREATE INDEX idx_checkpoint_historial ON checkpoint (historial_id);
 CREATE INDEX idx_apunte_estudiante ON apunte (estudiante_id);
 CREATE INDEX idx_apunte_clase ON apunte (clase_id);
+CREATE INDEX idx_playlist_estudiante ON playlist (estudiante_id);
+CREATE INDEX idx_playlist_item_playlist ON playlist_item (playlist_id);
 
 --funciones
 CREATE OR REPLACE FUNCTION fn_calcular_progreso(p_segundo_actual INT, p_duracion_total INT)

@@ -3,6 +3,8 @@
 .env.local
 .env.*.local
 .env.cloud
+gha-creds-*.json
+gha-kubeconfig-*
 
 # Plantillas de variables de entorno (sí se suben)
 !.env.example

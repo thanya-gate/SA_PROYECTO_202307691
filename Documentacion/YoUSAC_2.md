@@ -180,12 +180,12 @@ suficiente para afirmar cumplimiento.
 | RF-F2-03 | `context/proyecto2.md` y `context/practica4.md`, Video Chapters | [Contrato gRPC](../Backend/proto/catalogo.proto), [validadores](../Backend/services/catalog-service/src/application/dto/catalog-schemas.ts), [SQL](../Backend/sql/catalogo.sql), [gestor](../Frontend/src/components/ChapterManager.tsx), [navegación](../Frontend/src/components/ChapterTimeline.tsx) y pruebas de [Catálogo](../Backend/services/catalog-service/tests/catalog-service.test.ts), [SQL](../Backend/services/catalog-service/tests/catalogo-contract.sql) y [Frontend](../Frontend/tests/chapter-components.test.tsx). | Integrado; respaldado por código y pruebas |
 | RF-F2-04 | `context/proyecto2.md` y `context/practica4.md`, Repositorio de Materiales | [Rutas del Gateway](../Backend/api-gateway/src/server.ts), [validación](../Backend/api-gateway/src/validation/material.ts), [almacenamiento/versionado](../Backend/api-gateway/src/storage/storage.ts), [contrato](../Backend/proto/catalogo.proto), [SQL](../Backend/sql/catalogo.sql), [panel](../Frontend/src/components/MaterialesPanel.tsx) y pruebas de [Gateway](../Backend/api-gateway/tests/gateway-materials.test.ts), [validación](../Backend/api-gateway/tests/material-validation.test.ts), [storage](../Backend/api-gateway/tests/storage.test.ts), [GCS](../Backend/api-gateway/tests/gcs-storage.test.ts), [Catálogo](../Backend/services/catalog-service/tests/postgres-catalog-repository.test.ts) y [Frontend](../Frontend/tests/materiales-api.test.ts). | Integrado; respaldado por código y pruebas |
 | RF-F2-05 | `context/proyecto2.md`, Playlists | No se encontraron modelo de datos, endpoints, componentes ni pruebas de playlists privadas o públicas. | Pendiente/no evidenciado |
-| RNF-F2-01 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, Kubernetes | No existe directorio `k8s/` ni manifiestos que evidencien Ingress, `ClusterIP` o ausencia de `NodePort`/`LoadBalancer`. | Pendiente/no evidenciado |
-| RNF-F2-02 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, health checks | No existen Deployments Kubernetes con probes; los healthchecks de Docker Compose no sustituyen liveness/readiness de Kubernetes. | Pendiente/no evidenciado |
-| RNF-F2-03 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, recursos/persistencia | No existen manifiestos Kubernetes con requests/limits ni configuración productiva de persistencia para PostgreSQL y Redis. | Pendiente/no evidenciado |
-| RNF-F2-04 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, CI/CD | No existe `.github/workflows/` ni `.gitlab-ci.yml` que ejecute pruebas y bloquee etapas posteriores. | Pendiente/no evidenciado |
-| RNF-F2-05 | `context/proyecto2.md`, Container Registry | Existen Dockerfiles, pero no hay pipeline ni evidencia de publicación y versionado de imágenes en un Registry. | Pendiente/no evidenciado |
-| RNF-F2-06 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, secretos | No hay auditoría productiva que demuestre cero secretos; [Compose local](../docker-compose.local.yml) contiene valores de desarrollo que no constituyen cumplimiento productivo. | Pendiente/no evidenciado |
+| RNF-F2-01 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, Kubernetes | [Manifiestos Kustomize](../k8s/overlays/production) con Ingress nativo de GKE y ocho Services `ClusterIP`; el script de CD rechaza `NodePort` y `LoadBalancer`. | Implementado en repositorio; pendiente evidencia en GKE |
+| RNF-F2-02 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, health checks | [Deployments](../k8s/base/deployments.yaml) declaran liveness, readiness y startup probes; el Gateway aporta `/health/live` y readiness dependiente de los seis gRPC. | Implementado en repositorio; pendiente validación de rollouts |
+| RNF-F2-03 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, recursos/persistencia | Los Deployments declaran requests/limits; Cloud SQL Auth Proxy, Memorystore y GCS quedan fuera del almacenamiento efímero de aplicación. | Implementado en repositorio; pendiente preflight GCP |
+| RNF-F2-04 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, CI/CD | [`ci-cd.yml`](../.github/workflows/ci-cd.yml) conserva las pruebas, bloquea publicación ante fallos y añade WIF, publicación inmutable, apply Kustomize, rollouts y smoke tests GKE. | Implementado en repositorio; pendiente ejecución con secretos reales |
+| RNF-F2-05 | `context/proyecto2.md`, Container Registry | El workflow construye las ocho imágenes en Artifact Registry con aliases y `commit-${GITHUB_SHA}` como tag desplegable. | Implementado en repositorio; pendiente evidencia del Registry |
+| RNF-F2-06 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, secretos | El Secret runtime se crea durante CD desde GitHub Secrets; no se versionan valores reales ni `.env.cloud`. | Implementado en repositorio; pendiente auditoría de configuración GitHub/GCP |
 | RNF-F2-07 | `context/proyecto2.md` y `context/practica4.md`, validación de materiales | [Validador del Gateway](../Backend/api-gateway/src/validation/material.ts), [API frontend](../Frontend/src/api/materiales.ts) y pruebas de MIME, extensión, nombres y 50 MB. | Parcial; integrado localmente, sin medición productiva del 100% |
 | RNF-F2-08 | `context/proyecto2.md` y `context/practica4.md`, validación de capítulos | [DTO TypeScript](../Backend/services/catalog-service/src/application/dto/catalog-schemas.ts), [restricciones/procedimientos SQL](../Backend/sql/catalogo.sql), validación frontend y pruebas de [Catálogo](../Backend/services/catalog-service/tests/catalog-service.test.ts), [SQL](../Backend/services/catalog-service/tests/catalogo-contract.sql) y [Frontend](../Frontend/tests/chapter-components.test.tsx). | Integrado; respaldado por código y pruebas |
 | RNF-F2-09 | `context/proyecto2.md` y `context/practica4.md`, testing | [TESTING.md](TESTING.md) documenta suites TypeScript/TSX; no hay evidencia equivalente para Go, Python ni un pipeline que reporte la cobertura mínima. | Pendiente/no evidenciado |
@@ -195,7 +195,9 @@ Existe una discrepancia con `context/ESTADO_FASE2_Y_ENTORNO_LOCAL.md`, que
 conserva un diagnóstico anterior donde capítulos y materiales aparecen como
 pendientes. Para este documento se prioriza la evidencia actual de código y
 pruebas: esas dos capacidades están integradas en el baseline, mientras que
-foro, apuntes, playlists y los entregables cloud-native siguen pendientes.
+foro, apuntes y playlists siguen pendientes. Los entregables cloud-native ya
+cuentan con manifiestos y automatización versionados, pero todavía requieren
+la validación de los recursos externos de GCP.
 
 Los mockups y DER de Fase 2 son artefactos de diseño y no constituyen evidencia
 de implementación por sí mismos. Se incluyen [anotaciones](Mockups/MockupsF2_Anotaciones_G%234.drawio.svg),
@@ -208,8 +210,10 @@ los DER Fase 2 de [Catálogo](ER/DER_MicroservicioCatalogo_F2_G%234.drawio.svg),
 [Notificaciones](ER/DER_MicroservicioNotificaciones_F2_G%234.drawio.svg),
 [Reproducción](ER/DER_MicroservicioReproduccion_F2_G%234.drawio.svg) y
 [Analítica](ER/DER_MicroservicioAnalitica_F2_G%234.drawio.svg). La ejecución de
-las suites está descrita en [TESTING.md](TESTING.md); Kubernetes, CI/CD y
-Registry siguen sin evidencia ejecutable.
+las suites está descrita en [TESTING.md](TESTING.md). Los manifiestos,
+preflight y workflow de Kubernetes/CD ya están versionados; la evidencia
+ejecutable de GCP (clúster, certificado, DNS, rollouts y URL HTTPS) queda
+pendiente de configurar los recursos externos.
 
 ## Modelo de Casos de Uso
 
@@ -1596,16 +1600,21 @@ Describe la organización del software en componentes o módulos, mostrando cóm
 ### Vista de Despliegue
 Explica cómo se distribuye el sistema en la infraestructura física o virtual, indicando servidores, contenedores, dispositivos, redes y dónde se ejecuta cada componente.
 
-![DVista5](Vistas4+1/VistaDespliegue_DiagramaComponentes_202307691.drawio.svg)
+![Vista de despliegue Fase 2](Vistas4+1/VistaComponentes_DiagramaDespliegue_F2_G4.drawio.svg)
+
+[Archivo editable del diagrama de despliegue Fase 2](Vistas4+1/XML/VistaComponentes_DiagramaDespliegue_F2_G%234.drawio)
 
 ## Diagrama de flujo del pipeline CI/CD
 
 El flujo parte de los eventos de push o Pull Request hacia `main` o `develop`. El
-[workflow actual](../.github/workflows/unit-tests.yml) ejecuta en paralelo las
-pruebas de TypeScript, Go y Python, y habilita los builds únicamente cuando todas
-las suites terminan correctamente. La continuación del flujo representa las
-etapas requeridas por Fase 2 para construir y versionar las imágenes, publicarlas
-en Artifact Registry y desplegarlas en GKE con verificación de salud y rollback.
+[workflow de pruebas](../.github/workflows/unit-tests.yml) ejecuta en paralelo
+las suites de TypeScript, Go y Python. El
+[workflow CI/CD](../.github/workflows/ci-cd.yml) bloquea build/publicación ante
+fallos, publica las ocho imágenes en Artifact Registry con el tag inmutable
+`commit-${GITHUB_SHA}`, conserva el despliegue Compose de la VM y, en cada push a
+`main`, autentica mediante WIF, aplica Kustomize en GKE, espera los ocho rollouts
+y ejecuta smoke tests HTTPS. El rollback operativo está documentado con
+`kubectl rollout undo`.
 
 ![Pipeline CI/CD](Vistas4+1/DiagramaFlujoPipeline_CI_CD_F2_G4.drawio.svg)
 

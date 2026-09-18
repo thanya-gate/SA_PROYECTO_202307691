@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   catalogApi,
   type ClaseDetalle,
@@ -7,7 +7,7 @@ import {
   type DudaForo,
   type RespuestaDuda,
 } from '../api/catalog';
-import { reproduccionApi, type Apunte, type Checkpoint, type HistorialItem } from '../api/reproduccion';
+import { reproduccionApi, type Apunte, type Checkpoint, type HistorialItem, type Playlist } from '../api/reproduccion';
 import { mediaApi } from '../api/media';
 import { useAuth } from '../auth/auth-context';
 import { AppLayout } from '../components/AppLayout';
@@ -21,6 +21,7 @@ import { YT_STATE, YouTubePlayer } from '../components/YouTubePlayer';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
+import { TextField } from '../components/ui/TextField';
 import { esVideoLocal, extraerPrimerMarcador, formatFecha, formatSegundos, youtubeVideoId } from '../utils/video';
 
 const CHECKPOINT_INTERVAL_SECONDS = 15;
@@ -70,6 +71,16 @@ export default function ClasePage() {
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
 
+  // Playlists de repaso (RF-F2-05): agregar la grabación o un fragmento.
+  const [searchParams] = useSearchParams();
+  const inicioParam = searchParams.get('inicio');
+  const [playlistsDisponibles, setPlaylistsDisponibles] = useState<Playlist[]>([]);
+  const [mostrarAgregarPlaylist, setMostrarAgregarPlaylist] = useState(false);
+  const [playlistSeleccionada, setPlaylistSeleccionada] = useState('');
+  const [nombreNuevaPlaylist, setNombreNuevaPlaylist] = useState('');
+  const [agregandoPlaylist, setAgregandoPlaylist] = useState(false);
+  const [mensajePlaylist, setMensajePlaylist] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+
   const ultimoSegundoRef = useRef(0);
   const ultimoGuardadoRef = useRef(0);
   const vistaRegistradaRef = useRef(false);
@@ -79,6 +90,12 @@ export default function ClasePage() {
   const videoId = clase ? youtubeVideoId(clase.urlVideo) : null;
   const videoLocal = clase ? esVideoLocal(clase.urlVideo) : false;
   const puedeGestionarContenido = (user?.roles ?? []).some((rol) => rol === 'ROLE_CATEDRATICO' || rol === 'ROLE_ADMIN' || rol === 'ROLE_AUXILIAR');
+
+  const posicionInicial = (() => {
+    const desdeUrl = inicioParam !== null ? Number(inicioParam) : NaN;
+    if (!Number.isNaN(desdeUrl) && desdeUrl > 0) return Math.floor(desdeUrl);
+    return checkpoint?.segundoActual ?? 0;
+  })();
 
   const guardarCheckpoint = useCallback(
     async (segundos: number, evento?: string) => {
@@ -389,6 +406,55 @@ export default function ClasePage() {
     }
   }
 
+  function cargarPlaylists() {
+    if (playlistsDisponibles.length > 0) return;
+    reproduccionApi
+      .listarPlaylists(tokenActual)
+      .then((res) => setPlaylistsDisponibles(res.playlists ?? []))
+      .catch(() => setMensajePlaylist({ tipo: 'error', texto: 'No se pudieron cargar tus playlists.' }));
+  }
+
+  function abrirPanelPlaylist() {
+    setMostrarAgregarPlaylist((prev) => !prev);
+    setMensajePlaylist(null);
+    if (!mostrarAgregarPlaylist) cargarPlaylists();
+  }
+
+  async function agregarAPlaylist() {
+    if (!clase || agregandoPlaylist) return;
+    const playlistId = playlistSeleccionada;
+    const nombreNueva = nombreNuevaPlaylist.trim();
+    if (!playlistId && !nombreNueva) {
+      setMensajePlaylist({ tipo: 'error', texto: 'Selecciona una playlist o escribe el nombre de una nueva.' });
+      return;
+    }
+    setAgregandoPlaylist(true);
+    setMensajePlaylist(null);
+    const segundoInicio = Math.max(0, Math.floor(currentSeconds));
+    try {
+      if (!playlistId) {
+        const creada = await reproduccionApi.crearPlaylist(nombreNueva, false, tokenActual);
+        setPlaylistsDisponibles((prev) => [creada.playlist, ...prev]);
+        await reproduccionApi.agregarItemPlaylist(creada.playlist.playlistId, clase.claseId, segundoInicio, tokenActual);
+      } else {
+        await reproduccionApi.agregarItemPlaylist(playlistId, clase.claseId, segundoInicio, tokenActual);
+      }
+      setMensajePlaylist({
+        tipo: 'ok',
+        texto: segundoInicio > 0
+          ? `Fragmento agregado desde ${formatSegundos(segundoInicio)}.`
+          : 'Grabación agregada a la playlist.',
+      });
+      setMostrarAgregarPlaylist(false);
+      setPlaylistSeleccionada('');
+      setNombreNuevaPlaylist('');
+    } catch (err) {
+      setMensajePlaylist({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo agregar a la playlist.' });
+    } finally {
+      setAgregandoPlaylist(false);
+    }
+  }
+
   async function eliminarClase() {
     if (!clase || !tokenActual) return;
     const confirmacion = window.confirm(
@@ -443,9 +509,9 @@ export default function ClasePage() {
           ← Volver al catálogo
         </Link>
 
-        {reanudando && (
+        {reanudando && posicionInicial > 0 && !inicioParam && (
           <Alert tone="info">
-            Reanudando desde <strong>{formatSegundos(checkpoint?.segundoActual ?? 0)}</strong> — tu último checkpoint
+            Reanudando desde <strong>{formatSegundos(posicionInicial)}</strong> — tu último checkpoint
             guardado.
           </Alert>
         )}
@@ -456,7 +522,7 @@ export default function ClasePage() {
               {videoId ? (
                 <YouTubePlayer
                   videoId={videoId}
-                  startSeconds={checkpoint?.segundoActual ?? 0}
+                  startSeconds={posicionInicial}
                   onReady={(player) => {
                     seekRef.current = (seconds) => player.seekTo(seconds, true);
                   }}
@@ -471,7 +537,7 @@ export default function ClasePage() {
               ) : videoLocal ? (
                 <LocalVideoPlayer
                   src={clase.urlVideo}
-                  startSeconds={checkpoint?.segundoActual ?? 0}
+                  startSeconds={posicionInicial}
                   onReady={(player) => {
                     seekRef.current = (seconds) => player.seekTo(seconds);
                   }}
@@ -507,6 +573,59 @@ export default function ClasePage() {
                 </Button>
               </div>
             )}
+
+            <div className="clase__playlist">
+              <Button type="button" variant="secondary" onClick={abrirPanelPlaylist}>
+                {mostrarAgregarPlaylist ? 'Cerrar' : '＋ Agregar a playlist de repaso'}
+              </Button>
+              {mostrarAgregarPlaylist && (
+                <div className="clase__playlist-panel">
+                  {playlistsDisponibles.length > 0 && (
+                    <label className="catalogo__campo">
+                      <span className="catalogo__campo-label">Playlist existente</span>
+                      <select
+                        className="catalogo__select"
+                        value={playlistSeleccionada}
+                        onChange={(e) => {
+                          setPlaylistSeleccionada(e.target.value);
+                          if (e.target.value) setNombreNuevaPlaylist('');
+                        }}
+                      >
+                        <option value="">— Nueva playlist —</option>
+                        {playlistsDisponibles.map((p) => (
+                          <option key={p.playlistId} value={p.playlistId}>
+                            {p.nombre}
+                            {p.esPublica ? ' (pública)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <TextField
+                    label="O crea una playlist nueva"
+                    placeholder="Nombre de la playlist"
+                    value={nombreNuevaPlaylist}
+                    onChange={(e) => {
+                      setNombreNuevaPlaylist(e.target.value);
+                      if (e.target.value) setPlaylistSeleccionada('');
+                    }}
+                    maxLength={120}
+                  />
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() => void agregarAPlaylist()}
+                    disabled={agregandoPlaylist || (!playlistSeleccionada && nombreNuevaPlaylist.trim().length === 0)}
+                    loading={agregandoPlaylist}
+                  >
+                    {agregandoPlaylist ? 'Agregando…' : 'Agregar a playlist'}
+                  </Button>
+                  {mensajePlaylist && (
+                    <Alert tone={mensajePlaylist.tipo === 'ok' ? 'info' : 'error'}>{mensajePlaylist.texto}</Alert>
+                  )}
+                </div>
+              )}
+            </div>
 
             {puedeGestionarContenido && (
               <ChapterManager

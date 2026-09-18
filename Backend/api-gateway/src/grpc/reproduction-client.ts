@@ -77,4 +77,38 @@ export const reproductionGrpc = {
     unary('EliminarApunte', req),
   exportarApunteMd: (req: { estudianteId: string; claseId: string }) =>
     unary('ExportarApunteMd', req),
+
+  // ===== Playlists de repaso (RF-F2-05) =====
+
+  crearPlaylist: (req: { estudianteId: string; nombre: string; esPublica: boolean }) =>
+    unary('CrearPlaylist', req),
+  listarPlaylists: (req: { estudianteId: string }) => unary('ListarPlaylists', req),
+  listarPlaylistsPublicas: (req: { estudianteId: string }) => unary('ListarPlaylistsPublicas', req),
+  obtenerPlaylist: (req: { estudianteId: string; playlistId: string }) =>
+    unary('ObtenerPlaylist', req),
+  obtenerPlaylistPublica: (req: { enlacePublico: string }) => unary('ObtenerPlaylistPublica', req),
+  actualizarPlaylist: (req: {
+    estudianteId: string;
+    playlistId: string;
+    nombre: string;
+    esPublica: boolean;
+  }) => unary('ActualizarPlaylist', req),
+  eliminarPlaylist: (req: { estudianteId: string; playlistId: string }) =>
+    unary('EliminarPlaylist', req),
+  agregarItemPlaylist: (req: {
+    estudianteId: string;
+    playlistId: string;
+    claseId: string;
+    segundoInicio: number;
+  }) => unary('AgregarItemPlaylist', req),
+  reordenarPlaylist: (req: {
+    estudianteId: string;
+    playlistId: string;
+    itemsOrdenados: string[];
+  }) => unary('ReordenarPlaylist', req),
+  eliminarItemPlaylist: (req: {
+    estudianteId: string;
+    playlistId: string;
+    playlistItemId: string;
+  }) => unary('EliminarItemPlaylist', req),
 };
