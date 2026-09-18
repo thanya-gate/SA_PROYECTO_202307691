@@ -58,6 +58,11 @@ if ! command -v curl >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ERROR: jq es obligatorio para comprobar la salud de los backends del Ingress." >&2
+  exit 1
+fi
+
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/yousac-k8s.XXXXXX")"
 rendered_file="$work_dir/rendered.yaml"
 trap 'status=$?; if (( status != 0 )); then diagnose; fi; rm -rf -- "$work_dir"; exit "$status"' EXIT
@@ -188,16 +193,47 @@ if [[ "$certificate_status" != "Active" ]]; then
   exit 1
 fi
 
+echo "Esperando que los backends del Ingress queden HEALTHY..."
+ingress_backends=""
+for attempt in {1..36}; do
+  ingress_backends="$(kubectl get ingress yousac-public \
+    --namespace "$NAMESPACE" \
+    -o json 2>/dev/null \
+    | jq -c '.metadata.annotations["ingress.kubernetes.io/backends"] // {}' \
+    2>/dev/null || true)"
+
+  if [[ -n "$ingress_backends" ]] && jq -e \
+      'type == "object" and length > 0 and all(.[]; . == "HEALTHY")' \
+      <<<"$ingress_backends" >/dev/null 2>&1; then
+    echo "Backends del Ingress saludables: $ingress_backends"
+    break
+  fi
+
+  echo "Backends del Ingress todavía no están HEALTHY (intento $attempt/36): ${ingress_backends:-pendiente}."
+  sleep 5
+done
+
+if ! jq -e \
+    'type == "object" and length > 0 and all(.[]; . == "HEALTHY")' \
+    <<<"${ingress_backends:-{}}" >/dev/null 2>&1; then
+  echo "ERROR: los backends del Ingress no llegaron a HEALTHY." >&2
+  kubectl describe ingress yousac-public --namespace "$NAMESPACE" >&2 || true
+  exit 1
+fi
+
 base_url="https://$DOMAIN"
 echo "Ejecutando smoke tests contra $base_url..."
-curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
-  "$base_url/"
-echo
-curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
-  "$base_url/healthz"
-echo
-curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
-  "$base_url/api/health"
-echo
+smoke_test() {
+  local path="$1"
+  echo "Smoke test: $path"
+  curl --fail --silent --show-error \
+    --retry 36 --retry-delay 5 --retry-max-time 180 --retry-all-errors \
+    "$base_url$path"
+  echo
+}
+
+smoke_test "/"
+smoke_test "/healthz"
+smoke_test "/api/health"
 
 echo "Despliegue de $IMAGE_TAG completado en $base_url"
