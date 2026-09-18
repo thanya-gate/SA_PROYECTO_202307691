@@ -242,7 +242,7 @@ spec:
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
           args:
             - --structured-logs
-            - --address=127.0.0.1
+            - --address=0.0.0.0
             - --port=5432
             - $(CLOUD_SQL_CONNECTION_NAME_AUTH)
           env:
@@ -347,7 +347,7 @@ spec:
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
           args:
             - --structured-logs
-            - --address=127.0.0.1
+            - --address=0.0.0.0
             - --port=5432
             - $(CLOUD_SQL_CONNECTION_NAME_CATALOG)
           env:
@@ -452,7 +452,7 @@ spec:
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
           args:
             - --structured-logs
-            - --address=127.0.0.1
+            - --address=0.0.0.0
             - --port=5432
             - $(CLOUD_SQL_CONNECTION_NAME_REPRODUCCION)
           env:
@@ -562,7 +562,7 @@ spec:
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
           args:
             - --structured-logs
-            - --address=127.0.0.1
+            - --address=0.0.0.0
             - --port=5432
             - $(CLOUD_SQL_CONNECTION_NAME_ANALITICA)
           env:
@@ -667,7 +667,7 @@ spec:
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
           args:
             - --structured-logs
-            - --address=127.0.0.1
+            - --address=0.0.0.0
             - --port=5432
             - $(CLOUD_SQL_CONNECTION_NAME_INSCRIPCION)
           env:
@@ -787,7 +787,7 @@ spec:
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
           args:
             - --structured-logs
-            - --address=127.0.0.1
+            - --address=0.0.0.0
             - --port=5432
             - $(CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES)
           env:

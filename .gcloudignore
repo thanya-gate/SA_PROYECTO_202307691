@@ -10,3 +10,4 @@ tests/
 **/coverage/
 **/.pytest_cache/
 *.log
+.env*

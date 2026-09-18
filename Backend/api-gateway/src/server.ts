@@ -372,7 +372,9 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
       analiticaStatus,
       inscripcionStatus,
       notificacionesStatus,
-    ].every((status) => status === 'SERVING');
+    // Analítica conserva el contrato histórico `OK`; los demás servicios
+    // responden con el estado gRPC estándar `SERVING`.
+    ].every((status) => status === 'SERVING' || status === 'OK');
 
     res.status(healthy ? 200 : 503).json({
       status: healthy ? 'ok' : 'degraded',
