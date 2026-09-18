@@ -132,7 +132,8 @@ jobs:
           elif [[ "$REF_NAME" == "main" ]]; then
             image_tag="main"
           elif [[ "$REF_NAME" =~ ^[vV]([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            image_tag="${BASH_REMATCH[1]}"
+            # Acepta vX.Y.Z y VX.Y.Z, pero publica siempre el formato canónico vX.Y.Z.
+            image_tag="v${BASH_REMATCH[1]}"
           else
             echo "::error::La referencia no corresponde a main ni a un tag semántico vX.Y.Z/VX.Y.Z: $REF_NAME"
             exit 1
@@ -235,10 +236,9 @@ jobs:
         with:
           images: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ matrix.name }}
           tags: |
-            # Tag de release estándar: v1.3.0 -> :1.3.0 (+ :latest automático)
-            type=semver,pattern={{version}}
-            # Tag de release histórico: V1.3.0 -> :1.3.0 (+ :latest automático)
-            type=match,pattern=V(\d+\.\d+\.\d+),group=1
+            # Tag semver canónico: v1.3.0 o V1.3.0 -> :v1.3.0.
+            # El tag raw normalizado cubre explícitamente ambas mayúsculas.
+            type=semver,pattern=v{{version}}
             # Push a rama: main -> :main
             type=ref,event=branch
             # Garantiza una etiqueta explícita también en workflow_dispatch.
