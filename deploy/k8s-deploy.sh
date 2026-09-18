@@ -199,7 +199,7 @@ for attempt in {1..36}; do
   ingress_backends="$(kubectl get ingress yousac-public \
     --namespace "$NAMESPACE" \
     -o json 2>/dev/null \
-    | jq -c '.metadata.annotations["ingress.kubernetes.io/backends"] // {}' \
+    | jq -r '.metadata.annotations["ingress.kubernetes.io/backends"] // "{}"' \
     2>/dev/null || true)"
 
   if [[ -n "$ingress_backends" ]] && jq -e \
