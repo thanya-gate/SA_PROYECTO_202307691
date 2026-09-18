@@ -1,0 +1,820 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/part-of: yousac
+    spec:
+      serviceAccountName: yousac-frontend
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: frontend
+          image: yousac/frontend:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: VITE_API_BASE_URL
+              value: /api
+            - name: NGINX_PORT
+              value: "80"
+            - name: BACKEND_URL
+              value: http://api-gateway:8080
+            - name: FORWARD_PROTO
+              value: https
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api-gateway
+        app.kubernetes.io/part-of: yousac
+    spec:
+      serviceAccountName: yousac-gateway
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api-gateway
+          image: yousac/api-gateway:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: yousac-runtime-config
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: GOOGLE_CLIENT_ID
+            - name: YOUTUBE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: YOUTUBE_API_KEY
+                  optional: true
+          volumeMounts:
+            - name: temporary-media
+              mountPath: /tmp/media
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: temporary-media
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  labels:
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: auth-service
+        app.kubernetes.io/part-of: yousac
+    spec:
+      serviceAccountName: yousac-runtime
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: auth-service
+          image: yousac/auth-service:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 50051
+          envFrom:
+            - configMapRef:
+                name: yousac-runtime-config
+          env:
+            - name: GRPC_PORT
+              value: "50051"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_AUTH
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: GOOGLE_CLIENT_SECRET
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - --structured-logs
+            - --address=0.0.0.0
+            - --port=5432
+            - $(CLOUD_SQL_CONNECTION_NAME_AUTH)
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_AUTH
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_AUTH
+          ports:
+            - name: cloudsql
+              containerPort: 5432
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service
+  labels:
+    app.kubernetes.io/name: catalog-service
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: catalog-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: catalog-service
+        app.kubernetes.io/part-of: yousac
+    spec:
+      serviceAccountName: yousac-runtime
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: catalog-service
+          image: yousac/catalog-service:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 50052
+          envFrom:
+            - configMapRef:
+                name: yousac-runtime-config
+          env:
+            - name: GRPC_PORT
+              value: "50052"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_CATALOG
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - --structured-logs
+            - --address=0.0.0.0
+            - --port=5432
+            - $(CLOUD_SQL_CONNECTION_NAME_CATALOG)
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_CATALOG
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_CATALOG
+          ports:
+            - name: cloudsql
+              containerPort: 5432
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reproduccion-service
+  labels:
+    app.kubernetes.io/name: reproduccion-service
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: reproduccion-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: reproduccion-service
+        app.kubernetes.io/part-of: yousac
+    spec:
+      serviceAccountName: yousac-runtime
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: reproduccion-service
+          image: yousac/reproduccion-service:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 50053
+          envFrom:
+            - configMapRef:
+                name: yousac-runtime-config
+          env:
+            - name: GRPC_PORT
+              value: "50053"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_REPRODUCCION
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            exec:
+              command: ["/app/server", "-healthcheck"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["/app/server", "-healthcheck"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["/app/server", "-healthcheck"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - --structured-logs
+            - --address=0.0.0.0
+            - --port=5432
+            - $(CLOUD_SQL_CONNECTION_NAME_REPRODUCCION)
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_REPRODUCCION
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_REPRODUCCION
+          ports:
+            - name: cloudsql
+              containerPort: 5432
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analitica-service
+  labels:
+    app.kubernetes.io/name: analitica-service
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: analitica-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: analitica-service
+        app.kubernetes.io/part-of: yousac
+    spec:
+      serviceAccountName: yousac-runtime
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: analitica-service
+          image: yousac/analitica-service:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 50054
+          envFrom:
+            - configMapRef:
+                name: yousac-runtime-config
+          env:
+            - name: GRPC_PORT
+              value: "50054"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_ANALITICA
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: REDIS_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            exec:
+              command: ["python", "healthcheck.py"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["python", "healthcheck.py"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["python", "healthcheck.py"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - --structured-logs
+            - --address=0.0.0.0
+            - --port=5432
+            - $(CLOUD_SQL_CONNECTION_NAME_ANALITICA)
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_ANALITICA
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_ANALITICA
+          ports:
+            - name: cloudsql
+              containerPort: 5432
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inscripcion-service
+  labels:
+    app.kubernetes.io/name: inscripcion-service
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inscripcion-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inscripcion-service
+        app.kubernetes.io/part-of: yousac
+    spec:
+      serviceAccountName: yousac-runtime
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: inscripcion-service
+          image: yousac/inscripcion-service:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 50055
+          envFrom:
+            - configMapRef:
+                name: yousac-runtime-config
+          env:
+            - name: GRPC_PORT
+              value: "50055"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_INSCRIPCION
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - --structured-logs
+            - --address=0.0.0.0
+            - --port=5432
+            - $(CLOUD_SQL_CONNECTION_NAME_INSCRIPCION)
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_INSCRIPCION
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_INSCRIPCION
+          ports:
+            - name: cloudsql
+              containerPort: 5432
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificaciones-service
+  labels:
+    app.kubernetes.io/name: notificaciones-service
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: notificaciones-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: notificaciones-service
+        app.kubernetes.io/part-of: yousac
+    spec:
+      serviceAccountName: yousac-runtime
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: notificaciones-service
+          image: yousac/notificaciones-service:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 50056
+          envFrom:
+            - configMapRef:
+                name: yousac-runtime-config
+          env:
+            - name: GRPC_PORT
+              value: "50056"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_NOTIFICACIONES
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: SMTP_USER
+            - name: SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: SMTP_PASS
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: SMTP_FROM
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["node", "dist/healthcheck.js"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - --structured-logs
+            - --address=0.0.0.0
+            - --port=5432
+            - $(CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES)
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES
+          ports:
+            - name: cloudsql
+              containerPort: 5432
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: cloudsql
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3

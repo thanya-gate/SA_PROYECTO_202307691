@@ -3,9 +3,10 @@ name: CI/CD — Pruebas, publicación y despliegue
 # Pipeline de Integración Continua y Despliegue Continuo (Práctica 6):
 # 1. Ejecuta las suites de pruebas unitarias ante cada PR / push.
 # 2. Si todas pasan, construye y publica las imágenes Docker de los
-#    8 servicios en GCP Artifact Registry con versionamiento semántico.
+#    8 servicios en GCP Artifact Registry con aliases y un tag inmutable.
 # 3. En main o en un tag de release, actualiza la VM mediante SSH usando
 #    docker compose pull; la VM nunca compila las imágenes.
+# 4. En cada push a main, despliega además el tag inmutable en GKE.
 
 on:
   push:
@@ -18,6 +19,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   # ------------------------------------------------------------------
@@ -110,12 +112,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.resolve.outputs.image_tag }}
+      immutable_image_tag: ${{ steps.resolve.outputs.immutable_image_tag }}
     steps:
       - name: Resolver referencia
         id: resolve
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
 
@@ -128,14 +132,17 @@ jobs:
           elif [[ "$REF_NAME" == "main" ]]; then
             image_tag="main"
           elif [[ "$REF_NAME" =~ ^[vV]([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            image_tag="${BASH_REMATCH[1]}"
+            # Acepta vX.Y.Z y VX.Y.Z, pero publica siempre el formato canónico vX.Y.Z.
+            image_tag="v${BASH_REMATCH[1]}"
           else
             echo "::error::La referencia no corresponde a main ni a un tag semántico vX.Y.Z/VX.Y.Z: $REF_NAME"
             exit 1
           fi
 
           echo "image_tag=$image_tag" >> "$GITHUB_OUTPUT"
+          echo "immutable_image_tag=commit-$COMMIT_SHA" >> "$GITHUB_OUTPUT"
           echo "Etiqueta de imagen seleccionada: $image_tag"
+          echo "Etiqueta inmutable de imagen: commit-$COMMIT_SHA"
 
   # ------------------------------------------------------------------
   # 3. Build y publicación de imágenes en GCP Artifact Registry
@@ -146,10 +153,12 @@ jobs:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.resolve-image-tag.result == 'success'
     runs-on: ubuntu-latest
     env:
-      # Credenciales definidas como Repository Secrets.
+      # Identificadores del proyecto/Registry existentes y credenciales WIF.
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       GCP_REGION: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}
       GCP_REPOSITORY: ${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}
+      GCP_WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_CICD_SERVICE_ACCOUNT: ${{ secrets.GCP_CICD_SERVICE_ACCOUNT }}
     strategy:
       fail-fast: true
       matrix:
@@ -186,29 +195,37 @@ jobs:
 
       - name: Verificar credenciales del Registry
         env:
-          SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          WIF_PROVIDER: ${{ env.GCP_WIF_PROVIDER }}
+          CICD_SERVICE_ACCOUNT: ${{ env.GCP_CICD_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
           missing=()
           [[ -n "$GCP_PROJECT_ID" ]] || missing+=(GCP_PROJECT_ID)
           [[ -n "$GCP_REGION" ]] || missing+=(GCP_ARTIFACT_REGISTRY_REGION)
           [[ -n "$GCP_REPOSITORY" ]] || missing+=(GCP_ARTIFACT_REGISTRY_REPOSITORY)
-          [[ -n "$SA_KEY" ]] || missing+=(GCP_SA_KEY)
+          [[ -n "$WIF_PROVIDER" ]] || missing+=(GCP_WORKLOAD_IDENTITY_PROVIDER)
+          [[ -n "$CICD_SERVICE_ACCOUNT" ]] || missing+=(GCP_CICD_SERVICE_ACCOUNT)
 
           if (( ${#missing[@]} > 0 )); then
-            echo "::error::Faltan Repository Secrets de GCP: ${missing[*]}"
+            echo "::error::Falta configuración de GCP/WIF: ${missing[*]}"
             exit 1
           fi
-          echo "Repository Secrets de GCP presentes; la publicación continuará."
+          echo "Configuración de GCP/WIF presente; la publicación continuará."
 
-      # Autenticación con el patrón oficial de Artifact Registry:
-      # usuario "_json_key" + la llave JSON de la Service Account como password.
-      - name: Login en Artifact Registry
-        uses: docker/login-action@v3
+      - name: Autenticar en Google Cloud mediante WIF
+        uses: google-github-actions/auth@v3
         with:
-          registry: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
-          username: _json_key
-          password: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.GCP_CICD_SERVICE_ACCOUNT }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configurar gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configurar autenticación de Docker
+        run: gcloud auth configure-docker "$GCP_REGION-docker.pkg.dev" --quiet
 
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -219,14 +236,15 @@ jobs:
         with:
           images: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ matrix.name }}
           tags: |
-            # Tag de release estándar: v1.3.0 -> :1.3.0 (+ :latest automático)
-            type=semver,pattern={{version}}
-            # Tag de release histórico: V1.3.0 -> :1.3.0 (+ :latest automático)
-            type=match,pattern=V(\d+\.\d+\.\d+),group=1
+            # Tag semver canónico: v1.3.0 o V1.3.0 -> :v1.3.0.
+            # El tag raw normalizado cubre explícitamente ambas mayúsculas.
+            type=semver,pattern=v{{version}}
             # Push a rama: main -> :main
             type=ref,event=branch
             # Garantiza una etiqueta explícita también en workflow_dispatch.
             type=raw,value=${{ needs.resolve-image-tag.outputs.image_tag }}
+            # Tag inmutable que consume Kubernetes: commit-<GITHUB_SHA>.
+            type=raw,value=commit-${{ github.sha }}
             # SHA del commit para trazabilidad: :sha-<hash>
             type=sha
 
@@ -253,7 +271,207 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ------------------------------------------------------------------
-  # 4. Despliegue continuo a la VM de desarrollo
+  # 4. Preflight de GKE (solo lectura; bloquea el CD si falla)
+  # ------------------------------------------------------------------
+  preflight-gke:
+    name: Preflight — GKE producción
+    needs: [publish, resolve-image-tag]
+    if: >-
+      needs.publish.result == 'success' &&
+      needs.resolve-image-tag.result == 'success' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'main'))
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: us-central1
+      GKE_CLUSTER_NAME: yousac-prod
+      K8S_NAMESPACE: yousac-prod
+      K8S_DOMAIN: yousac-thany.duckdns.org
+      GKE_STATIC_IP_NAME: yousac-prod-ip
+      REDIS_MODE: vm
+      REDIS_VM_NAME: yousac-vm-nube
+      REDIS_VM_ZONE: us-central1-a
+      REDIS_VM_IP: 10.128.0.3
+      REDIS_VM_PORT: "6379"
+      CLOUD_SQL_CONNECTION_NAME_AUTH: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_AUTH }}
+      CLOUD_SQL_CONNECTION_NAME_CATALOG: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_CATALOG }}
+      CLOUD_SQL_CONNECTION_NAME_REPRODUCCION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_REPRODUCCION }}
+      CLOUD_SQL_CONNECTION_NAME_ANALITICA: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_ANALITICA }}
+      CLOUD_SQL_CONNECTION_NAME_INSCRIPCION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_INSCRIPCION }}
+      CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES }}
+      GCP_WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_CICD_SERVICE_ACCOUNT: ${{ secrets.GCP_CICD_SERVICE_ACCOUNT }}
+
+    steps:
+      - name: Obtener código para el preflight
+        uses: actions/checkout@v4
+
+      - name: Autenticar en Google Cloud mediante WIF
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.GCP_CICD_SERVICE_ACCOUNT }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configurar gcloud y plugin de autenticación GKE
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          install_components: gke-gcloud-auth-plugin
+
+      - name: Obtener credenciales del clúster GKE
+        uses: google-github-actions/get-gke-credentials@v3
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER_NAME }}
+          location: ${{ env.GCP_REGION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Ejecutar preflight de solo lectura
+        run: bash deploy/gke-preflight.sh
+
+  # ------------------------------------------------------------------
+  # 5. Despliegue continuo a GKE (producción)
+  # ------------------------------------------------------------------
+  deploy-k8s:
+    name: Deploy — GKE producción
+    needs: [publish, preflight-gke, resolve-image-tag]
+    if: >-
+      needs.publish.result == 'success' &&
+      needs.preflight-gke.result == 'success' &&
+      needs.resolve-image-tag.result == 'success' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'main'))
+    runs-on: ubuntu-latest
+    concurrency:
+      group: yousac-production-gke
+      cancel-in-progress: false
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: us-central1
+      GKE_CLUSTER_NAME: yousac-prod
+      GKE_LOCATION: us-central1
+      K8S_NAMESPACE: yousac-prod
+      K8S_DOMAIN: yousac-thany.duckdns.org
+      IMAGE_TAG: ${{ needs.resolve-image-tag.outputs.immutable_image_tag }}
+      REGISTRY_BASE: ${{ secrets.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REGISTRY_REPOSITORY }}
+      GCP_WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_CICD_SERVICE_ACCOUNT: ${{ secrets.GCP_CICD_SERVICE_ACCOUNT }}
+
+    steps:
+      - name: Obtener código para el despliegue GKE
+        uses: actions/checkout@v4
+
+      - name: Verificar configuración GKE y secretos runtime
+        env:
+          CLOUD_SQL_AUTH: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_AUTH }}
+          CLOUD_SQL_CATALOG: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_CATALOG }}
+          CLOUD_SQL_REPRODUCCION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_REPRODUCCION }}
+          CLOUD_SQL_ANALITICA: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_ANALITICA }}
+          CLOUD_SQL_INSCRIPCION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_INSCRIPCION }}
+          CLOUD_SQL_NOTIFICACIONES: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES }}
+          JWT_SECRET_VALUE: ${{ secrets.JWT_SECRET }}
+          DATABASE_URL_AUTH_VALUE: ${{ secrets.DATABASE_URL_AUTH }}
+          DATABASE_URL_CATALOG_VALUE: ${{ secrets.DATABASE_URL_CATALOG }}
+          DATABASE_URL_REPRODUCCION_VALUE: ${{ secrets.DATABASE_URL_REPRODUCCION }}
+          DATABASE_URL_ANALITICA_VALUE: ${{ secrets.DATABASE_URL_ANALITICA }}
+          DATABASE_URL_INSCRIPCION_VALUE: ${{ secrets.DATABASE_URL_INSCRIPCION }}
+          DATABASE_URL_NOTIFICACIONES_VALUE: ${{ secrets.DATABASE_URL_NOTIFICACIONES }}
+          REDIS_URL_VALUE: ${{ secrets.REDIS_URL }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "$GCP_PROJECT_ID" ]] || missing+=(GCP_PROJECT_ID)
+          [[ -n "$GCP_WIF_PROVIDER" ]] || missing+=(GCP_WORKLOAD_IDENTITY_PROVIDER)
+          [[ -n "$GCP_CICD_SERVICE_ACCOUNT" ]] || missing+=(GCP_CICD_SERVICE_ACCOUNT)
+          [[ -n "$CLOUD_SQL_AUTH" ]] || missing+=(CLOUD_SQL_CONNECTION_NAME_AUTH)
+          [[ -n "$CLOUD_SQL_CATALOG" ]] || missing+=(CLOUD_SQL_CONNECTION_NAME_CATALOG)
+          [[ -n "$CLOUD_SQL_REPRODUCCION" ]] || missing+=(CLOUD_SQL_CONNECTION_NAME_REPRODUCCION)
+          [[ -n "$CLOUD_SQL_ANALITICA" ]] || missing+=(CLOUD_SQL_CONNECTION_NAME_ANALITICA)
+          [[ -n "$CLOUD_SQL_INSCRIPCION" ]] || missing+=(CLOUD_SQL_CONNECTION_NAME_INSCRIPCION)
+          [[ -n "$CLOUD_SQL_NOTIFICACIONES" ]] || missing+=(CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES)
+          [[ -n "$JWT_SECRET_VALUE" ]] || missing+=(JWT_SECRET)
+          [[ -n "$DATABASE_URL_AUTH_VALUE" ]] || missing+=(DATABASE_URL_AUTH)
+          [[ -n "$DATABASE_URL_CATALOG_VALUE" ]] || missing+=(DATABASE_URL_CATALOG)
+          [[ -n "$DATABASE_URL_REPRODUCCION_VALUE" ]] || missing+=(DATABASE_URL_REPRODUCCION)
+          [[ -n "$DATABASE_URL_ANALITICA_VALUE" ]] || missing+=(DATABASE_URL_ANALITICA)
+          [[ -n "$DATABASE_URL_INSCRIPCION_VALUE" ]] || missing+=(DATABASE_URL_INSCRIPCION)
+          [[ -n "$DATABASE_URL_NOTIFICACIONES_VALUE" ]] || missing+=(DATABASE_URL_NOTIFICACIONES)
+          [[ -n "$REDIS_URL_VALUE" ]] || missing+=(REDIS_URL)
+
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Falta configuración requerida de GKE: ${missing[*]}"
+            exit 1
+          fi
+          echo "Configuración GKE y secretos requeridos presentes."
+
+      - name: Autenticar en Google Cloud mediante WIF
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.GCP_CICD_SERVICE_ACCOUNT }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configurar gcloud y plugin de autenticación GKE
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          install_components: gke-gcloud-auth-plugin
+
+      - name: Obtener credenciales del clúster GKE
+        uses: google-github-actions/get-gke-credentials@v3
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER_NAME }}
+          location: ${{ env.GKE_LOCATION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Aplicar versión inmutable en GKE
+        env:
+          CLOUD_SQL_CONNECTION_NAME_AUTH: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_AUTH }}
+          CLOUD_SQL_CONNECTION_NAME_CATALOG: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_CATALOG }}
+          CLOUD_SQL_CONNECTION_NAME_REPRODUCCION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_REPRODUCCION }}
+          CLOUD_SQL_CONNECTION_NAME_ANALITICA: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_ANALITICA }}
+          CLOUD_SQL_CONNECTION_NAME_INSCRIPCION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_INSCRIPCION }}
+          CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES: ${{ secrets.CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES }}
+          K8S_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          K8S_DATABASE_URL_AUTH: ${{ secrets.DATABASE_URL_AUTH }}
+          K8S_DATABASE_URL_CATALOG: ${{ secrets.DATABASE_URL_CATALOG }}
+          K8S_DATABASE_URL_REPRODUCCION: ${{ secrets.DATABASE_URL_REPRODUCCION }}
+          K8S_DATABASE_URL_ANALITICA: ${{ secrets.DATABASE_URL_ANALITICA }}
+          K8S_DATABASE_URL_INSCRIPCION: ${{ secrets.DATABASE_URL_INSCRIPCION }}
+          K8S_DATABASE_URL_NOTIFICACIONES: ${{ secrets.DATABASE_URL_NOTIFICACIONES }}
+          K8S_REDIS_URL: ${{ secrets.REDIS_URL }}
+          K8S_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          K8S_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          K8S_YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          K8S_SMTP_USER: ${{ secrets.SMTP_USER }}
+          K8S_SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          K8S_SMTP_FROM: ${{ secrets.SMTP_FROM }}
+        run: bash deploy/k8s-deploy.sh
+
+      - name: Publicar resumen de GKE
+        run: |
+          {
+            echo "### Deploy automático a GKE"
+            echo "- Cluster: \`$GKE_CLUSTER_NAME\`"
+            echo "- Namespace: \`$K8S_NAMESPACE\`"
+            echo "- Etiqueta inmutable: \`$IMAGE_TAG\`"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- URL: \`https://$K8S_DOMAIN\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Diagnóstico si falla el despliegue GKE
+        if: failure()
+        run: |
+          set +e
+          kubectl get deployments,pods,services -n "$K8S_NAMESPACE" -o wide
+          kubectl get events -n "$K8S_NAMESPACE" --sort-by=.lastTimestamp
+          kubectl describe pods -n "$K8S_NAMESPACE" -l app.kubernetes.io/part-of=yousac
+          kubectl logs -n "$K8S_NAMESPACE" -l app.kubernetes.io/part-of=yousac \
+            --all-containers --prefix --tail=100
+
+  # ------------------------------------------------------------------
+  # 5. Despliegue continuo a la VM de desarrollo
   # ------------------------------------------------------------------
   deploy:
     name: Deploy — VM de desarrollo

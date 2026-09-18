@@ -20,6 +20,9 @@ type grpcFakeRepository struct {
 	readErr    error
 	apunte     *domain.Apunte
 	apuntes    []domain.Apunte
+	playlist   *domain.Playlist
+	playlists  []domain.Playlist
+	items      []domain.PlaylistItem
 }
 
 func (f *grpcFakeRepository) GuardarCheckpoint(context.Context, string, string, int32, int32) (string, float64, error) {
@@ -57,6 +60,61 @@ func (f *grpcFakeRepository) EliminarApunte(context.Context, string, string) (bo
 		return false, f.guardarErr
 	}
 	return true, nil
+}
+
+func (f *grpcFakeRepository) CrearPlaylist(_ context.Context, _ string, nombre string, esPublica bool) (*domain.Playlist, error) {
+	if f.guardarErr != nil {
+		return nil, f.guardarErr
+	}
+	return &domain.Playlist{PlaylistID: "playlist-1", Nombre: nombre, EsPublica: esPublica, EnlacePublico: "enlace-1"}, nil
+}
+
+func (f *grpcFakeRepository) ListarPlaylists(context.Context, string) ([]domain.Playlist, error) {
+	return f.playlists, f.readErr
+}
+
+func (f *grpcFakeRepository) ListarPlaylistsPublicas(context.Context, string) ([]domain.Playlist, error) {
+	return f.playlists, f.readErr
+}
+
+func (f *grpcFakeRepository) ObtenerPlaylist(context.Context, string, string) (*domain.Playlist, []domain.PlaylistItem, error) {
+	return f.playlist, f.items, f.readErr
+}
+
+func (f *grpcFakeRepository) ObtenerPlaylistPublica(context.Context, string) (*domain.Playlist, []domain.PlaylistItem, error) {
+	return f.playlist, f.items, f.readErr
+}
+
+func (f *grpcFakeRepository) ActualizarPlaylist(_ context.Context, _ string, _ string, nombre string, esPublica bool) (*domain.Playlist, error) {
+	if f.guardarErr != nil {
+		return nil, f.guardarErr
+	}
+	return &domain.Playlist{PlaylistID: "playlist-1", Nombre: nombre, EsPublica: esPublica}, nil
+}
+
+func (f *grpcFakeRepository) EliminarPlaylist(context.Context, string, string) (bool, error) {
+	if f.guardarErr != nil {
+		return false, f.guardarErr
+	}
+	return true, nil
+}
+
+func (f *grpcFakeRepository) AgregarItemPlaylist(_ context.Context, _ string, _ string, claseID string, _ int32) (*domain.PlaylistItem, int32, error) {
+	if f.guardarErr != nil {
+		return nil, 0, f.guardarErr
+	}
+	return &domain.PlaylistItem{PlaylistItemID: "item-1", ClaseID: claseID, Orden: 0}, 1, nil
+}
+
+func (f *grpcFakeRepository) ReordenarPlaylist(context.Context, string, string, []string) ([]domain.PlaylistItem, error) {
+	return f.items, f.readErr
+}
+
+func (f *grpcFakeRepository) EliminarItemPlaylist(context.Context, string, string, string) (bool, int32, error) {
+	if f.guardarErr != nil {
+		return false, 0, f.guardarErr
+	}
+	return true, 1, nil
 }
 
 func (f *grpcFakeRepository) Ping(context.Context) error { return nil }

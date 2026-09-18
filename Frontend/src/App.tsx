@@ -8,6 +8,9 @@ import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ClasePage from './pages/ClasePage';
 import HistorialPage from './pages/HistorialPage';
+import PlaylistsPage from './pages/PlaylistsPage';
+import PlaylistDetallePage from './pages/PlaylistDetallePage';
+import PlaylistPublicaPage from './pages/PlaylistPublicaPage';
 import NotificacionesPage from './pages/NotificacionesPage';
 import AnaliticaPage from './pages/AnaliticaPage';
 import AdminPage from './pages/AdminPage';
@@ -99,6 +102,30 @@ export default function App() {
               <RequireRole roles={['ROLE_ADMIN', 'ROLE_CATEDRATICO', 'ROLE_AUXILIAR']}>
                 <EditarClasePage />
               </RequireRole>
+            }
+          />
+          <Route
+            path="/playlists"
+            element={
+              <RequireAuth>
+                <PlaylistsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/playlists/:playlistId"
+            element={
+              <RequireAuth>
+                <PlaylistDetallePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/playlists/publicas/:enlace"
+            element={
+              <RequireAuth>
+                <PlaylistPublicaPage />
+              </RequireAuth>
             }
           />
           <Route

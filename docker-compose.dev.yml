@@ -37,7 +37,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-cambiar-en-produccion-1234567890abcdef}
       COOKIE_SECURE: "false"
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ingenieria.usac.edu.gt,ing.usac.edu.gt}
-      OAUTH_PROVIDER: google
+      OAUTH_PROVIDER: mock
       OAUTH_MOCK_ENABLED: "true"
       OAUTH_MOCK_ISSUER: http://api-gateway:8080/mock-oauth
       OAUTH_REDIRECT_URI: http://localhost:8081/oauth/callback
@@ -295,7 +295,7 @@ services:
       COOKIE_SAME_SITE: lax
       COOKIE_PATH: /
       SESSION_TTL_MS: "3600000"
-      OAUTH_PROVIDER: google
+      OAUTH_PROVIDER: mock
       OAUTH_ISSUER_PUBLIC: http://localhost:8080/mock-oauth
       OAUTH_REDIRECT_URI: http://localhost:8081/oauth/callback
       OAUTH_CLIENT_ID: yousac-web

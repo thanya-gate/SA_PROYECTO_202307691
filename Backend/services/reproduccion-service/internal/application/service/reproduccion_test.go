@@ -39,6 +39,21 @@ type fakeRepository struct {
 	lastTitulo         string
 	lastContenido      string
 	lastPosicion       int32
+	playlist           *domain.Playlist
+	playlistErr        error
+	playlists          []domain.Playlist
+	playlistsErr       error
+	items              []domain.PlaylistItem
+	item               *domain.PlaylistItem
+	itemErr            error
+	crearPlaylistCalls int
+	lastPlaylist       string
+	lastNombre         string
+	lastEsPublica      bool
+	lastClaseItem      string
+	lastSegundoInicio  int32
+	reordenarItems     []string
+	cantidadItems      int32
 }
 
 func (f *fakeRepository) GuardarCheckpoint(_ context.Context, estudianteID, claseID string, segundoActual, duracion int32) (string, float64, error) {
@@ -78,6 +93,57 @@ func (f *fakeRepository) ListarApuntes(context.Context, string, string) ([]domai
 
 func (f *fakeRepository) EliminarApunte(context.Context, string, string) (bool, error) {
 	return f.eliminarOk, f.eliminarErr
+}
+
+func (f *fakeRepository) CrearPlaylist(_ context.Context, estudianteID, nombre string, esPublica bool) (*domain.Playlist, error) {
+	f.crearPlaylistCalls++
+	f.lastEstudiante, f.lastNombre, f.lastEsPublica = estudianteID, nombre, esPublica
+	return f.playlist, f.playlistErr
+}
+
+func (f *fakeRepository) ListarPlaylists(context.Context, string) ([]domain.Playlist, error) {
+	return f.playlists, f.playlistsErr
+}
+
+func (f *fakeRepository) ListarPlaylistsPublicas(_ context.Context, estudianteID string) ([]domain.Playlist, error) {
+	f.lastEstudiante = estudianteID
+	return f.playlists, f.playlistsErr
+}
+
+func (f *fakeRepository) ObtenerPlaylist(context.Context, string, string) (*domain.Playlist, []domain.PlaylistItem, error) {
+	return f.playlist, f.items, f.playlistErr
+}
+
+func (f *fakeRepository) ObtenerPlaylistPublica(context.Context, string) (*domain.Playlist, []domain.PlaylistItem, error) {
+	return f.playlist, f.items, f.playlistErr
+}
+
+func (f *fakeRepository) ActualizarPlaylist(_ context.Context, estudianteID, playlistID, nombre string, esPublica bool) (*domain.Playlist, error) {
+	f.lastEstudiante, f.lastPlaylist, f.lastNombre, f.lastEsPublica = estudianteID, playlistID, nombre, esPublica
+	return f.playlist, f.playlistErr
+}
+
+func (f *fakeRepository) EliminarPlaylist(context.Context, string, string) (bool, error) {
+	return f.eliminarOk, f.eliminarErr
+}
+
+func (f *fakeRepository) AgregarItemPlaylist(_ context.Context, estudianteID, playlistID, claseID string, segundoInicio int32) (*domain.PlaylistItem, int32, error) {
+	f.lastEstudiante, f.lastPlaylist, f.lastClaseItem = estudianteID, playlistID, claseID
+	f.lastSegundoInicio = segundoInicio
+	if f.itemErr != nil {
+		return nil, 0, f.itemErr
+	}
+	return f.item, f.cantidadItems, nil
+}
+
+func (f *fakeRepository) ReordenarPlaylist(_ context.Context, estudianteID, playlistID string, itemsOrdenados []string) ([]domain.PlaylistItem, error) {
+	f.lastEstudiante, f.lastPlaylist = estudianteID, playlistID
+	f.reordenarItems = itemsOrdenados
+	return f.items, f.itemErr
+}
+
+func (f *fakeRepository) EliminarItemPlaylist(context.Context, string, string, string) (bool, int32, error) {
+	return f.eliminarOk, f.cantidadItems, f.eliminarErr
 }
 
 func (f *fakeRepository) Ping(context.Context) error { return nil }

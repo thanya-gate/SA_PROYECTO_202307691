@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yousac-runtime-config
+  labels:
+    app.kubernetes.io/part-of: yousac
+data:
+  NODE_ENV: production
+  CATALOG_NODE_ENV: production
+  SEED_DEMO: "false"
+  ALLOWED_EMAIL_DOMAINS: ingenieria.usac.edu.gt,ing.usac.edu.gt
+  PUBLIC_DOMAIN: yousac-thany.duckdns.org
+  API_GATEWAY_PORT: "8080"
+  FRONTEND_PORT: "80"
+  AUTH_GRPC_PORT: "50051"
+  CATALOG_GRPC_PORT: "50052"
+  REPRODUCTION_GRPC_PORT: "50053"
+  ANALITICA_GRPC_PORT: "50054"
+  INSCRIPCION_GRPC_PORT: "50055"
+  NOTIFICACIONES_GRPC_PORT: "50056"
+
+  # Contrato east-west: los servicios se descubren por DNS interno de
+  # Kubernetes y nunca se publican mediante un Service externo.
+  AUTH_GRPC_ADDR: auth-service:50051
+  CATALOG_GRPC_ADDR: catalog-service:50052
+  REPRODUCTION_GRPC_ADDR: reproduccion-service:50053
+  ANALITICA_GRPC_ADDR: analitica-service:50054
+  INSCRIPCION_GRPC_ADDR: inscripcion-service:50055
+  NOTIFICACIONES_GRPC_ADDR: notificaciones-service:50056
+
+  SESSION_COOKIE_NAME: yousac_session
+  COOKIE_SECURE: "true"
+  COOKIE_SAME_SITE: strict
+  COOKIE_PATH: /
+  SESSION_TTL_MS: "3600000"
+  JWT_EXPIRES_IN: 10m
+  JWT_ISSUER: yousac-auth
+  JWT_AUDIENCE: yousac-gateway
+  MAX_LOGIN_ATTEMPTS: "5"
+  LOGIN_ATTEMPTS_WINDOW_MIN: "15"
+
+  OAUTH_PROVIDER: google
+  OAUTH_MOCK_ENABLED: "false"
+  OAUTH_MOCK_ISSUER: https://yousac-thany.duckdns.org/mock-oauth
+  OAUTH_ISSUER_PUBLIC: https://yousac-thany.duckdns.org/mock-oauth
+  OAUTH_REDIRECT_URI: https://yousac-thany.duckdns.org/oauth/callback
+  OAUTH_CLIENT_ID: yousac-web
+  GOOGLE_REDIRECT_URI: https://yousac-thany.duckdns.org/oauth/callback
+
+  STORAGE_BACKEND: gcs
+  GCS_BUCKET_VIDEOS: yousac-videos
+  GCS_BUCKET_MATERIAL: yousac-material
+  GCS_PUBLIC_BASE_URL: ""
+  MEDIA_DIR: /tmp/media
+
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PORT: "587"
+  MAIL_DEBUG: "false"
+  WORKER_INTERVAL_MS: "15000"
+  MAX_INTENTOS: "5"
+  CACHE_TTL_MAS_VISTAS: "300"
+  CACHE_TTL_TENDENCIAS: "600"
+  CACHE_TTL_RANKING: "900"
+  CACHE_TTL_RECOMENDACIONES: "600"
+  DB_POOL_MAX: "10"
+  DB_CONNECTION_TIMEOUT_MS: "10000"
