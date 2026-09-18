@@ -61,7 +61,20 @@ export class Container {
     this.passwordService = new BcryptPasswordService();
     this.domainValidator = new EmailDomainValidator(config.ALLOWED_EMAIL_DOMAINS);
 
-    if (config.OAUTH_PROVIDER === 'google' && config.GOOGLE_CLIENT_ID) {
+    if (config.OAUTH_PROVIDER === 'google') {
+      const missingGoogleConfig = [
+        ['GOOGLE_CLIENT_ID', config.GOOGLE_CLIENT_ID],
+        ['GOOGLE_CLIENT_SECRET', config.GOOGLE_CLIENT_SECRET],
+      ]
+        .filter(([, value]) => value.trim().length === 0)
+        .map(([name]) => name);
+
+      if (missingGoogleConfig.length > 0) {
+        throw new Error(
+          `[auth-service] OAUTH_PROVIDER=google requiere: ${missingGoogleConfig.join(', ')}`,
+        );
+      }
+
       this.oauthProvider = new GoogleOAuthProvider(
         config.GOOGLE_CLIENT_ID,
         config.GOOGLE_CLIENT_SECRET,
