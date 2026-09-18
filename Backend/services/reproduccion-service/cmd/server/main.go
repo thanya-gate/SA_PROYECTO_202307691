@@ -37,6 +37,12 @@ func main() {
 		log.Fatalf("[reproduccion-service] %v", err)
 	}
 	defer pool.Close()
+	schemaCtx, cancelSchema := context.WithTimeout(ctx, 30*time.Second)
+	if err := postgres.EnsurePlaylistSchema(schemaCtx, pool); err != nil {
+		cancelSchema()
+		log.Fatalf("[reproduccion-service] %v", err)
+	}
+	cancelSchema()
 	log.Println("[reproduccion-service] Conectado a PostgreSQL (Database per Microservice)")
 
 	repo := postgres.NewReproduccionRepository(pool)
