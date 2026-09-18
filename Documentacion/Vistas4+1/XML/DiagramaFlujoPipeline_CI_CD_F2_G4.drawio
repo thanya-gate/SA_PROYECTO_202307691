@@ -25,7 +25,7 @@
           <mxGeometry x="20" y="240" width="2060" height="0" as="geometry" />
         </mxCell>
 
-        <mxCell id="pipelineTitle" parent="1" style="text;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontStyle=1;fontSize=24;" value="PIPELINE CI/CD" vertex="1">
+        <mxCell id="pipelineTitle" parent="1" style="text;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontStyle=1;fontSize=24;" value="PIPELINE CI/CD — VM + GKE" vertex="1">
           <mxGeometry x="900" y="40" width="480" height="42" as="geometry" />
         </mxCell>
         <mxCell id="developerLabel" parent="1" style="text;align=center;verticalAlign=middle;rotation=270;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontSize=14;" value="Desarrollador" vertex="1">
@@ -133,7 +133,7 @@
         <mxCell id="modifySources" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Modificación de fuentes" vertex="1">
           <mxGeometry x="170" y="95" width="220" height="75" as="geometry" />
         </mxCell>
-        <mxCell id="commitPush" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Commit / Push" vertex="1">
+        <mxCell id="commitPush" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Commit / Push a main" vertex="1">
           <mxGeometry x="450" y="95" width="190" height="75" as="geometry" />
         </mxCell>
         <mxCell id="gitArtifact" parent="1" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="" vertex="1">
@@ -161,17 +161,17 @@
         <mxCell id="dockerBuild" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Construcción de&lt;br&gt;imágenes Docker" vertex="1">
           <mxGeometry x="1230" y="410" width="220" height="62" as="geometry" />
         </mxCell>
-        <mxCell id="versionTag" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Etiquetado semántico" vertex="1">
+        <mxCell id="versionTag" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Aliases + commit-SHA inmutable" vertex="1">
           <mxGeometry x="1500" y="410" width="190" height="62" as="geometry" />
         </mxCell>
-        <mxCell id="artifactRegistry" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Publicación en&lt;br&gt;Artifact Registry" vertex="1">
+        <mxCell id="artifactRegistry" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="WIF + publicación de 8 imágenes en&lt;br&gt;Artifact Registry" vertex="1">
           <mxGeometry x="1740" y="410" width="220" height="62" as="geometry" />
         </mxCell>
 
         <mxCell id="workflowArtifact" parent="1" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="" vertex="1">
           <mxGeometry x="445" y="275" width="55" height="68" as="geometry" />
         </mxCell>
-        <mxCell id="workflowArtifactLabel" parent="1" style="text;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontSize=11;" value="unit-tests.yml" vertex="1">
+        <mxCell id="workflowArtifactLabel" parent="1" style="text;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#FFFFFF;html=1;fontSize=11;" value="unit-tests.yml + ci-cd.yml" vertex="1">
           <mxGeometry x="385" y="348" width="175" height="25" as="geometry" />
         </mxCell>
         <mxCell id="dockerArtifact" parent="1" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="" vertex="1">
@@ -191,19 +191,19 @@
           <mxGeometry x="860" y="802" width="160" height="25" as="geometry" />
         </mxCell>
 
-        <mxCell id="deployGke" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Despliegue en GKE" vertex="1">
+        <mxCell id="deployGke" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="WIF + Kustomize + apply -k&lt;br&gt;Despliegue en GKE producción" vertex="1">
           <mxGeometry x="1740" y="575" width="220" height="62" as="geometry" />
         </mxCell>
-        <mxCell id="healthCheck" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Aplicar probes y&lt;br&gt;smoke test" vertex="1">
+        <mxCell id="healthCheck" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Rollouts + ManagedCertificate&lt;br&gt;+ smoke tests HTTPS" vertex="1">
           <mxGeometry x="1740" y="680" width="220" height="62" as="geometry" />
         </mxCell>
         <mxCell id="healthGate" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="¿Servicio&lt;br&gt;saludable?" vertex="1">
           <mxGeometry x="1797" y="785" width="106" height="92" as="geometry" />
         </mxCell>
-        <mxCell id="releaseEvent" parent="1" style="ellipse;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Release disponible" vertex="1">
+        <mxCell id="releaseEvent" parent="1" style="ellipse;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Producción GKE y VM staging actualizadas" vertex="1">
           <mxGeometry x="1530" y="900" width="200" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="rollback" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="Rollback y notificar" vertex="1">
+        <mxCell id="rollback" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;strokeWidth=1;" value="kubectl rollout undo&lt;br&gt;y notificar" vertex="1">
           <mxGeometry x="1870" y="900" width="170" height="50" as="geometry" />
         </mxCell>
       </root>

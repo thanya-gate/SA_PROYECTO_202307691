@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: yousac-prod
+  labels:
+    app.kubernetes.io/part-of: yousac
+    app.kubernetes.io/managed-by: kustomize
