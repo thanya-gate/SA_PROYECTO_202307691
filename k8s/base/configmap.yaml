@@ -39,8 +39,8 @@ data:
   MAX_LOGIN_ATTEMPTS: "5"
   LOGIN_ATTEMPTS_WINDOW_MIN: "15"
 
-  OAUTH_PROVIDER: mock
-  OAUTH_MOCK_ENABLED: "true"
+  OAUTH_PROVIDER: google
+  OAUTH_MOCK_ENABLED: "false"
   OAUTH_MOCK_ISSUER: https://yousac-thany.duckdns.org/mock-oauth
   OAUTH_ISSUER_PUBLIC: https://yousac-thany.duckdns.org/mock-oauth
   OAUTH_REDIRECT_URI: https://yousac-thany.duckdns.org/oauth/callback
