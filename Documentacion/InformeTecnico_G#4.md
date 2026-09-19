@@ -16,19 +16,24 @@
   - [2. Objetivo, alcance y componentes](#2-objetivo-alcance-y-componentes)
   - [3. Evidencias del pipeline CI/CD](#3-evidencias-del-pipeline-cicd)
     - [3.1 Despliegue continuo hacia la VM](#31-despliegue-continuo-hacia-la-vm)
+    - [3.2 Despliegue continuo hacia Kubernetes (GKE) en producción](#32-despliegue-continuo-hacia-kubernetes-gke-en-producción)
   - [4. Registry de imágenes](#4-registry-de-imágenes)
     - [Imágenes publicadas](#imágenes-publicadas)
-  - [5. Funcionalidad del cuaderno de apuntes](#5-funcionalidad-del-cuaderno-de-apuntes)
+  - [5. Funcionalidades de aprendizaje interactivo (Fase 2)](#5-funcionalidades-de-aprendizaje-interactivo-fase-2)
     - [5.1 Editor Markdown](#51-editor-markdown)
     - [5.2 Creación de un apunte](#52-creación-de-un-apunte)
     - [5.3 Pines y navegación temporal](#53-pines-y-navegación-temporal)
     - [5.4 Persistencia y aislamiento](#54-persistencia-y-aislamiento)
     - [5.5 Exportación](#55-exportación)
+    - [5.6 Foro de dudas anclado al minuto exacto](#56-foro-de-dudas-anclado-al-minuto-exacto)
+    - [5.7 Segmentación por capítulos y temas (Video Chapters)](#57-segmentación-por-capítulos-y-temas-video-chapters)
+    - [5.8 Repositorio de material adjunto y recursos de laboratorio](#58-repositorio-de-material-adjunto-y-recursos-de-laboratorio)
+    - [5.9 Playlists de repaso](#59-playlists-de-repaso)
   - [6. Pruebas unitarias](#6-pruebas-unitarias)
 
 ## 1. Introducción
 
-Este informe documenta la implementación y verificación del cuaderno de apuntes de la Fase 2 de YoUSAC. La funcionalidad permite crear y mantener varios apuntes por clase, escribir contenido en Markdown, asociar marcadores de tiempo con la reproducción de un video y exportar el cuaderno en formatos PDF y Markdown.
+Este informe documenta la implementación y verificación de las funcionalidades de aprendizaje interactivo de la Fase 2 de YoUSAC. Entre ellas se incluyen el cuaderno de apuntes (edición en Markdown, marcadores de tiempo y exportación), el foro de dudas anclado al minuto exacto del video, la segmentación de las grabaciones por capítulos temáticos, el repositorio de material adjunto y las playlists de repaso.
 
 También se presentan las evidencias del pipeline de integración y entrega continua. El pipeline ejecuta las suites de pruebas del proyecto y, únicamente cuando estas finalizan correctamente, construye y publica las ocho imágenes Docker en Google Cloud Artifact Registry. Para la Práctica 6 se documenta además el despliegue automático de esas imágenes hacia la VM de desarrollo.
 
@@ -97,6 +102,32 @@ imágenes de Artifact Registry.
 
 Las pruebas ampliadas del cuaderno de apuntes, correspondientes al commit `c8c9c90`, también finalizaron correctamente en las ejecuciones [CI/CD #3](https://github.com/thanya-gate/SA_PROYECTO_202307691/actions/runs/33698438294) y [Pruebas unitarias #16](https://github.com/thanya-gate/SA_PROYECTO_202307691/actions/runs/33698438311).
 
+### 3.2 Despliegue continuo hacia Kubernetes (GKE) en producción
+
+La etapa de despliegue de producción aplica entrega continua hacia un clúster de Kubernetes en Google Kubernetes Engine (GKE). Se compone de dos trabajos encadenados que actúan como cortocircuito del CD:
+
+1. **Preflight GKE producción** (solo lectura): autentica con Workload Identity Federation, obtiene las credenciales del clúster y ejecuta el script `deploy/gke-preflight.sh` para verificar que el clúster, el namespace, la IP estática y la conectividad con los servicios gestionados (Cloud SQL y Redis) estén disponibles antes de modificar cualquier recurso. Si este trabajo falla, se bloquea el despliegue.
+2. **Deploy GKE producción**: recién cuando las pruebas, la publicación de imágenes, el preflight y la resolución de etiqueta concluyen correctamente, obtiene las credenciales del clúster y ejecuta `deploy/k8s-deploy.sh` con la etiqueta inmutable de la versión.
+
+El script de despliegue aplica los manifiestos actualizados de Kubernetes mediante Kustomize, verifica la etiqueta de cada imagen, y espera el rollout de cada uno de los ocho `Deployment`s:
+
+![Paso de aplicación de la nueva versión del pipeline GKE](img/ci-cd-gke-paso-aplicar.png)
+
+```bash
+kubectl apply -k k8s/overlays/production
+
+for deployment in frontend api-gateway auth-service catalog-service \
+  reproduccion-service analitica-service inscripcion-service notificaciones-service; do
+  kubectl rollout status "deployment/$deployment" --namespace yousac-prod --timeout=10m
+done
+```
+
+Además del rollout de los ocho servicios, el pipeline espera que el `ManagedCertificate` quede en estado `Active` y valida que los backends del Ingress alcancen `HEALTHY` antes de confirmar el despliegue. Las reglas del gateway de entrada, la autenticación de los clústeres y la validación de la disponibilidad se resumen al final del trabajo.
+
+![Resumen de las reglas del job de despliegue GKE](img/ci-cd-gke-resumen.png)
+
+
+
 ## 4. Registry de imágenes
 
 Las imágenes se publicaron automáticamente en Google Cloud Artifact Registry. La configuración utilizada es la siguiente:
@@ -145,7 +176,7 @@ docker pull us-central1-docker.pkg.dev/yousac-202300396-2026/yousac/frontend:1.2
 
 El acceso al repositorio y a sus imágenes está sujeto a los permisos IAM configurados en el proyecto de Google Cloud.
 
-## 5. Funcionalidad del cuaderno de apuntes
+## 5. Funcionalidades de aprendizaje interactivo 
 
 ### 5.1 Editor Markdown
 
@@ -165,6 +196,7 @@ Cada apunte guardado se representa mediante un pin sobre la barra de progreso. A
 
 ![Pines de apuntes sobre la barra de reproducción](img/imagePines.png)
 
+
 ### 5.4 Persistencia y aislamiento
 
 El microservicio de reproducción almacena varios apuntes por clase y estudiante. Las operaciones de actualización y eliminación identifican tanto el apunte como al estudiante autenticado, evitando que un usuario modifique información perteneciente a otro usuario.
@@ -174,6 +206,62 @@ El microservicio de reproducción almacena varios apuntes por clase y estudiante
 El cuaderno puede exportarse como PDF desde el frontend y como archivo `.md` generado por el backend. La exportación Markdown reúne los apuntes persistidos de la clase y conserva los marcadores temporales.
 
 ![Opciones de exportación PDF y Markdown](img/imageExp.png)
+
+### 5.6 Foro de dudas anclado al minuto exacto
+
+El foro permite pausar el video y publicar una duda técnica vinculada directamente a la marca de tiempo actual de la reproducción. La pregunta queda registrada con su `posicionSegundos`, de modo que al reabrir el hilo se conoce el instante exacto en que surgió la consulta.
+
+![Duda anclada al minuto exacto del video](img/foro-dudas-anclada.png)
+
+![Marcadores de dudas sobre la barra de progreso](img/foro-dudas-marcadores.png)
+
+Los marcadores de duda se dibujan sobre la barra de progreso del reproductor y, al posicionar el cursor sobre uno de ellos, se previsualiza la pregunta sin interrumpir la reproducción. Desde la vista del foro, catedráticos, auxiliares y estudiantes pueden responder dentro del hilo; además, el autor de la pregunta o un catedrático/auxiliar pueden marcar una respuesta como verificada.
+
+![Previsualización de la pregunta sobre el marcador](img/foro-dudas-previsualizacion.png)
+
+![Vista del foro con hilo de respuestas](img/foro-dudas-hilo.png)
+
+El API Gateway expone las operaciones `GET/POST /catalog/classes/:claseId/dudas` y `POST /catalog/dudas/:dudaId/respuestas`, respaldadas por el contrato gRPC del catálogo y las tablas `duda_clase` y `respuesta_duda`.
+
+### 5.7 Segmentación por capítulos y temas
+
+El catedrático o auxiliar dispone de un gestor dentro del panel de la clase para estructurar la grabación en bloques temáticos. Cada capítulo se define con un inicio y un fin expresados en segundos (por ejemplo, `00:00 - Introducción`, `12:30 - Fundamentos Teóricos`), respetando reglas de integridad: fin mayor que inicio, rango dentro de la duración y sin solapamientos entre capítulos.
+
+![Gestor de capítulos y temas del docente](img/capitulos-gestor.png)
+
+El reproductor segmenta visualmente la barra de avance según los capítulos definidos y muestra un índice lateral desplegable para navegar directamente al tema deseado. Al seleccionar un capítulo, la reproducción salta al inicio del bloque correspondiente.
+
+![Barra de reproducción segmentada por capítulos](img/capitulos-barra.png)
+
+![Índice lateral para navegar entre capítulos](img/capitulos-indice.png)
+
+El componente `ChapterManager` implementa el CRUD y las operaciones se exponen mediante `GET/POST /catalog/classes/:claseId/chapters` en el API Gateway, con la tabla `capitulo` en PostgreSQL.
+
+### 5.8 Repositorio de material adjunto y recursos de laboratorio
+
+Cada clase cuenta con un repositorio de recursos didácticos en el que el catedrático y el auxiliar pueden subir, actualizar y versionar archivos como guías de laboratorio, presentaciones PDF, hojas de trabajo y código fuente. El sistema conserva la versión vigente de cada material lógico y mantiene el historial de versiones anteriores.
+
+![Panel de material adjunto de la clase](img/materiales-panel.png)
+
+Las cargas se validan contra una lista permitida de tipos MIME y extensiones, se sanitiza el nombre del archivo y se limita el tamaño máximo a 50 MB, evitando la subida de archivos maliciosos o ejecutables no permitidos. El sistema registra el conteo de descargas de cada archivo para medir el uso de los recursos.
+
+![Detalle de un material con su versión y descargas](img/materiales-version.png)
+
+El API Gateway expone `GET/POST /catalog/classes/:claseId/materials` y la publicación de nuevas versiones, con la validación implementada en `validation/material.ts` y el almacenamiento versiónado en `storage.ts`.
+
+### 5.9 Playlists de repaso
+
+Los estudiantes pueden crear listas de reproducción personalizadas combinando grabaciones o fragmentos de distintos semestres y cursos. Cada playlist se identifica con un nombre y admite elementos ordenados, que pueden ser clases completas o fragmentos con un instante de inicio.
+
+![Lista de playlists de repaso](img/playlists-lista.png)
+
+Las playlists se configuran como privadas (visibles solo para su propietario) o públicas, en cuyo caso el sistema genera un enlace único compartible no autenticado para que otros estudiantes accedan a la colección sin exponer las listas privadas. El detalle de una playlist permite reproducir sus elementos y reordenarlos.
+
+![Entrada pública de una playlist compartida](img/playlists-publica.png)
+
+![Detalle de una playlist con sus elementos](img/playlists-detalle.png)
+
+Las operaciones del API Gateway (`GET/POST /reproduccion/playlists`, `GET /reproduccion/playlists/publicas/:enlace`, entre otras) están respaldadas por el microservicio de reproducción (Go) y las tablas `playlist` y `playlist_item` de PostgreSQL.
 
 ## 6. Pruebas unitarias
 
