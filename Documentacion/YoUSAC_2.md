@@ -175,11 +175,11 @@ suficiente para afirmar cumplimiento.
 
 | ID Fase 2 | Fuente oficial | Evidencia actual | Estado |
 |---|---|---|---|
-| RF-F2-01 | `context/proyecto2.md`, Foro de Dudas | No se encontraron entidades, rutas HTTP, RPC, componentes ni pruebas del foro anclado a timestamps. | Pendiente/no evidenciado |
-| RF-F2-02 | `context/proyecto2.md`, Cuaderno Markdown | No se encontraron editor, persistencia de apuntes, navegación por timestamps ni exportación implementados. | Pendiente/no evidenciado |
+| RF-F2-01 | `context/proyecto2.md`, Foro de Dudas | [Rutas del Gateway](../Backend/api-gateway/src/server.ts) (`/catalog/classes/:claseId/dudas`, `/catalog/dudas/:dudaId/respuestas`), [gRPC Catálogo](../Backend/api-gateway/src/grpc/catalog-client.ts), [componente](../Frontend/src/components/ForoDudas.tsx) y pruebas de [Catálogo](../Backend/services/catalog-service/tests/catalog-foro.test.ts). El marcador se ancla al segundo actual del video y el modelo conserva autor, respuestas y estado de verificación. | Integrado; respaldado por código y pruebas |
+| RF-F2-02 | `context/proyecto2.md`, Cuaderno Markdown | [Rutas del Gateway](../Backend/api-gateway/src/server.ts) (`/reproduccion/apuntes` CRUD y `/exportar` a `.md`), [contrato gRPC Reproducción](../Backend/proto/reproduccion.proto), [modelo](../Backend/services/reproduccion-service/internal/domain/apunte.go), [editor de apuntes](../Frontend/src/components/ApunteEditor.tsx) y pruebas de [Gateway](../Backend/api-gateway/tests/gateway-apuntes.test.ts), [Go](../Backend/services/reproduccion-service/internal/domain/apunte_test.go) y [Frontend](../Frontend/tests/apunte-editor.test.tsx). | Integrado; respaldado por código y pruebas |
 | RF-F2-03 | `context/proyecto2.md` y `context/practica4.md`, Video Chapters | [Contrato gRPC](../Backend/proto/catalogo.proto), [validadores](../Backend/services/catalog-service/src/application/dto/catalog-schemas.ts), [SQL](../Backend/sql/catalogo.sql), [gestor](../Frontend/src/components/ChapterManager.tsx), [navegación](../Frontend/src/components/ChapterTimeline.tsx) y pruebas de [Catálogo](../Backend/services/catalog-service/tests/catalog-service.test.ts), [SQL](../Backend/services/catalog-service/tests/catalogo-contract.sql) y [Frontend](../Frontend/tests/chapter-components.test.tsx). | Integrado; respaldado por código y pruebas |
 | RF-F2-04 | `context/proyecto2.md` y `context/practica4.md`, Repositorio de Materiales | [Rutas del Gateway](../Backend/api-gateway/src/server.ts), [validación](../Backend/api-gateway/src/validation/material.ts), [almacenamiento/versionado](../Backend/api-gateway/src/storage/storage.ts), [contrato](../Backend/proto/catalogo.proto), [SQL](../Backend/sql/catalogo.sql), [panel](../Frontend/src/components/MaterialesPanel.tsx) y pruebas de [Gateway](../Backend/api-gateway/tests/gateway-materials.test.ts), [validación](../Backend/api-gateway/tests/material-validation.test.ts), [storage](../Backend/api-gateway/tests/storage.test.ts), [GCS](../Backend/api-gateway/tests/gcs-storage.test.ts), [Catálogo](../Backend/services/catalog-service/tests/postgres-catalog-repository.test.ts) y [Frontend](../Frontend/tests/materiales-api.test.ts). | Integrado; respaldado por código y pruebas |
-| RF-F2-05 | `context/proyecto2.md`, Playlists | No se encontraron modelo de datos, endpoints, componentes ni pruebas de playlists privadas o públicas. | Pendiente/no evidenciado |
+| RF-F2-05 | `context/proyecto2.md`, Playlists | [Rutas del Gateway](../Backend/api-gateway/src/server.ts) (`/reproduccion/playlists` CRUD, públicas y enlace compartible), [SQL](../Backend/sql/reproduccion.sql) (`playlist` y `playlist_item`), [gRPC Reproducción](../Backend/proto/reproduccion.proto), [componente](../Frontend/src/components/PlaylistCard.tsx) y pruebas de [Gateway](../Backend/api-gateway/tests/gateway-playlists.test.ts), [Go](../Backend/services/reproduccion-service/internal/application/service/playlist_test.go) y [Frontend](../Frontend/tests/playlist-card.test.tsx). | Integrado; respaldado por código y pruebas |
 | RNF-F2-01 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, Kubernetes | [Manifiestos Kustomize](../k8s/overlays/production) con Ingress nativo de GKE y ocho Services `ClusterIP`; el script de CD rechaza `NodePort` y `LoadBalancer`. | Implementado en repositorio; pendiente evidencia en GKE |
 | RNF-F2-02 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, health checks | [Deployments](../k8s/base/deployments.yaml) declaran liveness, readiness y startup probes; el Gateway aporta `/health/live` y readiness dependiente de los seis gRPC. | Implementado en repositorio; pendiente validación de rollouts |
 | RNF-F2-03 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, recursos/persistencia | Los Deployments declaran requests/limits; Cloud SQL Auth Proxy, Memorystore y GCS quedan fuera del almacenamiento efímero de aplicación. | Implementado en repositorio; pendiente preflight GCP |
@@ -188,32 +188,9 @@ suficiente para afirmar cumplimiento.
 | RNF-F2-06 | `context/proyecto2.md` y `context/aclaraciones_practica4_fase2.md`, secretos | El Secret runtime se crea durante CD desde GitHub Secrets; no se versionan valores reales ni `.env.cloud`. | Implementado en repositorio; pendiente auditoría de configuración GitHub/GCP |
 | RNF-F2-07 | `context/proyecto2.md` y `context/practica4.md`, validación de materiales | [Validador del Gateway](../Backend/api-gateway/src/validation/material.ts), [API frontend](../Frontend/src/api/materiales.ts) y pruebas de MIME, extensión, nombres y 50 MB. | Parcial; integrado localmente, sin medición productiva del 100% |
 | RNF-F2-08 | `context/proyecto2.md` y `context/practica4.md`, validación de capítulos | [DTO TypeScript](../Backend/services/catalog-service/src/application/dto/catalog-schemas.ts), [restricciones/procedimientos SQL](../Backend/sql/catalogo.sql), validación frontend y pruebas de [Catálogo](../Backend/services/catalog-service/tests/catalog-service.test.ts), [SQL](../Backend/services/catalog-service/tests/catalogo-contract.sql) y [Frontend](../Frontend/tests/chapter-components.test.tsx). | Integrado; respaldado por código y pruebas |
-| RNF-F2-09 | `context/proyecto2.md` y `context/practica4.md`, testing | [TESTING.md](TESTING.md) documenta suites TypeScript/TSX; no hay evidencia equivalente para Go, Python ni un pipeline que reporte la cobertura mínima. | Pendiente/no evidenciado |
-| RNF-F2-10 | `context/proyecto2.md`, escalabilidad y rendimiento | No se encontró prueba de carga ni configuración Kubernetes que evidencie escalado horizontal del escenario definido. | Pendiente/no evidenciado |
+| RNF-F2-09 | `context/proyecto2.md` y `context/practica4.md`, testing | [TESTING.md](TESTING.md) documenta las suites; el pipeline [unit-tests.yml](../.github/workflows/unit-tests.yml) ejecuta TypeScript, Go y Python en CI. Faltan los reportes de cobertura porcentual (Go y Python) y el umbral mínimo de 80% en el pipeline. | Parcial; suites en CI, sin reporte/umbral de cobertura |
+| RNF-F2-10 | `context/proyecto2.md`, escalabilidad y rendimiento | Los HPA de [frontend y gateway](../k8s/overlays/production/hpa.yaml) escalan de 2 a 4 réplicas por CPU al 70%. No existe prueba de carga (100 usuarios concurrentes, 10 min, p95 < 300 ms) ni medir de errores HTTP ≤ 1%. | Parcial; HPA configurado, sin prueba de carga |
 
-Existe una discrepancia con `context/ESTADO_FASE2_Y_ENTORNO_LOCAL.md`, que
-conserva un diagnóstico anterior donde capítulos y materiales aparecen como
-pendientes. Para este documento se prioriza la evidencia actual de código y
-pruebas: esas dos capacidades están integradas en el baseline, mientras que
-foro, apuntes y playlists siguen pendientes. Los entregables cloud-native ya
-cuentan con manifiestos y automatización versionados, pero todavía requieren
-la validación de los recursos externos de GCP.
-
-Los mockups y DER de Fase 2 son artefactos de diseño y no constituyen evidencia
-de implementación por sí mismos. Se incluyen [anotaciones](Mockups/MockupsF2_Anotaciones_G%234.drawio.svg),
-[foro](Mockups/MockupsF2_ForoDudas_G%234.drawio.svg),
-[playlists](Mockups/MockupsF2_GestionPlaylists_G%234.drawio.svg) y
-[segmentación](Mockups/MockupsF2_SegmentacionCapitulos_G%234.drawio.svg), así como
-los DER Fase 2 de [Catálogo](ER/DER_MicroservicioCatalogo_F2_G%234.drawio.svg),
-[Auth](ER/DER_MicroservicioAuth_F2_G%234.drawio.svg),
-[Inscripción](ER/DER_MicroservicioInscripcion_F2_G%234.drawio.svg),
-[Notificaciones](ER/DER_MicroservicioNotificaciones_F2_G%234.drawio.svg),
-[Reproducción](ER/DER_MicroservicioReproduccion_F2_G%234.drawio.svg) y
-[Analítica](ER/DER_MicroservicioAnalitica_F2_G%234.drawio.svg). La ejecución de
-las suites está descrita en [TESTING.md](TESTING.md). Los manifiestos,
-preflight y workflow de Kubernetes/CD ya están versionados; la evidencia
-ejecutable de GCP (clúster, certificado, DNS, rollouts y URL HTTPS) queda
-pendiente de configurar los recursos externos.
 
 ## Modelo de Casos de Uso
 
