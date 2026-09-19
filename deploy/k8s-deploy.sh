@@ -215,7 +215,7 @@ done
 
 if ! jq -e \
     'type == "object" and length > 0 and all(.[]; . == "HEALTHY")' \
-    <<<"${ingress_backends:-{}}" >/dev/null 2>&1; then
+    <<<"$ingress_backends" >/dev/null 2>&1; then
   echo "ERROR: los backends del Ingress no llegaron a HEALTHY." >&2
   kubectl describe ingress yousac-public --namespace "$NAMESPACE" >&2 || true
   exit 1
