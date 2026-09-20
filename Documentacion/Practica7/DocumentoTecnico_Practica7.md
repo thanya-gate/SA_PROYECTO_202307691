@@ -24,6 +24,11 @@
 7. [Servicios conceptuales](#7-servicios-conceptuales)
 8. [Requerimientos del sistema](#8-requerimientos-del-sistema)
 9. [Casos de uso iniciales](#9-casos-de-uso-iniciales)
+   9.1 [CU-P7-01: Consultar catálogo de eventos](#cu-p7-01-consultar-catálogo-de-eventos)
+   9.2 [CU-P7-02: Consultar detalle y disponibilidad](#cu-p7-02-consultar-detalle-y-disponibilidad)
+   9.3 [CU-P7-03: Solicitar reserva de cupo](#cu-p7-03-solicitar-reserva-de-cupo)
+   9.4 [CU-P7-04: Consultar ticket y estado de reserva](#cu-p7-04-consultar-ticket-y-estado-de-reserva)
+   9.5 [CU-P7-05: Verificar credencial digital](#cu-p7-05-verificar-credencial-digital)
 10. [Estados del dominio](#10-estados-del-dominio)
 11. [Flujo conceptual de reserva](#11-flujo-conceptual-de-reserva)
 12. [Contratos lógicos y mocks](#12-contratos-lógicos-y-mocks)
@@ -227,8 +232,8 @@ Responsabilidades:
 ## 9. Casos de uso iniciales
 
 Estos casos de uso delimitan la primera versión de la documentación. Las
-narrativas expandidas y los diagramas UML se elaborarán en la siguiente fase
-documental.
+narrativas se presentan en formato académico y los diagramas UML se elaborarán
+en una siguiente fase documental.
 
 | ID | Caso de uso | Actor principal | Resultado esperado |
 |---|---|---|---|
@@ -237,6 +242,242 @@ documental.
 | CU-P7-03 | Solicitar reserva de cupo | Estudiante | La solicitud queda registrada para su procesamiento asíncrono. |
 | CU-P7-04 | Consultar ticket y estado de reserva | Estudiante | El estudiante visualiza el estado de la reserva y el ticket si fue confirmado. |
 | CU-P7-05 | Verificar credencial digital | Verificador público | El sistema informa la validez de la credencial consultada. |
+
+### CU-P7-01: Consultar catálogo de eventos
+
+| Campo | Descripción |
+|---|---|
+| ID | CU-P7-01 |
+| Nombre | Consultar catálogo de eventos |
+| Actor principal | Estudiante |
+| Descripción | Permite al estudiante consultar los eventos académicos publicados por el Servicio de Talleres. |
+| Precondiciones | El frontend está disponible y el contrato de catálogo puede ser consultado. |
+| Postcondiciones | Se muestra una lista de eventos con sus datos principales o un estado vacío si no existen eventos publicados. |
+| Requerimientos relacionados | RF-P7-01 |
+| Servicios y componentes participantes | Frontend independiente, Servicio de Talleres y contrato mock GET /mock/events. |
+
+**Flujo principal:**
+
+| Paso | Actor o componente | Acción |
+|---|---|---|
+| 1 | Estudiante | Accede a la vista de catálogo de Academix Pass & CertiHub. |
+| 2 | Frontend | Solicita al contrato de catálogo la lista de eventos publicados. |
+| 3 | Servicio de Talleres | Retorna los eventos disponibles con sus datos resumidos. |
+| 4 | Frontend | Valida que cada evento tenga identificador, nombre, curso, ponente, fecha y disponibilidad. |
+| 5 | Frontend | Muestra las tarjetas o filas de los eventos publicados. |
+| 6 | Estudiante | Selecciona un evento para consultar su información completa mediante CU-P7-02. |
+
+**Flujos alternativos:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | No existen eventos publicados | El frontend muestra un estado vacío con un mensaje informativo y conserva disponible la navegación del sistema. |
+| FA-02 | Un evento no tiene cupos disponibles | El evento permanece visible, pero se identifica como SIN_CUPO para que el estudiante conozca su disponibilidad antes de abrir el detalle. |
+
+**Flujos de excepción:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | El contrato de catálogo no responde | El frontend muestra un mensaje de error y ofrece reintentar la consulta. |
+| FE-02 | La respuesta contiene datos incompletos o inválidos | El frontend no muestra información inconsistente, registra el estado de error de la consulta y solicita reintentar. |
+
+**Reglas de negocio:**
+
+- Solo se muestran eventos marcados como publicados.
+- La cantidad de cupos disponibles no puede ser negativa ni superar el cupo total.
+- La consulta del catálogo no inicia una reserva.
+
+### CU-P7-02: Consultar detalle y disponibilidad
+
+| Campo | Descripción |
+|---|---|
+| ID | CU-P7-02 |
+| Nombre | Consultar detalle y disponibilidad |
+| Actor principal | Estudiante |
+| Descripción | Permite consultar la información completa de un evento y determinar si puede iniciar una reserva. |
+| Precondiciones | El estudiante seleccionó un evento del catálogo y se dispone de su identificador. |
+| Postcondiciones | Se muestran los datos completos del evento, sus prerrequisitos y el estado del botón de reserva. |
+| Requerimientos relacionados | RF-P7-02, RF-P7-03 |
+| Servicios y componentes participantes | Frontend independiente, Servicio de Talleres y contrato mock GET /mock/events/{eventId}. |
+
+**Flujo principal:**
+
+| Paso | Actor o componente | Acción |
+|---|---|---|
+| 1 | Estudiante | Selecciona un evento desde el catálogo. |
+| 2 | Frontend | Solicita el detalle utilizando el identificador del evento. |
+| 3 | Servicio de Talleres | Retorna nombre, descripción, curso, ponente, fecha, modalidad, cupo y prerrequisitos. |
+| 4 | Frontend | Valida y presenta la información completa del evento. |
+| 5 | Frontend | Calcula visualmente si existen cupos disponibles para iniciar una reserva. |
+| 6 | Estudiante | Revisa los prerrequisitos y decide iniciar la reserva o regresar al catálogo. |
+| 7 | Frontend | Habilita la acción de reserva cuando el evento tiene disponibilidad y dirige a CU-P7-03. |
+
+**Flujos alternativos:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | El evento no tiene cupos disponibles | El frontend muestra SIN_CUPO, deshabilita la acción de reserva y permite volver al catálogo. |
+| FA-02 | El evento no declara prerrequisitos | El frontend muestra que no existen prerrequisitos registrados y mantiene disponible la acción de reserva si hay cupo. |
+| FA-03 | El estudiante decide no continuar | El frontend conserva el detalle consultado y permite regresar al catálogo sin crear una reserva. |
+
+**Flujos de excepción:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | El identificador no corresponde a un evento | El frontend muestra que el evento no fue encontrado y ofrece regresar al catálogo. |
+| FE-02 | El Servicio de Talleres no está disponible | El frontend muestra un error de consulta y ofrece reintentar. |
+
+**Reglas de negocio:**
+
+- Un evento sin cupos no puede iniciar una reserva.
+- Los prerrequisitos se muestran como información del evento; la validación productiva de elegibilidad queda fuera de esta primera entrega.
+- La disponibilidad mostrada proviene del contrato de catálogo o del mock documentado.
+
+### CU-P7-03: Solicitar reserva de cupo
+
+| Campo | Descripción |
+|---|---|
+| ID | CU-P7-03 |
+| Nombre | Solicitar reserva de cupo |
+| Actor principal | Estudiante |
+| Descripción | Permite enviar una solicitud de reserva para un evento disponible y dejarla lista para procesamiento asíncrono. |
+| Precondiciones | El estudiante consultó un evento disponible, cuenta con una identidad de prueba y no existe una solicitud confirmada duplicada para el mismo evento. |
+| Postcondiciones | Se genera un identificador de reserva y la solicitud queda inicialmente en estado PENDIENTE; todavía no se emite un ticket confirmado. |
+| Requerimientos relacionados | RF-P7-04 |
+| Servicios y componentes participantes | Frontend independiente, Servicio de Talleres, Servicio de Reservas/Ticketing, RabbitMQ, consumidor de reservas y contrato mock POST /mock/reservations. |
+
+**Flujo principal:**
+
+| Paso | Actor o componente | Acción |
+|---|---|---|
+| 1 | Estudiante | Selecciona la acción de reservar desde el detalle de un evento disponible. |
+| 2 | Frontend | Solicita o confirma los datos mínimos de la reserva y muestra un resumen del evento. |
+| 3 | Estudiante | Confirma el envío de la solicitud. |
+| 4 | Frontend | Envía eventId y los datos mínimos del estudiante al Servicio de Reservas/Ticketing. |
+| 5 | Servicio de Reservas/Ticketing | Valida que el evento exista y que la solicitud tenga los datos requeridos. |
+| 6 | Servicio de Reservas/Ticketing | Crea la solicitud con identificador propio y estado PENDIENTE. |
+| 7 | Servicio de Reservas/Ticketing | Publica el evento de reserva solicitada en RabbitMQ para su procesamiento interno. |
+| 8 | Consumidor de reservas | Recibe el mensaje, valida capacidad y reglas de negocio, y comunica el resultado al Servicio de Reservas/Ticketing. |
+| 9 | Frontend | Muestra el identificador de reserva y el estado inicial PENDIENTE, dirigiendo a CU-P7-04 para consultar el resultado. |
+
+**Flujos alternativos:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | El evento pierde disponibilidad antes de publicar la solicitud | El Servicio de Reservas/Ticketing rechaza la operación con estado SIN_CUPO y no genera ticket. |
+| FA-02 | El estudiante no cumple un prerrequisito requerido | El consumidor procesa la regla y actualiza la solicitud a RECHAZADA, mostrando el motivo al estudiante. |
+| FA-03 | Ya existe una solicitud del mismo estudiante para el evento | El servicio devuelve la reserva existente y evita publicar una solicitud duplicada. |
+
+**Flujos de excepción:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | Faltan datos obligatorios o el evento no es válido | El frontend impide el envío, muestra los campos que deben corregirse y no crea una reserva. |
+| FE-02 | El Servicio de Reservas/Ticketing no está disponible | El frontend informa que la solicitud no pudo enviarse y permite reintentar sin mostrar una reserva confirmada. |
+| FE-03 | RabbitMQ no acepta el mensaje | La solicitud no se presenta como confirmada; el servicio informa el fallo de procesamiento y permite reintentar según el contrato definido. |
+
+**Reglas de negocio:**
+
+- El frontend no se conecta directamente con RabbitMQ.
+- Una solicitud PENDIENTE no genera un ticket confirmado.
+- La verificación definitiva de cupo se realiza durante el procesamiento interno.
+- El procesamiento debe ser idempotente para evitar más de una reserva confirmada por estudiante y evento.
+
+### CU-P7-04: Consultar ticket y estado de reserva
+
+| Campo | Descripción |
+|---|---|
+| ID | CU-P7-04 |
+| Nombre | Consultar ticket y estado de reserva |
+| Actor principal | Estudiante |
+| Descripción | Permite consultar el resultado actualizado de una solicitud de reserva y visualizar el ticket cuando corresponda. |
+| Precondiciones | El estudiante posee un identificador de reserva obtenido durante CU-P7-03 o una reserva de prueba válida. |
+| Postcondiciones | Se muestra el estado actual de la reserva, el motivo cuando corresponda y el ticket si la reserva fue confirmada. |
+| Requerimientos relacionados | RF-P7-05, RF-P7-06 |
+| Servicios y componentes participantes | Frontend independiente, Servicio de Reservas/Ticketing, consumidor de reservas y contrato mock GET /mock/reservations/{reservationId}. |
+
+**Flujo principal:**
+
+| Paso | Actor o componente | Acción |
+|---|---|---|
+| 1 | Estudiante | Accede a la consulta de reserva e ingresa el identificador recibido. |
+| 2 | Frontend | Valida que el identificador tenga un formato permitido. |
+| 3 | Frontend | Solicita el estado al Servicio de Reservas/Ticketing. |
+| 4 | Servicio de Reservas/Ticketing | Retorna el estado actual, mensaje y ticket cuando exista. |
+| 5 | Frontend | Interpreta el estado y muestra la información correspondiente. |
+| 6 | Estudiante | Consulta nuevamente cuando la reserva permanece PENDIENTE o revisa el ticket cuando está CONFIRMADA. |
+
+**Flujos alternativos:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | La reserva está PENDIENTE | El frontend muestra que el procesamiento continúa y permite actualizar la consulta. |
+| FA-02 | La reserva está CONFIRMADA | El frontend muestra los datos del evento, el identificador del ticket y las instrucciones disponibles. |
+| FA-03 | La reserva está RECHAZADA | El frontend muestra el estado y el motivo informado por el servicio; no presenta ticket. |
+| FA-04 | La reserva está SIN_CUPO | El frontend informa que no se pudo asignar cupo y no presenta ticket confirmado. |
+
+**Flujos de excepción:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | El identificador no corresponde a una reserva | El frontend muestra que la reserva no fue encontrada y solicita verificar el dato. |
+| FE-02 | El Servicio de Reservas/Ticketing no responde | El frontend muestra un error temporal y permite reintentar la consulta. |
+| FE-03 | La respuesta no contiene un estado válido | El frontend evita mostrar un resultado ambiguo y presenta un error de procesamiento. |
+
+**Reglas de negocio:**
+
+- Los estados válidos son PENDIENTE, CONFIRMADA, RECHAZADA y SIN_CUPO.
+- Solo una reserva CONFIRMADA puede mostrar un ticket.
+- Una reserva en estado terminal no debe cambiar a otro estado sin una operación administrativa definida en una fase posterior.
+- La consulta del estado no publica nuevos mensajes en RabbitMQ; consulta el resultado producido por el procesamiento interno.
+
+### CU-P7-05: Verificar credencial digital
+
+| Campo | Descripción |
+|---|---|
+| ID | CU-P7-05 |
+| Nombre | Verificar credencial digital |
+| Actor principal | Verificador público |
+| Descripción | Permite consultar públicamente la validez académica de un diploma mediante su identificador único o hash. |
+| Precondiciones | El portal público está disponible y el verificador cuenta con un identificador o hash para consultar. |
+| Postcondiciones | Se muestra el estado de la credencial y únicamente los datos académicos disponibles para verificación pública. |
+| Requerimientos relacionados | RF-P7-07, RF-P7-08 |
+| Servicios y componentes participantes | Frontend independiente, Servicio de Certificados y contrato mock GET /mock/credentials/verify. |
+
+**Flujo principal:**
+
+| Paso | Actor o componente | Acción |
+|---|---|---|
+| 1 | Verificador público | Accede al portal de verificación sin autenticarse. |
+| 2 | Verificador público | Ingresa el identificador único o hash del diploma. |
+| 3 | Frontend | Valida que el campo no esté vacío y normaliza el valor ingresado. |
+| 4 | Frontend | Envía la consulta al Servicio de Certificados. |
+| 5 | Servicio de Certificados | Busca la credencial asociada con el identificador recibido. |
+| 6 | Servicio de Certificados | Retorna el estado de verificación y los datos públicos disponibles. |
+| 7 | Frontend | Muestra el resultado de manera clara, indicando si la credencial es válida, inválida o no encontrada. |
+
+**Flujos alternativos:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FA-01 | La credencial es VÁLIDA | El frontend muestra el estado válido, el nombre de la actividad y los datos académicos autorizados. |
+| FA-02 | La credencial es INVÁLIDA | El frontend muestra el estado inválido sin exponer datos internos del certificado. |
+| FA-03 | La credencial es NO_ENCONTRADA | El frontend informa que no existe una credencial asociada con el valor consultado. |
+
+**Flujos de excepción:**
+
+| ID | Condición | Acción |
+|---|---|---|
+| FE-01 | El campo está vacío o tiene un formato no permitido | El frontend solicita un identificador válido y no envía la consulta. |
+| FE-02 | El Servicio de Certificados no está disponible | El frontend muestra un error temporal y permite reintentar. |
+| FE-03 | La respuesta no contiene un estado de verificación válido | El frontend muestra un error de procesamiento y no declara la credencial como válida. |
+
+**Reglas de negocio:**
+
+- La verificación pública no requiere autenticación.
+- Los estados válidos son VÁLIDA, INVÁLIDA y NO_ENCONTRADA.
+- La consulta solo devuelve los datos definidos como públicos.
+- Este caso de uso verifica credenciales; no emite ni modifica certificados.
 
 ## 10. Estados del dominio
 
@@ -363,8 +604,7 @@ implementar servicios productivos.
 Las siguientes actividades pertenecen a fases posteriores de la documentación
 y no se declaran terminadas en esta entrega:
 
-- Diagramas de casos de uso de alto nivel, primera descomposición y narrativas
-  expandidas.
+- Diagramas de casos de uso de alto nivel y primera descomposición.
 - Modelo de vistas 4+1 de Kruchten.
 - Diagrama de actividades y secuencia con RabbitMQ.
 - Diagrama entidad-relación.
