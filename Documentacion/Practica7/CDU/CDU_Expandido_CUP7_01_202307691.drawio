@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mxfile host="app.diagrams.net">
   <diagram name="Page-1" id="p7-cu01">
-    <mxGraphModel dx="1239" dy="697" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="650" math="0" shadow="0">
+    <mxGraphModel dx="1239" dy="697" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="750" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="cu01-boundary" parent="1" style="html=1;whiteSpace=wrap;" value="" vertex="1">
-          <mxGeometry x="180" y="30" width="760" height="500" as="geometry" />
+          <mxGeometry x="180" y="30" width="760" height="620" as="geometry" />
         </mxCell>
         <mxCell id="cu01-title" parent="1" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="CU-P7-01 — Consultar catálogo de eventos" vertex="1">
           <mxGeometry x="330" y="50" width="460" height="45" as="geometry" />
@@ -26,29 +26,26 @@
         <mxCell id="cu01-error" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Gestionar error de catálogo" vertex="1">
           <mxGeometry x="655" y="360" width="235" height="75" as="geometry" />
         </mxCell>
+        <mxCell id="cu01-no-cupo" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Mostrar evento SIN_CUPO" vertex="1">
+          <mxGeometry x="655" y="485" width="235" height="75" as="geometry" />
+        </mxCell>
         <mxCell id="cu01-edge-actor" edge="1" parent="1" source="cu01-actor" target="cu01-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu01-edge-include" edge="1" parent="1" source="cu01-main" target="cu01-include" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu01-edge-include" value="«include»" edge="1" parent="1" source="cu01-main" target="cu01-include" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu01-label-include" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«include»" vertex="1">
-          <mxGeometry x="555" y="135" width="90" height="25" as="geometry" />
-        </mxCell>
-        <mxCell id="cu01-edge-empty" edge="1" parent="1" source="cu01-empty" target="cu01-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu01-edge-empty" value="«extend»" edge="1" parent="1" source="cu01-empty" target="cu01-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu01-label-empty" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«extend»" vertex="1">
-          <mxGeometry x="560" y="245" width="90" height="25" as="geometry" />
-        </mxCell>
-        <mxCell id="cu01-edge-error" edge="1" parent="1" source="cu01-error" target="cu01-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu01-edge-error" value="«extend»" edge="1" parent="1" source="cu01-error" target="cu01-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu01-label-error" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«extend»" vertex="1">
-          <mxGeometry x="560" y="370" width="90" height="25" as="geometry" />
+        <mxCell id="cu01-edge-no-cupo" value="«extend»" edge="1" parent="1" source="cu01-no-cupo" target="cu01-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="cu01-note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=10;" value="Componente interno: Servicio de Talleres" vertex="1">
-          <mxGeometry x="350" y="455" width="420" height="30" as="geometry" />
+          <mxGeometry x="350" y="580" width="420" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

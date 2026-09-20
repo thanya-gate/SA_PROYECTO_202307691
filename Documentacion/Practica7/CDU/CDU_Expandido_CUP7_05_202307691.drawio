@@ -35,35 +35,20 @@
         <mxCell id="cu05-edge-actor" edge="1" parent="1" source="cu05-actor" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu05-edge-validate" edge="1" parent="1" source="cu05-main" target="cu05-validate" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu05-edge-validate" value="«include»" edge="1" parent="1" source="cu05-main" target="cu05-validate" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu05-label-validate" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«include»" vertex="1">
-          <mxGeometry x="625" y="135" width="95" height="25" as="geometry" />
-        </mxCell>
-        <mxCell id="cu05-edge-query" edge="1" parent="1" source="cu05-main" target="cu05-query" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu05-edge-query" value="«include»" edge="1" parent="1" source="cu05-main" target="cu05-query" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu05-label-query" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«include»" vertex="1">
-          <mxGeometry x="625" y="250" width="95" height="25" as="geometry" />
-        </mxCell>
-        <mxCell id="cu05-edge-valid" edge="1" parent="1" source="cu05-valid" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu05-edge-valid" value="«extend»" edge="1" parent="1" source="cu05-valid" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu05-label-valid" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«extend»" vertex="1">
-          <mxGeometry x="300" y="385" width="95" height="25" as="geometry" />
-        </mxCell>
-        <mxCell id="cu05-edge-invalid" edge="1" parent="1" source="cu05-invalid" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu05-edge-invalid" value="«extend»" edge="1" parent="1" source="cu05-invalid" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu05-label-invalid" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«extend»" vertex="1">
-          <mxGeometry x="455" y="385" width="95" height="25" as="geometry" />
-        </mxCell>
-        <mxCell id="cu05-edge-not-found" edge="1" parent="1" source="cu05-not-found" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu05-edge-not-found" value="«extend»" edge="1" parent="1" source="cu05-not-found" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="cu05-label-not-found" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«extend»" vertex="1">
-          <mxGeometry x="790" y="385" width="95" height="25" as="geometry" />
         </mxCell>
         <mxCell id="cu05-note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=10;" value="Componente interno: Servicio de Certificados" vertex="1">
           <mxGeometry x="420" y="550" width="520" height="30" as="geometry" />

@@ -233,8 +233,8 @@ Responsabilidades:
 ## 9. Casos de uso iniciales
 
 Estos casos de uso delimitan la primera versión de la documentación. Las
-narrativas se presentan en formato académico y los diagramas UML se elaborarán
-en una siguiente fase documental.
+narrativas se presentan en formato académico y los diagramas UML
+correspondientes se incluyen en la sección 9.6 junto con sus fuentes editables.
 
 | ID | Caso de uso | Actor principal | Resultado esperado |
 |---|---|---|---|
@@ -243,6 +243,19 @@ en una siguiente fase documental.
 | CU-P7-03 | Solicitar reserva de cupo | Estudiante | La solicitud queda registrada para su procesamiento asíncrono. |
 | CU-P7-04 | Consultar ticket y estado de reserva | Estudiante | El estudiante visualiza el estado de la reserva y el ticket si fue confirmado. |
 | CU-P7-05 | Verificar credencial digital | Verificador público | El sistema informa la validez de la credencial consultada. |
+
+### Identificadores de alto nivel y módulos
+
+El caso de uso de alto nivel y la primera descomposición utilizan identificadores
+distintos de los cinco casos concretos para evitar confundir módulos con casos de
+uso ejecutados directamente por el usuario.
+
+| Nivel | Identificador | Nombre | Casos concretos relacionados |
+|---|---|---|---|
+| Alto nivel | CU-P7-00 | Consultar eventos, solicitar reservas y verificar credenciales digitales | CU-P7-01 a CU-P7-05 |
+| Módulo | M-P7-01 | Catálogo de eventos | CU-P7-01, CU-P7-02 |
+| Módulo | M-P7-02 | Reservas y Ticketing | CU-P7-03, CU-P7-04 |
+| Módulo | M-P7-03 | Verificación de credenciales | CU-P7-05 |
 
 ### CU-P7-01: Consultar catálogo de eventos
 
@@ -341,7 +354,7 @@ en una siguiente fase documental.
 | ID | CU-P7-03 |
 | Nombre | Solicitar reserva de cupo |
 | Actor principal | Estudiante |
-| Descripción | Permite enviar una solicitud de reserva para un evento disponible y dejarla lista para procesamiento asíncrono. |
+| Descripción | Permite enviar una solicitud de reserva para un evento disponible, registrarla en estado PENDIENTE y dejarla lista para procesamiento asíncrono. |
 | Precondiciones | El estudiante consultó un evento disponible, cuenta con una identidad de prueba y no existe una solicitud confirmada duplicada para el mismo evento. |
 | Postcondiciones | Se genera un identificador de reserva y la solicitud queda inicialmente en estado PENDIENTE; todavía no se emite un ticket confirmado. |
 | Requerimientos relacionados | RF-P7-04 |
@@ -380,6 +393,7 @@ en una siguiente fase documental.
 **Reglas de negocio:**
 
 - El frontend no se conecta directamente con RabbitMQ.
+- CU-P7-03 concluye para el frontend cuando la solicitud tiene identificador y estado PENDIENTE; el resultado final se consulta mediante CU-P7-04.
 - Una solicitud PENDIENTE no genera un ticket confirmado.
 - La verificación definitiva de cupo se realiza durante el procesamiento interno.
 - El procesamiento debe ser idempotente para evitar más de una reserva confirmada por estudiante y evento.
@@ -488,13 +502,13 @@ se acompaña de su fuente editable en formato `.drawio`.
 
 #### Diagrama de alto nivel
 
-[![Diagrama de alto nivel de Academix Pass & CertiHub](CDU/CDU_AltoNivel_P7_202307691.drawio.svg)](CDU/CDU_AltoNivel_P7_202307691.drawio)
+[![Diagrama de alto nivel de YOUSAC Academix Pass & CertiHub](CDU/CDU_AltoNivel_P7_202307691.drawio.svg)](CDU/CDU_AltoNivel_P7_202307691.drawio)
 
 [Fuente editable del diagrama de alto nivel](CDU/CDU_AltoNivel_P7_202307691.drawio)
 
 #### Primera descomposición
 
-[![Primera descomposición de Academix Pass & CertiHub](CDU/CDU_PrimeraDescomposicion_P7_202307691.drawio.svg)](CDU/CDU_PrimeraDescomposicion_P7_202307691.drawio)
+[![Primera descomposición de YOUSAC Academix Pass & CertiHub](CDU/CDU_PrimeraDescomposicion_P7_202307691.drawio.svg)](CDU/CDU_PrimeraDescomposicion_P7_202307691.drawio)
 
 [Fuente editable de la primera descomposición](CDU/CDU_PrimeraDescomposicion_P7_202307691.drawio)
 
@@ -551,8 +565,11 @@ se acompaña de su fuente editable en formato `.drawio`.
 
 ## 11. Flujo conceptual de reserva
 
-El frontend no se conecta directamente con RabbitMQ. La comunicación con el
-broker pertenece a los servicios internos y se representa conceptualmente así:
+El frontend no se conecta directamente con RabbitMQ. CU-P7-03 termina para el
+frontend cuando Servicio de Reservas/Ticketing registra la solicitud con un
+`reservationId`, la deja en estado `PENDIENTE` y publica el mensaje. El
+consumidor procesa el mensaje de forma interna y CU-P7-04 consulta el resultado
+posteriormente. La comunicación con el broker se representa conceptualmente así:
 
 ~~~mermaid
 sequenceDiagram
@@ -567,12 +584,17 @@ sequenceDiagram
     F->>T: Consulta disponibilidad
     T-->>F: Evento y cupos disponibles
     F->>R: Envía solicitud de reserva
+    R->>R: Registra reservationId y estado PENDIENTE
     R->>B: Publica reserva solicitada
+    R-->>F: reservationId y estado PENDIENTE
+    F-->>E: Muestra solicitud registrada
     B->>C: Entrega mensaje de la cola
     C->>C: Valida capacidad y reglas
     C-->>R: Actualiza resultado
-    R-->>F: Estado y ticket simulado
-    F-->>E: Muestra resultado de la reserva
+    E->>F: Consulta el estado de la reserva
+    F->>R: Solicita resultado por reservationId
+    R-->>F: Estado y ticket si existe
+    F-->>E: Muestra el resultado de la reserva
 ~~~
 
 El consumidor debe procesar la operación de forma idempotente para evitar que
@@ -660,7 +682,7 @@ y no se declaran terminadas en esta entrega:
 - Diagrama entidad-relación.
 - Mockups detallados de las pantallas.
 - Matriz de decisiones técnicas completa.
-- Archivos editables de los diagramas restantes (.drawio, .puml u otro formato).
+- Archivos editables de las vistas pendientes (.drawio, .puml u otro formato). Los diagramas UML de casos de uso de la sección 9.6 ya cuentan con fuente `.drawio` y representación `.drawio.svg`.
 - Implementación y despliegue del frontend independiente en Vercel.
 - Pruebas funcionales del frontend con los mocks.
 - Confirmación del alcance final de backend, CI/CD, Registry y pruebas.

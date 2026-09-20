@@ -29,23 +29,14 @@
         <mxCell id="cu02-edge-actor" edge="1" parent="1" source="cu02-actor" target="cu02-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu02-edge-include" edge="1" parent="1" source="cu02-main" target="cu02-include" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu02-edge-include" value="«include»" edge="1" parent="1" source="cu02-main" target="cu02-include" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu02-label-include" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«include»" vertex="1">
-          <mxGeometry x="565" y="135" width="90" height="25" as="geometry" />
-        </mxCell>
-        <mxCell id="cu02-edge-no-cupo" edge="1" parent="1" source="cu02-no-cupo" target="cu02-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu02-edge-no-cupo" value="«extend»" edge="1" parent="1" source="cu02-no-cupo" target="cu02-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cu02-label-no-cupo" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«extend»" vertex="1">
-          <mxGeometry x="565" y="245" width="90" height="25" as="geometry" />
-        </mxCell>
-        <mxCell id="cu02-edge-not-found" edge="1" parent="1" source="cu02-not-found" target="cu02-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;">
+        <mxCell id="cu02-edge-not-found" value="«extend»" edge="1" parent="1" source="cu02-not-found" target="cu02-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
           <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="cu02-label-not-found" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=9;" value="«extend»" vertex="1">
-          <mxGeometry x="565" y="370" width="90" height="25" as="geometry" />
         </mxCell>
         <mxCell id="cu02-note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=10;" value="Componente interno: Servicio de Talleres" vertex="1">
           <mxGeometry x="350" y="455" width="420" height="30" as="geometry" />
