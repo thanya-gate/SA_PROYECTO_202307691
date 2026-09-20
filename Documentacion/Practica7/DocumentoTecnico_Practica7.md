@@ -29,6 +29,7 @@
    9.3 [CU-P7-03: Solicitar reserva de cupo](#cu-p7-03-solicitar-reserva-de-cupo)
    9.4 [CU-P7-04: Consultar ticket y estado de reserva](#cu-p7-04-consultar-ticket-y-estado-de-reserva)
    9.5 [CU-P7-05: Verificar credencial digital](#cu-p7-05-verificar-credencial-digital)
+   9.6 [Diagramas de casos de uso](#96-diagramas-de-casos-de-uso)
 10. [Estados del dominio](#10-estados-del-dominio)
 11. [Flujo conceptual de reserva](#11-flujo-conceptual-de-reserva)
 12. [Contratos lógicos y mocks](#12-contratos-lógicos-y-mocks)
@@ -479,6 +480,56 @@ en una siguiente fase documental.
 - La consulta solo devuelve los datos definidos como públicos.
 - Este caso de uso verifica credenciales; no emite ni modifica certificados.
 
+### 9.6 Diagramas de casos de uso
+
+Los siguientes diagramas representan el alcance de la Práctica 7 y mantienen
+separada esta solución satélite del proyecto principal YOUSAC. Cada imagen SVG
+se acompaña de su fuente editable en formato `.drawio`.
+
+#### Diagrama de alto nivel
+
+[![Diagrama de alto nivel de Academix Pass & CertiHub](CDU/CDU_AltoNivel_P7_202307691.drawio.svg)](CDU/CDU_AltoNivel_P7_202307691.drawio)
+
+[Fuente editable del diagrama de alto nivel](CDU/CDU_AltoNivel_P7_202307691.drawio)
+
+#### Primera descomposición
+
+[![Primera descomposición de Academix Pass & CertiHub](CDU/CDU_PrimeraDescomposicion_P7_202307691.drawio.svg)](CDU/CDU_PrimeraDescomposicion_P7_202307691.drawio)
+
+[Fuente editable de la primera descomposición](CDU/CDU_PrimeraDescomposicion_P7_202307691.drawio)
+
+#### Casos de uso expandidos
+
+##### CU-P7-01 — Consultar catálogo de eventos
+
+[![Diagrama expandido del CU-P7-01](CDU/CDU_Expandido_CUP7_01_202307691.drawio.svg)](CDU/CDU_Expandido_CUP7_01_202307691.drawio)
+
+[Fuente editable del CU-P7-01](CDU/CDU_Expandido_CUP7_01_202307691.drawio)
+
+##### CU-P7-02 — Consultar detalle y disponibilidad
+
+[![Diagrama expandido del CU-P7-02](CDU/CDU_Expandido_CUP7_02_202307691.drawio.svg)](CDU/CDU_Expandido_CUP7_02_202307691.drawio)
+
+[Fuente editable del CU-P7-02](CDU/CDU_Expandido_CUP7_02_202307691.drawio)
+
+##### CU-P7-03 — Solicitar reserva de cupo
+
+[![Diagrama expandido del CU-P7-03](CDU/CDU_Expandido_CUP7_03_202307691.drawio.svg)](CDU/CDU_Expandido_CUP7_03_202307691.drawio)
+
+[Fuente editable del CU-P7-03](CDU/CDU_Expandido_CUP7_03_202307691.drawio)
+
+##### CU-P7-04 — Consultar ticket y estado de reserva
+
+[![Diagrama expandido del CU-P7-04](CDU/CDU_Expandido_CUP7_04_202307691.drawio.svg)](CDU/CDU_Expandido_CUP7_04_202307691.drawio)
+
+[Fuente editable del CU-P7-04](CDU/CDU_Expandido_CUP7_04_202307691.drawio)
+
+##### CU-P7-05 — Verificar credencial digital
+
+[![Diagrama expandido del CU-P7-05](CDU/CDU_Expandido_CUP7_05_202307691.drawio.svg)](CDU/CDU_Expandido_CUP7_05_202307691.drawio)
+
+[Fuente editable del CU-P7-05](CDU/CDU_Expandido_CUP7_05_202307691.drawio)
+
 ## 10. Estados del dominio
 
 ### 10.1 Estados de una reserva
@@ -604,13 +655,12 @@ implementar servicios productivos.
 Las siguientes actividades pertenecen a fases posteriores de la documentación
 y no se declaran terminadas en esta entrega:
 
-- Diagramas de casos de uso de alto nivel y primera descomposición.
 - Modelo de vistas 4+1 de Kruchten.
 - Diagrama de actividades y secuencia con RabbitMQ.
 - Diagrama entidad-relación.
 - Mockups detallados de las pantallas.
 - Matriz de decisiones técnicas completa.
-- Archivos editables de diagramación (.drawio, .puml u otro formato).
+- Archivos editables de los diagramas restantes (.drawio, .puml u otro formato).
 - Implementación y despliegue del frontend independiente en Vercel.
 - Pruebas funcionales del frontend con los mocks.
 - Confirmación del alcance final de backend, CI/CD, Registry y pruebas.

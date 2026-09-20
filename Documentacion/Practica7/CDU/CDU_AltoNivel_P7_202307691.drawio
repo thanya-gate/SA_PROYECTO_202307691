@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="p7-alto-nivel">
+    <mxGraphModel dx="1239" dy="697" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="p7-alto-boundary" parent="1" style="html=1;whiteSpace=wrap;" value="" vertex="1">
+          <mxGeometry x="180" y="30" width="620" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-alto-title" parent="1" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="Academix Pass &amp; CertiHub&lt;br&gt;Sistema" vertex="1">
+          <mxGeometry x="330" y="50" width="320" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-alto-student" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Estudiante" vertex="1">
+          <mxGeometry x="75" y="175" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-alto-verifier" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Verificador público" vertex="1">
+          <mxGeometry x="850" y="245" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-alto-main" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="CUP7-000&lt;br&gt;Gestionar eventos, reservas y&lt;br&gt;credenciales digitales" vertex="1">
+          <mxGeometry x="315" y="175" width="350" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-alto-edge-student" edge="1" parent="1" source="p7-alto-student" target="p7-alto-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-alto-edge-verifier" edge="1" parent="1" source="p7-alto-verifier" target="p7-alto-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
