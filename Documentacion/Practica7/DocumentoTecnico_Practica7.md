@@ -30,11 +30,12 @@
    9.4 [CU-P7-04: Consultar ticket y estado de reserva](#cu-p7-04-consultar-ticket-y-estado-de-reserva)
    9.5 [CU-P7-05: Verificar credencial digital](#cu-p7-05-verificar-credencial-digital)
    9.6 [Diagramas de casos de uso](#96-diagramas-de-casos-de-uso)
-10. [Estados del dominio](#10-estados-del-dominio)
-11. [Flujo conceptual de reserva](#11-flujo-conceptual-de-reserva)
-12. [Contratos lógicos y mocks](#12-contratos-lógicos-y-mocks)
-13. [Supuestos y decisiones](#13-supuestos-y-decisiones)
-14. [Trabajo pendiente](#14-trabajo-pendiente)
+10. [Mockups UI/UX](#10-mockups-uiux)
+11. [Estados del dominio](#11-estados-del-dominio)
+12. [Flujo conceptual de reserva](#12-flujo-conceptual-de-reserva)
+13. [Contratos lógicos y mocks](#13-contratos-lógicos-y-mocks)
+14. [Supuestos y decisiones](#14-supuestos-y-decisiones)
+15. [Trabajo pendiente](#15-trabajo-pendiente)
 
 ## 1. Introducción
 
@@ -544,9 +545,105 @@ se acompaña de su fuente editable en formato `.drawio`.
 
 [Fuente editable del CU-P7-05](CDU/CDU_Expandido_CUP7_05_202307691.drawio)
 
-## 10. Estados del dominio
+## 10. Mockups UI/UX
 
-### 10.1 Estados de una reserva
+Los mockups de **Academix Pass & CertiHub** documentan la interfaz esperada del
+frontend independiente de Práctica 7. Mantienen el estilo wireframe de los
+mockups de YOUSAC: fondo claro, bordes delgados, controles azul claro y datos de
+prueba identificados como mock. No representan pantallas de autenticación,
+administración, emisión de certificados ni una conexión directa del frontend
+con RabbitMQ.
+
+El archivo editable maestro se encuentra en
+[AcademixPass_CertiHub_P7_Mockups.pen](Mockups/AcademixPass_CertiHub_P7_Mockups.pen).
+Las exportaciones PNG corresponden a los frames principales del documento
+Pencil y a las hojas de estados alternativos.
+
+### 10.1 Matriz de trazabilidad
+
+| Vista | Caso(s) de uso | Requerimiento(s) funcional(es) | Contrato mock | Estados representados |
+|---|---|---|---|---|
+| Catálogo de eventos | CU-P7-01 | RF-P7-01 | `GET /mock/events` | Cargado, vacío, error y `SIN_CUPO` |
+| Detalle del evento | CU-P7-02 | RF-P7-02, RF-P7-03 | `GET /mock/events/{eventId}` | Disponible, sin cupo, no encontrado y error |
+| Solicitud de reserva | CU-P7-03 | RF-P7-04 | `POST /mock/reservations` | Validación, `PENDIENTE`, duplicada, prerrequisito, `SIN_CUPO` y error |
+| Estado de reserva | CU-P7-04 | RF-P7-05, RF-P7-06 | `GET /mock/reservations/{reservationId}` | `PENDIENTE`, `CONFIRMADA` con ticket, `RECHAZADA`, `SIN_CUPO`, no encontrada y error |
+| Verificación de credencial | CU-P7-05 | RF-P7-07, RF-P7-08 | `GET /mock/credentials/verify?identifier=` | `VÁLIDA`, `INVÁLIDA`, `NO_ENCONTRADA`, formato inválido y error |
+
+Las cinco vistas tienen variantes responsive de 360 px, 768 px y 1440 px,
+conforme a RNF-P7-03. Las hojas de estados reúnen las respuestas de carga,
+vacío, validación, éxito y error necesarias para revisar RNF-P7-04 sin duplicar
+innecesariamente cada variante en los tres anchos.
+
+### 10.2 Vistas principales responsive
+
+#### Catálogo de eventos — CU-P7-01
+
+[![Catálogo a 360 px](Mockups/Mockup_Catalogo_P7_202307691_360.png)](Mockups/Mockup_Catalogo_P7_202307691_360.png)
+
+[![Catálogo a 768 px](Mockups/Mockup_Catalogo_P7_202307691_768.png)](Mockups/Mockup_Catalogo_P7_202307691_768.png)
+
+[![Catálogo a 1440 px](Mockups/Mockup_Catalogo_P7_202307691_1440.png)](Mockups/Mockup_Catalogo_P7_202307691_1440.png)
+
+#### Detalle del evento — CU-P7-02
+
+[![Detalle del evento a 360 px](Mockups/Mockup_DetalleEvento_P7_202307691_360.png)](Mockups/Mockup_DetalleEvento_P7_202307691_360.png)
+
+[![Detalle del evento a 768 px](Mockups/Mockup_DetalleEvento_P7_202307691_768.png)](Mockups/Mockup_DetalleEvento_P7_202307691_768.png)
+
+[![Detalle del evento a 1440 px](Mockups/Mockup_DetalleEvento_P7_202307691_1440.png)](Mockups/Mockup_DetalleEvento_P7_202307691_1440.png)
+
+#### Solicitud de reserva — CU-P7-03
+
+[![Solicitud de reserva a 360 px](Mockups/Mockup_Reserva_P7_202307691_360.png)](Mockups/Mockup_Reserva_P7_202307691_360.png)
+
+[![Solicitud de reserva a 768 px](Mockups/Mockup_Reserva_P7_202307691_768.png)](Mockups/Mockup_Reserva_P7_202307691_768.png)
+
+[![Solicitud de reserva a 1440 px](Mockups/Mockup_Reserva_P7_202307691_1440.png)](Mockups/Mockup_Reserva_P7_202307691_1440.png)
+
+#### Estado de reserva — CU-P7-04
+
+[![Estado de reserva a 360 px](Mockups/Mockup_EstadoReserva_P7_202307691_360.png)](Mockups/Mockup_EstadoReserva_P7_202307691_360.png)
+
+[![Estado de reserva a 768 px](Mockups/Mockup_EstadoReserva_P7_202307691_768.png)](Mockups/Mockup_EstadoReserva_P7_202307691_768.png)
+
+[![Estado de reserva a 1440 px](Mockups/Mockup_EstadoReserva_P7_202307691_1440.png)](Mockups/Mockup_EstadoReserva_P7_202307691_1440.png)
+
+#### Verificación de credencial — CU-P7-05
+
+[![Verificación de credencial a 360 px](Mockups/Mockup_VerificacionCredencial_P7_202307691_360.png)](Mockups/Mockup_VerificacionCredencial_P7_202307691_360.png)
+
+[![Verificación de credencial a 768 px](Mockups/Mockup_VerificacionCredencial_P7_202307691_768.png)](Mockups/Mockup_VerificacionCredencial_P7_202307691_768.png)
+
+[![Verificación de credencial a 1440 px](Mockups/Mockup_VerificacionCredencial_P7_202307691_1440.png)](Mockups/Mockup_VerificacionCredencial_P7_202307691_1440.png)
+
+### 10.3 Hojas de estados alternativos
+
+Las siguientes hojas reúnen los estados secundarios utilizados por las
+narrativas de los casos de uso. Los textos y valores son datos de prueba.
+
+#### Estados del catálogo
+
+[![Estados del catálogo](Mockups/Estados_Catalogo_P7_202307691.png)](Mockups/Estados_Catalogo_P7_202307691.png)
+
+#### Estados del detalle del evento
+
+[![Estados del detalle del evento](Mockups/Estados_DetalleEvento_P7_202307691.png)](Mockups/Estados_DetalleEvento_P7_202307691.png)
+
+#### Estados de la solicitud de reserva
+
+[![Estados de la solicitud de reserva](Mockups/Estados_Reserva_P7_202307691.png)](Mockups/Estados_Reserva_P7_202307691.png)
+
+#### Estados de la consulta de reserva
+
+[![Estados de la consulta de reserva](Mockups/Estados_EstadoReserva_P7_202307691.png)](Mockups/Estados_EstadoReserva_P7_202307691.png)
+
+#### Estados de la verificación de credencial
+
+[![Estados de la verificación de credencial](Mockups/Estados_VerificacionCredencial_P7_202307691.png)](Mockups/Estados_VerificacionCredencial_P7_202307691.png)
+
+## 11. Estados del dominio
+
+### 11.1 Estados de una reserva
 
 | Estado | Descripción |
 |---|---|
@@ -555,7 +652,7 @@ se acompaña de su fuente editable en formato `.drawio`.
 | RECHAZADA | La solicitud no fue aceptada por una regla de negocio. |
 | SIN_CUPO | La solicitud no pudo confirmarse porque el evento alcanzó su capacidad. |
 
-### 10.2 Estados de verificación
+### 11.2 Estados de verificación
 
 | Estado | Descripción |
 |---|---|
@@ -563,7 +660,7 @@ se acompaña de su fuente editable en formato `.drawio`.
 | INVÁLIDA | La credencial existe, pero no cumple las condiciones de validez. |
 | NO_ENCONTRADA | No existe una credencial asociada con el identificador consultado. |
 
-## 11. Flujo conceptual de reserva
+## 12. Flujo conceptual de reserva
 
 El frontend no se conecta directamente con RabbitMQ. CU-P7-03 termina para el
 frontend cuando Servicio de Reservas/Ticketing registra la solicitud con un
@@ -602,7 +699,7 @@ una solicitud duplicada genere más de un ticket confirmado. Esta regla queda
 como decisión arquitectónica para la documentación de vistas de procesos y
 persistencia.
 
-## 12. Contratos lógicos y mocks
+## 13. Contratos lógicos y mocks
 
 Los siguientes contratos son interfaces lógicas para el frontend futuro. No
 representan endpoints implementados en el backend actual.
@@ -627,9 +724,9 @@ Los mocks deberán contemplar al menos:
 - Credencial no encontrada.
 - Error de comunicación.
 
-## 13. Supuestos y decisiones
+## 14. Supuestos y decisiones
 
-### 13.1 Decisiones adoptadas
+### 14.1 Decisiones adoptadas
 
 | Decisión | Justificación |
 |---|---|
@@ -640,7 +737,7 @@ Los mocks deberán contemplar al menos:
 | Mocks documentados | Permiten construir posteriormente el frontend sin afirmar que existe un backend productivo. |
 | Frontend independiente | La futura aplicación de Práctica 7 no agregará rutas ni componentes al Frontend/ principal. |
 
-### 13.2 Supuestos
+### 14.2 Supuestos
 
 - Los eventos del catálogo se consideran previamente publicados por el Servicio
   de Talleres.
@@ -652,7 +749,7 @@ Los mocks deberán contemplar al menos:
   Servicio de Certificados; la interfaz inicial solo verifica credenciales.
 - La URL pública de Vercel se configurará cuando se implemente el frontend.
 
-### 13.3 Ambigüedades del enunciado
+### 14.3 Ambigüedades del enunciado
 
 El documento de referencia presenta diferencias internas que deben confirmarse
 con el docente o el equipo:
@@ -672,7 +769,7 @@ Mientras no exista una confirmación distinta, esta primera entrega sigue la
 interpretación de documentación, contratos/mocks y frontend futuro, sin
 implementar servicios productivos.
 
-## 14. Trabajo pendiente
+## 15. Trabajo pendiente
 
 Las siguientes actividades pertenecen a fases posteriores de la documentación
 y no se declaran terminadas en esta entrega:
@@ -680,7 +777,6 @@ y no se declaran terminadas en esta entrega:
 - Modelo de vistas 4+1 de Kruchten.
 - Diagrama de actividades y secuencia con RabbitMQ.
 - Diagrama entidad-relación.
-- Mockups detallados de las pantallas.
 - Matriz de decisiones técnicas completa.
 - Archivos editables de las vistas pendientes (.drawio, .puml u otro formato). Los diagramas UML de casos de uso de la sección 9.6 ya cuentan con fuente `.drawio` y representación `.drawio.svg`.
 - Implementación y despliegue del frontend independiente en Vercel.
