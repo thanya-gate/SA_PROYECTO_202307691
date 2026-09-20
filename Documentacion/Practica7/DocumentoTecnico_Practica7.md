@@ -3,7 +3,7 @@
 **Práctica:** 7
 **Curso:** Software Avanzado
 **Institución:** Universidad de San Carlos de Guatemala
-**Estado del documento:** Primera entrega documental
+**Estado del documento:** Primera entrega documental y frontend mock
 **Identificadores:** RF-P7, RNF-P7 y CU-P7
 
 > Este documento define el alcance inicial, los actores, los servicios y los
@@ -51,10 +51,10 @@ gestiona eventos con cupos limitados, solicitudes de reserva y validación de
 credenciales digitales.
 
 La primera entrega se concentra en la documentación de ingeniería de software
-y en la definición del frontend que posteriormente será desplegado de forma
+y en un frontend interactivo que posteriormente será desplegado de forma
 pública en Vercel. Los servicios de backend, la persistencia y el broker se
-representan en esta etapa mediante arquitectura conceptual, contratos lógicos
-y mocks documentados.
+representan mediante arquitectura conceptual, contratos lógicos y mocks
+documentados.
 
 ## 2. Objetivos
 
@@ -86,7 +86,7 @@ de YOUSAC, pero tiene responsabilidades, flujos y servicios propios.
 | Unidad principal | Curso, clase y recurso académico | Evento, reserva, ticket y certificado |
 | Flujo crítico | Reproducción de contenido | Reserva concurrente de cupos |
 | Comunicación central | Servicios de YOUSAC | Servicios SOA y eventos mediante RabbitMQ |
-| Frontend | Aplicación principal en Frontend/ | Aplicación independiente planificada para una fase posterior |
+| Frontend | Aplicación principal en Frontend/ | Aplicación independiente en Practica7/Frontend/ |
 
 La documentación de esta práctica no modifica los servicios, contratos,
 esquemas ni rutas del proyecto principal.
@@ -119,11 +119,13 @@ estado de procesamiento y la emisión simulada de un ticket.
 Una persona sin autenticación podrá ingresar un identificador único o hash de
 un diploma y consultar si la credencial es válida, inválida o no encontrada.
 
-#### Despliegue futuro del frontend
+#### Despliegue del frontend
 
-El frontend deberá construirse posteriormente como una aplicación
-independiente y publicarse en un dominio de Vercel. La evaluación no deberá
-depender de localhost.
+El frontend se construye como una aplicación independiente en
+`Practica7/Frontend/`, utilizando mocks locales alineados con los contratos de
+esta práctica. Está configurado para exportación estática de Next.js y deberá
+publicarse posteriormente en un dominio de Vercel. La evaluación final no
+deberá depender de localhost.
 
 ### 4.2 Funcionalidades excluidas de esta primera entrega
 
@@ -547,7 +549,7 @@ se acompaña de su fuente editable en formato `.drawio`.
 
 ## 10. Mockups UI/UX
 
-Los mockups de **Academix Pass & CertiHub** documentan la interfaz esperada del
+Los mockups de **Academix Pass & CertiHub** documentan la interfaz del
 frontend independiente de Práctica 7. Mantienen el estilo wireframe de los
 mockups de YOUSAC: fondo claro, bordes delgados, controles azul claro y datos de
 prueba identificados como mock. No representan pantallas de autenticación,
@@ -556,6 +558,9 @@ con RabbitMQ.
 
 El archivo editable maestro se encuentra en
 [AcademixPass_CertiHub_P7_Mockups.pen](Mockups/AcademixPass_CertiHub_P7_Mockups.pen).
+La implementación de la interfaz se encuentra en
+[Practica7/Frontend](../../Practica7/Frontend/README.md), separada del frontend
+principal de YOUSAC.
 Las exportaciones PNG corresponden a los frames principales del documento
 Pencil y a las hojas de estados alternativos.
 
@@ -701,7 +706,7 @@ persistencia.
 
 ## 13. Contratos lógicos y mocks
 
-Los siguientes contratos son interfaces lógicas para el frontend futuro. No
+Los siguientes contratos son interfaces lógicas para el frontend. No
 representan endpoints implementados en el backend actual.
 
 | Operación | Entrada | Respuesta mínima |
@@ -712,7 +717,35 @@ representan endpoints implementados en el backend actual.
 | GET /mock/reservations/{reservationId} | Identificador de reserva | Estado, mensaje y ticket cuando exista. |
 | GET /mock/credentials/verify?identifier= | Identificador o hash | Estado de verificación y datos académicos disponibles. |
 
-Los mocks deberán contemplar al menos:
+### 13.1 Implementación mock del frontend
+
+El frontend implementado consume adaptadores locales equivalentes a las
+operaciones anteriores. Las interfaces TypeScript principales son
+`listEvents`, `getEvent`, `createReservation`, `getReservation` y
+`verifyCredential`; la implementación puede sustituirse posteriormente por
+llamadas HTTP sin modificar las vistas.
+
+Los identificadores de demostración disponibles son:
+
+| Escenario | Identificador o valor |
+|---|---|
+| Evento disponible | `evt-soa` |
+| Evento sin cupo | `evt-cert` |
+| Catálogo vacío | `/?scenario=empty` |
+| Error de catálogo | `/?scenario=error` |
+| Reserva pendiente | `RSV-2026-000184` |
+| Reserva confirmada con ticket | `RSV-2026-000185` |
+| Reserva rechazada | `RSV-2026-000186` |
+| Reserva sin cupo | `RSV-2026-000187` |
+| Credencial válida | `CERT-2026-000742` |
+| Credencial inválida | `CERT-INVALIDA-2026` |
+| Credencial no encontrada | `CERT-NO-ENCONTRADA` |
+| Error de credencial | `CERT-ERROR` |
+
+Las reservas creadas desde la vista se guardan únicamente en el `localStorage`
+del navegador como datos de prueba. No contienen información real ni secretos.
+
+Los mocks contemplan al menos:
 
 - Evento con cupos disponibles.
 - Evento sin cupo.
@@ -734,8 +767,8 @@ Los mocks deberán contemplar al menos:
 | Documentación inicial aislada | Los archivos de esta fase se ubican en Documentacion/Practica7/ para conservar separados los avances de la práctica. |
 | RabbitMQ | El modelo de productor, exchange, cola y consumidor representa de forma directa la reserva asíncrona solicitada y mantiene una complejidad adecuada para la primera documentación. |
 | Actores externos limitados | Se documentan únicamente estudiante y verificador público porque son los flujos visibles exigidos para el frontend inicial. |
-| Mocks documentados | Permiten construir posteriormente el frontend sin afirmar que existe un backend productivo. |
-| Frontend independiente | La futura aplicación de Práctica 7 no agregará rutas ni componentes al Frontend/ principal. |
+| Mocks documentados | Permiten operar el frontend implementado sin afirmar que existe un backend productivo. |
+| Frontend independiente | La aplicación de Práctica 7 no agrega rutas ni componentes al Frontend/ principal. |
 
 ### 14.2 Supuestos
 
@@ -747,7 +780,8 @@ Los mocks deberán contemplar al menos:
   constituye todavía una reserva concurrente real.
 - La emisión de un certificado ocurre como responsabilidad interna del
   Servicio de Certificados; la interfaz inicial solo verifica credenciales.
-- La URL pública de Vercel se configurará cuando se implemente el frontend.
+- La URL pública de Vercel se configurará después de validar el build estático y
+  el acceso a la cuenta de despliegue.
 
 ### 14.3 Ambigüedades del enunciado
 
@@ -765,9 +799,9 @@ con el docente o el equipo:
    el trabajo debe copiarse al repositorio del proyecto y ubicarse en una
    carpeta identificada por práctica.
 
-Mientras no exista una confirmación distinta, esta primera entrega sigue la
-interpretación de documentación, contratos/mocks y frontend futuro, sin
-implementar servicios productivos.
+Mientras no exista una confirmación distinta, esta entrega sigue la
+interpretación de documentación, contratos/mocks y frontend interactivo
+independiente, sin implementar servicios productivos.
 
 ## 15. Trabajo pendiente
 
@@ -779,6 +813,6 @@ y no se declaran terminadas en esta entrega:
 - Diagrama entidad-relación.
 - Matriz de decisiones técnicas completa.
 - Archivos editables de las vistas pendientes (.drawio, .puml u otro formato). Los diagramas UML de casos de uso de la sección 9.6 ya cuentan con fuente `.drawio` y representación `.drawio.svg`.
-- Implementación y despliegue del frontend independiente en Vercel.
-- Pruebas funcionales del frontend con los mocks.
+- Despliegue público del frontend independiente en Vercel y registro de la URL
+  final para evaluación.
 - Confirmación del alcance final de backend, CI/CD, Registry y pruebas.
