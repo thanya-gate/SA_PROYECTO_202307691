@@ -812,6 +812,11 @@ independiente, sin implementar servicios productivos.
 
 ![DES](Vistas4+1/VistaDespliegue_Practica7_G4.drawio.svg)
 
+### Vista de Física (Diagrama de despliegue)
+
+![DES](Vistas4+1/VistaFisica_Practica7_G4.drawio.svg)
+
+
 
 
 Las siguientes actividades pertenecen a fases posteriores de la documentación
