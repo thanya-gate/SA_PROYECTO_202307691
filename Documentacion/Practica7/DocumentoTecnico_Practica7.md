@@ -807,6 +807,13 @@ independiente, sin implementar servicios productivos.
 
 ![ER](ER/ER_Practica7_G4.drawio.svg)
 
+## 16. Vista4+1
+### Vista de Despliegue (Diagrama de componentes)
+
+![DES](Vistas4+1/VistaDespliegue_Practica7_G4.drawio.svg)
+
+
+
 Las siguientes actividades pertenecen a fases posteriores de la documentación
 y no se declaran terminadas en esta entrega:
 
