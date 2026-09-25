@@ -803,14 +803,27 @@ Mientras no exista una confirmación distinta, esta entrega sigue la
 interpretación de documentación, contratos/mocks y frontend interactivo
 independiente, sin implementar servicios productivos.
 
-## 15. Trabajo pendiente
+## 15. Diagrama Entidad Relación
+
+![ER](ER/ER_Practica7_G4.drawio.svg)
+
+## 16. Vista4+1
+### Vista de Despliegue (Diagrama de componentes)
+
+![DES](Vistas4+1/VistaDespliegue_Practica7_G4.drawio.svg)
+
+### Vista de Física (Diagrama de despliegue)
+
+![DES](Vistas4+1/VistaFisica_Practica7_G4.drawio.svg)
+
+
+
 
 Las siguientes actividades pertenecen a fases posteriores de la documentación
 y no se declaran terminadas en esta entrega:
 
 - Modelo de vistas 4+1 de Kruchten.
 - Diagrama de actividades y secuencia con RabbitMQ.
-- Diagrama entidad-relación.
 - Matriz de decisiones técnicas completa.
 - Archivos editables de las vistas pendientes (.drawio, .puml u otro formato). Los diagramas UML de casos de uso de la sección 9.6 ya cuentan con fuente `.drawio` y representación `.drawio.svg`.
 - Despliegue público del frontend independiente en Vercel y registro de la URL
