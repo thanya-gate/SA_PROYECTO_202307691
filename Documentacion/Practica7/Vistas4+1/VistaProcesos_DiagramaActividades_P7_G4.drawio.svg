@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Render companion for P7_G4 -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1600" height="1450" viewBox="0 0 1600 1450" role="img" aria-labelledby="title desc">
+<title id="title">VISTA DE PROCESOS · CU-P7-01–CU-P7-05 · catálogo, reservas, RabbitMQ y credenciales</title>
+<desc id="desc">CU-P7-01–CU-P7-05 · catálogo, reservas, RabbitMQ y credenciales</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#FFFFFF"/></marker></defs>
+<style>.canvas{fill:#152718;stroke:#3b6436;stroke-width:1.5}.laneLine{stroke:#FFFFFF;stroke-width:3}.action{fill:#121212;stroke:#FFFFFF;stroke-width:1.4}.decision{fill:#121212;stroke:#FFFFFF;stroke-width:1.4}.title{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700}.subtitle,.laneTitle,.label{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif}.subtitle{font-size:12px}.laneTitle{font-size:12px;font-weight:700;text-anchor:middle}.label{font-size:12px;text-anchor:middle}.edge{fill:none;stroke:#FFFFFF;stroke-width:1.4;marker-end:url(#arrow)}.dashed{fill:none;stroke:#FFFFFF;stroke-width:1.2;stroke-dasharray:6 6;marker-end:url(#arrow)}.edgeLabel{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px;text-anchor:middle;paint-order:stroke;stroke:#121212;stroke-width:4px}.start{fill:#FFFFFF;stroke:#FFFFFF;stroke-width:1}.endOuter{fill:#152718;stroke:#FFFFFF;stroke-width:1.2}.endInner{fill:#FFFFFF;stroke:none}</style>
+<rect class="canvas" x="20" y="20" width="1560" height="1410" rx="58" ry="58"/>
+<text class="title" x="800" y="58" text-anchor="middle">VISTA DE PROCESOS</text>
+<text class="subtitle" x="800" y="88" text-anchor="middle">CU-P7-01–CU-P7-05 · catálogo, reservas, RabbitMQ y credenciales</text>
+<line class="laneLine" x1="40" y1="130" x2="40" y2="1360"/>
+<line class="laneLine" x1="295" y1="130" x2="295" y2="1360"/>
+<line class="laneLine" x1="550" y1="130" x2="550" y2="1360"/>
+<line class="laneLine" x1="805" y1="130" x2="805" y2="1360"/>
+<line class="laneLine" x1="1060" y1="130" x2="1060" y2="1360"/>
+<line class="laneLine" x1="1315" y1="130" x2="1315" y2="1360"/>
+<line class="laneLine" x1="1570" y1="130" x2="1570" y2="1360"/>
+<text class="laneTitle" x="168" y="118">Actores</text>
+<text class="laneTitle" x="423" y="118">Frontend</text>
+<text class="laneTitle" x="678" y="118">API Gateway</text>
+<text class="laneTitle" x="933" y="118">Talleres /</text>
+<text class="laneTitle" x="933" y="132">Certificados</text>
+<text class="laneTitle" x="1188" y="118">Reservas/Ticketing</text>
+<text class="laneTitle" x="1443" y="118">RabbitMQ /</text>
+<text class="laneTitle" x="1443" y="132">Consumidor</text>
+<circle class="start" cx="168" cy="186" r="14"/>
+<rect class="action" x="73" y="235" width="190" height="70" rx="13" ry="13"/>
+<text class="label" x="168" y="270">Consulta catálogo o detalle</text>
+<rect class="action" x="328" y="350" width="190" height="70" rx="13" ry="13"/>
+<text class="label" x="423" y="385">Solicita eventos o detalle</text>
+<rect class="action" x="838" y="465" width="190" height="70" rx="13" ry="13"/>
+<text class="label" x="933" y="500">Consulta Talleres o Certificados</text>
+<rect class="action" x="328" y="580" width="190" height="70" rx="13" ry="13"/>
+<text class="label" x="423" y="615">Muestra datos y disponibilidad</text>
+<rect class="action" x="328" y="695" width="190" height="70" rx="13" ry="13"/>
+<text class="label" x="423" y="730">Solicita reserva</text>
+<rect class="action" x="1093" y="810" width="190" height="70" rx="13" ry="13"/>
+<text class="label" x="1188" y="838">Crea reservationId</text>
+<text class="label" x="1188" y="852">PENDIENTE</text>
+<rect class="action" x="1348" y="925" width="190" height="70" rx="13" ry="13"/>
+<text class="label" x="1443" y="960">Publica reserva_solicitada</text>
+<rect class="action" x="1348" y="1040" width="190" height="70" rx="13" ry="13"/>
+<text class="label" x="1443" y="1075">Consume y valida cupo/reglas</text>
+<path class="decision" d="M1443 1150 L1538 1200 L1443 1250 L1348 1200 Z"/>
+<text class="label" x="1443" y="1200">¿Reglas válidas?</text>
+<rect class="action" x="1093" y="1285" width="190" height="78" rx="13" ry="13"/>
+<text class="label" x="1188" y="1317">CONFIRMADA</text>
+<text class="label" x="1188" y="1331">Genera ticket</text>
+<rect class="action" x="838" y="1285" width="190" height="78" rx="13" ry="13"/>
+<text class="label" x="933" y="1317">RECHAZADA</text>
+<text class="label" x="933" y="1331">o SIN_CUPO</text>
+<circle class="endOuter" cx="168" cy="1401" r="16"/><circle class="endInner" cx="168" cy="1401" r="9"/>
+<path class="edge" d="M168 200 V305"/>
+<path class="edge" d="M168 305 V363 H423 V420"/>
+<text class="edgeLabel" x="295.5" y="357.5">Consulta</text>
+<path class="edge" d="M423 420 V478 H933 V535"/>
+<text class="edgeLabel" x="678" y="472.5">Datos</text>
+<path class="edge" d="M933 535 V593 H423 V650"/>
+<text class="edgeLabel" x="678" y="587.5">Respuesta</text>
+<path class="edge" d="M423 650 V765"/>
+<path class="edge" d="M423 765 V823 H1188 V880"/>
+<text class="edgeLabel" x="805.5" y="817.5">POST reserva</text>
+<path class="dashed" d="M1188 880 V938 H1443 V995"/>
+<text class="edgeLabel" x="1315.5" y="932.5">AMQP</text>
+<path class="dashed" d="M1443 995 V1110"/>
+<text class="edgeLabel" x="1443" y="1047.5">Entrega</text>
+<path class="edge" d="M1443 1110 V1250"/>
+<path class="edge" d="M1443 1250 V1307 H1188 V1363"/>
+<text class="edgeLabel" x="1315.5" y="1301.5">Sí</text>
+<path class="edge" d="M1443 1250 V1307 H933 V1363"/>
+<text class="edgeLabel" x="1188" y="1301.5">No</text>
+<path class="dashed" d="M1443 995 V823 H423 V650"/>
+<text class="edgeLabel" x="933" y="817.5">PENDIENTE</text>
+<path class="edge" d="M1188 1363 V1374 H168 V1385"/>
+<text class="edgeLabel" x="678" y="1369">Resultado</text>
+<path class="dashed" d="M933 1363 V1374 H168 V1385"/>
+<text class="edgeLabel" x="550.5" y="1369">Resultado</text>
+<text class="subtitle" x="800" y="1400" text-anchor="middle">Flecha punteada: respuesta o mensajería asíncrona · Las ramas Sí/No representan flujos alternativos.</text>
+</svg>

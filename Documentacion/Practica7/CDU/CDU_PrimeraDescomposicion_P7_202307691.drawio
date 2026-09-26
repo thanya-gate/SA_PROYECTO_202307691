@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="p7-primera-descomposicion">
+    <mxGraphModel dx="1239" dy="697" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="p7-descomp-boundary" parent="1" style="html=1;whiteSpace=wrap;" value="" vertex="1">
+          <mxGeometry x="180" y="30" width="620" height="820" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-title" parent="1" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="YOUSAC Academix Pass &amp; CertiHub&lt;br&gt;Sistema" vertex="1">
+          <mxGeometry x="330" y="50" width="320" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-student" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Estudiante" vertex="1">
+          <mxGeometry x="75" y="285" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-verifier" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Verificador público" vertex="1">
+          <mxGeometry x="850" y="665" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-catalog" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="M-P7-01&lt;br&gt;Catálogo de eventos&lt;br&gt;CU-P7-01 y CU-P7-02" vertex="1">
+          <mxGeometry x="330" y="145" width="320" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-reservas" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="M-P7-02&lt;br&gt;Reservas y Ticketing&lt;br&gt;CU-P7-03 y CU-P7-04" vertex="1">
+          <mxGeometry x="330" y="365" width="320" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-certs" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="M-P7-03&lt;br&gt;Verificación de credenciales&lt;br&gt;CU-P7-05" vertex="1">
+          <mxGeometry x="330" y="585" width="320" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-edge-student-catalog" edge="1" parent="1" source="p7-descomp-student" target="p7-descomp-catalog" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-edge-student-reservas" edge="1" parent="1" source="p7-descomp-student" target="p7-descomp-reservas" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p7-descomp-edge-verifier" edge="1" parent="1" source="p7-descomp-verifier" target="p7-descomp-certs" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
