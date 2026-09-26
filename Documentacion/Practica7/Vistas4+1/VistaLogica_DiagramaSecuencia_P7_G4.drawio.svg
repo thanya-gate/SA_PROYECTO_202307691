@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Render companion for P7_G4 -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1300" height="1040" viewBox="0 0 1300 1040" role="img" aria-labelledby="title desc">
+  <title id="title">VISTA LÓGICA · PRÁCTICA 7</title>
+  <desc id="desc">CU-P7-01–CU-P7-05 · Academix Pass &amp; CertiHub</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#FFFFFF"/></marker></defs>
+  <style>
+    .canvas{fill:#121212;stroke:#FFFFFF;stroke-width:1}.round{fill:#1c2a3d;stroke:#3b587e;stroke-width:1.4}.box{fill:#121212;stroke:#FFFFFF;stroke-width:1.5}.text,.actorLabel{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700}.title{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700}.subtitle{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px}.line{stroke:#FFFFFF;stroke-width:1;stroke-dasharray:6 6}.activation{fill:#121212;stroke:#FFFFFF;stroke-width:1.2}.message{stroke:#FFFFFF;stroke-width:1.4;marker-end:url(#arrow)}.return{stroke:#FFFFFF;stroke-width:1.2;stroke-dasharray:6 6;marker-end:url(#arrow)}.separator{stroke:#FFFFFF;stroke-width:1;stroke-dasharray:5 5}.labelText{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px;text-anchor:middle;paint-order:stroke;stroke:#121212;stroke-width:4px;stroke-linejoin:round}.actor{fill:none;stroke:#FFFFFF;stroke-width:1.2}.foot{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px}
+  </style>
+  <rect class="canvas" x="0" y="20" width="1300" height="1000"/>
+  <rect class="round" x="0" y="20" width="1300" height="1000" rx="58" ry="58"/>
+  <text class="title" x="650" y="58" text-anchor="middle">VISTA LÓGICA · PRÁCTICA 7</text>
+  <text class="subtitle" x="650" y="88" text-anchor="middle">CU-P7-01–CU-P7-05 · Academix Pass &amp; CertiHub</text>
+  <rect class="box" x="5" y="112" width="180" height="48"/>
+  <text class="text" x="75" y="137" text-anchor="middle">Actores</text>
+  <line class="line" x1="75" y1="160" x2="75" y2="990"/>
+  <rect class="box" x="195" y="112" width="180" height="48"/>
+  <text class="text" x="285" y="137" text-anchor="middle">Frontend</text>
+  <line class="line" x1="285" y1="160" x2="285" y2="990"/>
+  <rect class="box" x="405" y="112" width="180" height="48"/>
+  <text class="text" x="495" y="137" text-anchor="middle">API Gateway</text>
+  <line class="line" x1="495" y1="160" x2="495" y2="990"/>
+  <rect class="box" x="615" y="112" width="180" height="48"/>
+  <text class="text" x="705" y="137" text-anchor="middle">Talleres</text>
+  <line class="line" x1="705" y1="160" x2="705" y2="990"/>
+  <rect class="box" x="825" y="112" width="180" height="48"/>
+  <text class="text" x="915" y="137" text-anchor="middle">Reservas/Ticketing</text>
+  <line class="line" x1="915" y1="160" x2="915" y2="990"/>
+  <rect class="box" x="1035" y="112" width="180" height="48"/>
+  <text class="text" x="1125" y="137" text-anchor="middle">Certificados / BD</text>
+  <line class="line" x1="1125" y1="160" x2="1125" y2="990"/>
+  <rect class="activation" x="279" y="210.0" width="12" height="583.3"/>
+  <rect class="activation" x="489" y="242.3" width="12" height="475.0"/>
+  <rect class="activation" x="699" y="280.3" width="12" height="57.0"/>
+  <rect class="activation" x="909" y="432.3" width="12" height="171.0"/>
+  <rect class="activation" x="1119" y="698.3" width="12" height="57.0"/>
+  <circle class="actor" cx="75" cy="182" r="7"/><path class="actor" d="M75 189 V207 M63 196 H87 M75 207 L64 222 M75 207 L86 222"/>
+  <text class="actorLabel" x="75" y="240" text-anchor="middle">Estudiante / Verificador</text>
+  <line class="message" x1="75" y1="210" x2="285" y2="210"/>
+  <text class="labelText" x="180" y="203">1. Consulta catálogo o detalle</text>
+  <line class="message" x1="285" y1="248" x2="495" y2="248"/>
+  <text class="labelText" x="390" y="241">2. GET eventos / detalle</text>
+  <line class="message" x1="495" y1="286" x2="705" y2="286"/>
+  <text class="labelText" x="600" y="279">3. Solicita catálogo y cupos</text>
+  <line class="return" x1="705" y1="324" x2="285" y2="324"/>
+  <text class="labelText" x="495" y="317">4. Retorna eventos y disponibilidad</text>
+  <line class="separator" x1="55" y1="346" x2="1545" y2="346"/>
+  <line class="message" x1="75" y1="362" x2="285" y2="362"/>
+  <text class="labelText" x="180" y="355">5. Solicita reserva o verificación</text>
+  <line class="message" x1="285" y1="400" x2="495" y2="400"/>
+  <text class="labelText" x="390" y="393">6. Envía POST reserva / consulta</text>
+  <line class="message" x1="495" y1="438" x2="915" y2="438"/>
+  <text class="labelText" x="705" y="431">7. Crea solicitud PENDIENTE</text>
+  <line class="return" x1="915" y1="476" x2="495" y2="476"/>
+  <text class="labelText" x="705" y="469">8. Procesa cupo y reglas</text>
+  <line class="return" x1="495" y1="514" x2="285" y2="514"/>
+  <text class="labelText" x="390" y="507">9. Retorna estado y ticket</text>
+  <line class="separator" x1="55" y1="612" x2="1125" y2="612"/>
+  <line class="message" x1="75" y1="628" x2="285" y2="628"/>
+  <text class="labelText" x="180" y="621">10. Consulta credencial</text>
+  <line class="message" x1="285" y1="666" x2="495" y2="666"/>
+  <text class="labelText" x="390" y="659">11. GET credentials/verify</text>
+  <line class="message" x1="495" y1="704" x2="1125" y2="704"/>
+  <text class="labelText" x="810" y="697">12. Busca credencial pública</text>
+  <line class="return" x1="1125" y1="742" x2="285" y2="742"/>
+  <text class="labelText" x="705" y="735">13. Retorna VÁLIDA / INVÁLIDA / NO_ENCONTRADA</text>
+  <line class="return" x1="285" y1="780" x2="75" y2="780"/>
+  <text class="labelText" x="180" y="773">14. Muestra resultado al actor</text>
+  <text class="foot" x="650" y="1000" text-anchor="middle">Secuencia consolidada de catálogo, reservas y verificación pública.</text>
+</svg>

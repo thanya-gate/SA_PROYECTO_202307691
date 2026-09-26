@@ -10,8 +10,8 @@
 > requisitos de **YOUSAC Academix Pass & CertiHub**. La solución se plantea
 > como un sistema satélite independiente del proyecto principal YOUSAC.
 >
-> El enunciado de referencia se encuentra en
-> [context/practica7.md](../../context/practica7.md).
+> El enunciado de referencia es el PDF de la Práctica 7 proporcionado por el
+> curso.
 
 ## Índice
 
@@ -35,7 +35,8 @@
 12. [Flujo conceptual de reserva](#12-flujo-conceptual-de-reserva)
 13. [Contratos lógicos y mocks](#13-contratos-lógicos-y-mocks)
 14. [Supuestos y decisiones](#14-supuestos-y-decisiones)
-15. [Trabajo pendiente](#15-trabajo-pendiente)
+15. [Diagrama Entidad Relación](#15-diagrama-entidad-relación)
+16. [Vista 4+1](#16-vista-41)
 
 ## 1. Introducción
 
@@ -759,7 +760,25 @@ Los mocks contemplan al menos:
 
 ## 14. Supuestos y decisiones
 
-### 14.1 Decisiones adoptadas
+### 14.1 Matriz de decisiones técnicas
+
+El enunciado solicita justificar **qué** tecnología o estructura se adopta,
+**por qué** se elige y **para qué** se utilizará. Las alternativas se comparan
+según el flujo de reservas concurrentes, la independencia del sistema satélite
+y la evaluación pública del frontend.
+
+| Qué | Por qué | Para qué |
+|---|---|---|
+| Arquitectura orientada a servicios (SOA): separar Talleres, Reservas/Ticketing y Certificados del YOUSAC principal. | Cada dominio tiene reglas y datos distintos; un único módulo acoplaría catálogo, cupos y credenciales. La separación permite evolucionarlos individualmente, a cambio de definir contratos y comunicación entre servicios. | Aislar la consulta de eventos, el procesamiento de reservas y la verificación pública; concentrar en Reservas/Ticketing las reglas del cupo limitado. |
+| RabbitMQ como broker de la reserva asíncrona: productor en Reservas/Ticketing, cola y consumidor. | El flujo necesita registrar `PENDIENTE` y procesar la solicitud después, sin mantener bloqueada la respuesta al estudiante. Frente a Kafka, una cola de trabajo para este flujo conceptual requiere menos componentes y decisiones operativas; no se afirma una ventaja de rendimiento sin mediciones. Exige controlar duplicados, fallos de publicación y cupos concurrentes. | Desacoplar la recepción de CU-P7-03 del procesamiento; el consumidor resolverá `CONFIRMADA`, `RECHAZADA` o `SIN_CUPO`, y CU-P7-04 consultará el resultado. |
+| Vercel para publicar el frontend independiente de Academix Pass & CertiHub. | El enunciado exige una URL pública `*.vercel.app`; una ejecución en `localhost` no permite la evaluación externa. El frontend Next.js ya usa exportación estática y mocks locales, lo que facilita el despliegue sin backend inicial. Este enfoque no sustituye la integración de servicios posterior. | Permitir que se recorran públicamente catálogo, detalle, reserva simulada, consulta de estado y verificación de credenciales. |
+
+La elección de RabbitMQ describe la arquitectura objetivo; no implica que los
+mocks actuales aseguren reservas concurrentes ni persistencia real. La
+publicación en Vercel debe validarse desde una URL pública antes de marcar
+RNF-P7-01 como cumplido.
+
+### 14.2 Decisiones adoptadas
 
 | Decisión | Justificación |
 |---|---|
@@ -770,7 +789,7 @@ Los mocks contemplan al menos:
 | Mocks documentados | Permiten operar el frontend implementado sin afirmar que existe un backend productivo. |
 | Frontend independiente | La aplicación de Práctica 7 no agrega rutas ni componentes al Frontend/ principal. |
 
-### 14.2 Supuestos
+### 14.3 Supuestos
 
 - Los eventos del catálogo se consideran previamente publicados por el Servicio
   de Talleres.
@@ -783,7 +802,7 @@ Los mocks contemplan al menos:
 - La URL pública de Vercel se configurará después de validar el build estático y
   el acceso a la cuenta de despliegue.
 
-### 14.3 Ambigüedades del enunciado
+### 14.4 Ambigüedades del enunciado
 
 El documento de referencia presenta diferencias internas que deben confirmarse
 con el docente o el equipo:
@@ -807,25 +826,113 @@ independiente, sin implementar servicios productivos.
 
 ![ER](ER/ER_Practica7_G4.drawio.svg)
 
-## 16. Vista4+1
-### Vista de Despliegue (Diagrama de componentes)
+## 16. Vista 4+1
 
-![DES](Vistas4+1/VistaDespliegue_Practica7_G4.drawio.svg)
+El siguiente diagrama reúne las cinco perspectivas de la Práctica 7: los casos
+de uso como vista de escenarios (+1), la lógica de los servicios, el proceso
+asíncrono de reserva, los componentes de desarrollo y el despliegue físico.
+Cada perspectiva se detalla en los diagramas de esta sección y en los casos de
+uso de la sección 9.6.
 
-### Vista de Física (Diagrama de despliegue)
+![Vista 4+1 de la Práctica 7](Vistas4+1/Vista4+1_Practica7_G4.drawio.svg)
 
-![DES](Vistas4+1/VistaFisica_Practica7_G4.drawio.svg)
+[Fuente editable de la vista 4+1](Vistas4+1/XML/Vista4+1_Practica7_G4.drawio)
 
+### Vista Lógica
 
+La vista lógica se entrega como una secuencia consolidada y como una secuencia
+específica para cada caso de uso, siguiendo el formato utilizado en las fases
+anteriores. Esta vista describe las responsabilidades de los servicios y el
+retorno de estados; el detalle del broker RabbitMQ se reserva para la vista de
+procesos, donde se muestra el productor, la cola y el consumidor.
 
+![Vista lógica consolidada](Vistas4+1/VistaLogica_DiagramaSecuencia_P7_G4.drawio.svg)
 
-Las siguientes actividades pertenecen a fases posteriores de la documentación
-y no se declaran terminadas en esta entrega:
+[Fuente editable de la vista lógica consolidada](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_P7_G4.drawio)
 
-- Modelo de vistas 4+1 de Kruchten.
-- Diagrama de actividades y secuencia con RabbitMQ.
-- Matriz de decisiones técnicas completa.
-- Archivos editables de las vistas pendientes (.drawio, .puml u otro formato). Los diagramas UML de casos de uso de la sección 9.6 ya cuentan con fuente `.drawio` y representación `.drawio.svg`.
-- Despliegue público del frontend independiente en Vercel y registro de la URL
-  final para evaluación.
-- Confirmación del alcance final de backend, CI/CD, Registry y pruebas.
+#### Vistas lógicas por caso de uso
+
+##### CU-P7-01 — Consultar catálogo de eventos
+
+![Vista lógica CU-P7-01](Vistas4+1/VistaLogica_DiagramaSecuencia_CUP7_01_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-01](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CUP7_01_P7_G4.drawio)
+
+##### CU-P7-02 — Consultar detalle y disponibilidad
+
+![Vista lógica CU-P7-02](Vistas4+1/VistaLogica_DiagramaSecuencia_CUP7_02_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-02](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CUP7_02_P7_G4.drawio)
+
+##### CU-P7-03 — Solicitar reserva de cupo
+
+![Vista lógica CU-P7-03](Vistas4+1/VistaLogica_DiagramaSecuencia_CUP7_03_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-03](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CUP7_03_P7_G4.drawio)
+
+##### CU-P7-04 — Consultar ticket y estado de reserva
+
+![Vista lógica CU-P7-04](Vistas4+1/VistaLogica_DiagramaSecuencia_CUP7_04_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-04](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CUP7_04_P7_G4.drawio)
+
+##### CU-P7-05 — Verificar credencial digital
+
+![Vista lógica CU-P7-05](Vistas4+1/VistaLogica_DiagramaSecuencia_CUP7_05_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-05](Vistas4+1/XML/VistaLogica_DiagramaSecuencia_CUP7_05_P7_G4.drawio)
+
+### Vista de Procesos
+
+La vista de procesos se entrega como un flujo consolidado y como un diagrama
+de actividades por cada caso de uso. El flujo de reserva representa
+explícitamente productor → RabbitMQ → consumidor, con respuesta inicial
+`PENDIENTE` y resolución posterior `CONFIRMADA`, `RECHAZADA` o `SIN_CUPO`.
+
+![Vista de procesos consolidada](Vistas4+1/VistaProcesos_DiagramaActividades_P7_G4.drawio.svg)
+
+[Fuente editable de la vista de procesos consolidada](Vistas4+1/XML/VistaProcesos_DiagramaActividades_P7_G4.drawio)
+
+#### Vistas de procesos por caso de uso
+
+##### CU-P7-01 — Consultar catálogo de eventos
+
+![Vista de procesos CU-P7-01](Vistas4+1/VistaProcesos_DiagramaActividades_CUP7_01_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-01](Vistas4+1/XML/VistaProcesos_DiagramaActividades_CUP7_01_P7_G4.drawio)
+
+##### CU-P7-02 — Consultar detalle y disponibilidad
+
+![Vista de procesos CU-P7-02](Vistas4+1/VistaProcesos_DiagramaActividades_CUP7_02_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-02](Vistas4+1/XML/VistaProcesos_DiagramaActividades_CUP7_02_P7_G4.drawio)
+
+##### CU-P7-03 — Solicitar reserva de cupo
+
+![Vista de procesos CU-P7-03](Vistas4+1/VistaProcesos_DiagramaActividades_CUP7_03_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-03](Vistas4+1/XML/VistaProcesos_DiagramaActividades_CUP7_03_P7_G4.drawio)
+
+##### CU-P7-04 — Consultar ticket y estado de reserva
+
+![Vista de procesos CU-P7-04](Vistas4+1/VistaProcesos_DiagramaActividades_CUP7_04_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-04](Vistas4+1/XML/VistaProcesos_DiagramaActividades_CUP7_04_P7_G4.drawio)
+
+##### CU-P7-05 — Verificar credencial digital
+
+![Vista de procesos CU-P7-05](Vistas4+1/VistaProcesos_DiagramaActividades_CUP7_05_P7_G4.drawio.svg)
+
+[Fuente editable CU-P7-05](Vistas4+1/XML/VistaProcesos_DiagramaActividades_CUP7_05_P7_G4.drawio)
+
+### Vista de Desarrollo (Diagrama de componentes)
+
+![Vista de desarrollo: componentes](Vistas4+1/VistaDespliegue_Practica7_G4.drawio.svg)
+
+[Fuente editable de la vista de desarrollo](Vistas4+1/XML/VistaDespliegue_Practica7_G4.drawio.xml)
+
+### Vista de Despliegue (Física)
+
+![Vista de despliegue físico](Vistas4+1/VistaFisica_Practica7_G4.drawio.svg)
+
+[Fuente editable de la vista de despliegue](Vistas4+1/XML/VistaFisica_Practica7_G4.drawio.xml)
