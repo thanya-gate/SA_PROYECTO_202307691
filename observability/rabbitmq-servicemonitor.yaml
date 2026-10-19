@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: academix-rabbitmq
+  labels:
+    app.kubernetes.io/part-of: academix
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - academix-prod
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rabbitmq
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics

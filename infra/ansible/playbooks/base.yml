@@ -1,0 +1,9 @@
+---
+- name: Playbook Base
+  hosts: all
+  become: true
+  # Los facts se recogen dentro del rol, despues de esperar a que la VM
+  # recien creada acepte SSH.
+  gather_facts: false
+  roles:
+    - base

@@ -1,0 +1,13 @@
+# Ejemplo del inventario que genera Terraform (../terraform/ansible.tf).
+# El real se crea con `terraform apply`; no hace falta copiar este archivo.
+
+[development]
+vm-development ansible_host=203.0.113.10 internal_ip=10.10.1.10
+
+[production]
+vm-production-k3s ansible_host=203.0.113.20 internal_ip=10.10.2.10
+
+[all:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=~/.ssh/academix_pass_ed25519
+ansible_python_interpreter=/usr/bin/python3

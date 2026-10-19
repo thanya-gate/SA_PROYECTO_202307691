@@ -1,0 +1,13 @@
+---
+# Variables compartidas por todos los hosts. Cada rol tiene ademas sus
+# defaults en roles/<rol>/defaults/main.yml.
+
+# Usuarios que se agregan al grupo docker en vm-development.
+docker_users:
+  - "{{ ansible_user }}"
+
+# Version fija de K3s: la reconstruccion instala exactamente la misma.
+k3s_version: v1.33.5+k3s1
+
+# Donde queda el kubeconfig en la maquina de administracion.
+k3s_local_kubeconfig: "{{ inventory_dir }}/kubeconfig/k3s.yaml"
