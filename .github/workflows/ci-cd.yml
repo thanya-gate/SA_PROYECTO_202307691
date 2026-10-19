@@ -444,6 +444,8 @@ jobs:
           K8S_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           K8S_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           K8S_YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          K8S_FEDERATION_API_KEYS: ${{ secrets.FEDERATION_API_KEYS }}
+          K8S_FEDERATION_REMOTE_KEY: ${{ secrets.FEDERATION_REMOTE_KEY }}
           K8S_SMTP_USER: ${{ secrets.SMTP_USER }}
           K8S_SMTP_PASS: ${{ secrets.SMTP_PASS }}
           K8S_SMTP_FROM: ${{ secrets.SMTP_FROM }}
