@@ -91,17 +91,22 @@ jobs:
 
       - name: Ejecutar pruebas unitarias (Jest)
         if: matrix.stack == 'node'
-        run: npm test -- --runInBand
+        run: npm test -- --runInBand --coverage
 
       - name: Ejecutar pruebas unitarias (Go)
         if: matrix.stack == 'go'
-        run: go test ./... -v
+        # Umbral 75%: se excluyen el arranque (cmd), el código generado (gen) y la config.
+        run: |
+          go list ./... | grep -vE '/cmd/|/gen/|/config$' | xargs go test -v -coverprofile=coverage.out
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {sub("%","",$3); print $3}')
+          echo "Cobertura Go: ${total}%"
+          awk -v t="$total" 'BEGIN { exit (t + 0 < 75) }' || { echo "::error::Cobertura Go ${total}% menor al 75%"; exit 1; }
 
       - name: Ejecutar pruebas unitarias (pytest)
         if: matrix.stack == 'python'
         run: |
           source .venv/bin/activate
-          python3 -m pytest -v
+          python3 -m pytest -v --cov --cov-config=.coveragerc
 
   # ------------------------------------------------------------------
   # 2. Resolver la etiqueta que consumirá la VM

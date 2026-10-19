@@ -15,4 +15,6 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],
+  // Fase 3: el pipeline se corta si la cobertura unitaria baja del 75%.
+  coverageThreshold: { global: { lines: 75, statements: 75 } },
 };

@@ -10,10 +10,12 @@ module.exports = {
   collectCoverageFrom: [
     'src/application/dto/**/*.ts',
     'src/application/services/**/*.ts',
-    'src/infrastructure/persistence/postgres/postgres-catalog-repository.ts',
+    // El adaptador SQL se valida contra PostgreSQL real con tests/run-sql-contract.sh (integración).
     'src/interfaces/grpc/server.ts',
     '!src/index.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],
+  // Fase 3: el pipeline se corta si la cobertura unitaria baja del 75%.
+  coverageThreshold: { global: { lines: 75, statements: 75 } },
 };

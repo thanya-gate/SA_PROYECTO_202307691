@@ -285,6 +285,33 @@ Como referencia del cuaderno, la ejecución verificada el 2 de septiembre de 202
 
 El porcentaje global de persistencia también incluye checkpoints, historial y calificaciones; las operaciones de apuntes sí cuentan con casos directos de éxito y error.
 
+### Umbral obligatorio del 75% (Fase 3)
+
+El pipeline (`ci-cd.yml` y `unit-tests.yml`) **se detiene** si algún paquete baja del 75% de cobertura de líneas y sentencias. El umbral vive junto a cada suite:
+
+| Paquete | Dónde se exige | Medido el 18/10/2026 |
+|---|---|---:|
+| API Gateway (endpoints HTTP) | `coverageThreshold` en `Backend/api-gateway/jest.config.cjs` | 77.8% sentencias · 78.5% líneas |
+| Catálogo | `Backend/services/catalog-service/jest.config.cjs` | 94.6% |
+| Autenticación | `Backend/services/auth-service/jest.config.cjs` | 89.9% |
+| Inscripción | `Backend/services/inscripcion-service/jest.config.cjs` | 96.6% |
+| Notificaciones | `Backend/services/notificaciones-service/jest.config.cjs` | 98.1% |
+| Frontend | `Frontend/jest.config.cjs` | 81.0% |
+| Reproducción (Go) | paso `go tool cover` del workflow | 79.7% |
+| Analítica (Python) | `fail_under` en `Backend/services/analitica-service/.coveragerc` | 87.7% |
+
+Qué se mide y qué no:
+- **Endpoints**: `tests/gateway-endpoints-smoke.test.ts` recorre las rutas del gateway en tres escenarios: datos vacíos (validación), datos válidos (camino feliz) y microservicios caídos (errores controlados, nunca 500). El catálogo tiene una prueba equivalente para sus RPC gRPC (`tests/catalog-grpc-handlers.test.ts`).
+- **Se excluyen** del cálculo unitario el arranque (`main`, `cmd`, `config`, `container`), el código generado de Protocol Buffers (`gen`) y los adaptadores que necesitan PostgreSQL o Redis reales. Esos adaptadores se validan con pruebas de integración, por ejemplo `catalog-service/tests/run-sql-contract.sh`.
+
+Para reproducir el cálculo de Go tal como lo hace el pipeline:
+
+```bash
+cd Backend/services/reproduccion-service
+go list ./... | grep -vE '/cmd/|/gen/|/config$' | xargs go test -coverprofile=coverage.out
+go tool cover -func=coverage.out | tail -1
+```
+
 ## 7. Línea base de todas las suites
 
 La siguiente línea base fue ejecutada localmente el 2 de septiembre de 2026:
