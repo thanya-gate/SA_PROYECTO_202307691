@@ -23,6 +23,9 @@ import { requireRole, requireAnyRole } from './middleware/requireRole';
 import { domainGuard } from './middleware/domain-guard';
 import { errorHandler } from './middleware/error-handler';
 import { createIdpRouter, buildIdpLoginUri } from './mock-idp';
+import { createFederationRouter } from './federation/router';
+import { CatalogoExterno, crearCatalogoExterno } from './federation/catalogo-externo';
+import { AcademixApi, crearAcademixApi, nombreCompleto } from './academix/client';
 import { createStorageBackend, StorageBackend } from './storage/storage';
 import {
   MATERIAL_EXTENSIONS,
@@ -291,6 +294,9 @@ export interface GatewayDependencies {
   inscripcionGrpc?: typeof defaultInscripcionGrpc;
   notificacionesGrpc?: typeof defaultNotificacionesGrpc;
   storage?: StorageBackend;
+  federationApiKeys?: string[];
+  catalogoExterno?: CatalogoExterno | null;
+  academix?: AcademixApi;
 }
 
 export function createGateway(dependencies: GatewayDependencies = {}): Express {
@@ -301,6 +307,11 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
   const inscripcionGrpc = dependencies.inscripcionGrpc ?? defaultInscripcionGrpc;
   const notificacionesGrpc = dependencies.notificacionesGrpc ?? defaultNotificacionesGrpc;
   const storage = dependencies.storage ?? defaultStorage;
+  const catalogoExterno =
+    dependencies.catalogoExterno !== undefined
+      ? dependencies.catalogoExterno
+      : crearCatalogoExterno(config.FEDERATION_REMOTE_URL, config.FEDERATION_REMOTE_KEY, config.FEDERATION_REMOTE_NOMBRE);
+  const academix = dependencies.academix ?? crearAcademixApi(config.ACADEMIX_BASE_URL);
   const authenticate = createAuthenticate(authGrpc);
   const app = express();
 
@@ -317,6 +328,19 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
 
   // IdP institucional simulado (OAuth 2.0 Authorization Code).
   app.use('/mock-oauth', createIdpRouter());
+
+  // Catálogo federado de solo lectura para grupos aliados (docs/federacion).
+  app.use(
+    '/federation',
+    createFederationRouter({
+      catalogGrpc,
+      apiKeys: dependencies.federationApiKeys ?? config.FEDERATION_API_KEYS,
+      limitePorMinuto: config.FEDERATION_RATE_LIMIT,
+      grupo: config.FEDERATION_ORIGEN_GRUPO,
+      institucion: config.FEDERATION_ORIGEN_INSTITUCION,
+      baseUrl: config.FEDERATION_PUBLIC_BASE_URL,
+    }),
+  );
 
   app.get('/health/live', (_req, res) => {
     res.status(200).json({ status: 'ok', service: 'api-gateway', version: '1.0.0' });
@@ -818,6 +842,77 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
         expiresAt: result.expiresAt,
         provider: result.provider,
       });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Academix Pass & CertiHub: talleres de la clase, reserva directa y billetera.
+  app.get('/academix/talleres', authenticate, async (req, res, next) => {
+    try {
+      res.json(await academix.talleres(String(req.query.curso ?? '')));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/academix/reservas', authenticate, async (req, res, next) => {
+    try {
+      const { eventoId } = req.body as Record<string, unknown>;
+      if (typeof eventoId !== 'string' || !eventoId.trim()) {
+        throw new DomainError('ENTRADA_INVALIDA', 'eventoId requerido', 400);
+      }
+      const { user } = await authGrpc.getCurrentUser(req.context!.sessionId);
+      res.status(202).json(await academix.reservar(eventoId.trim(), nombreCompleto(user), user.email));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/academix/reservas/:trackingId', authenticate, async (req, res, next) => {
+    try {
+      res.json(await academix.estadoReserva(req.params.trackingId));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/academix/certificados', authenticate, async (req, res, next) => {
+    try {
+      const { user } = await authGrpc.getCurrentUser(req.context!.sessionId);
+      // shortcut: CertiHub identifica al titular por nombre; dos estudiantes homónimos verían ambos certificados. Agregar el correo a la credencial si se vuelve un problema.
+      res.json(await academix.credenciales(nombreCompleto(user)));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/academix/certificados/:codigo/verificar', authenticate, async (req, res, next) => {
+    try {
+      res.json(await academix.verificar(req.params.codigo));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Clases del grupo aliado para la búsqueda unificada; el SPA las muestra junto
+  // a /catalog/classes con su etiqueta de origen. Si el aliado falla, lista vacía.
+  app.get('/catalog/externos', authenticate, async (req, res, next) => {
+    try {
+      const resultados = catalogoExterno
+        ? await catalogoExterno.buscar(String(req.query.q ?? ''), toPositiveInt(req.query.page, 1))
+        : [];
+      res.json({ aliado: catalogoExterno?.nombre ?? null, resultados });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/catalog/externo/:id', authenticate, async (req, res, next) => {
+    try {
+      const clase = catalogoExterno ? await catalogoExterno.obtener(req.params.id) : null;
+      if (!clase) throw new DomainError('NO_ENCONTRADO', 'Clase externa no disponible', 404);
+      res.json({ clase });
     } catch (err) {
       next(err);
     }

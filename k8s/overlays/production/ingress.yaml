@@ -27,6 +27,13 @@ spec:
                 name: api-gateway
                 port:
                   number: 8080
+          - path: /federation
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:

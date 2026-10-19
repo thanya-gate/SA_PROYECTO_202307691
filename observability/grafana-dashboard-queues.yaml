@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-academix-queues
+  labels:
+    grafana_dashboard: "1"
+data:
+  academix-queues.json: |
+    {
+      "uid": "academix-queues",
+      "title": "Academix · Negocio y Colas",
+      "tags": ["academix"],
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "time": {"from": "now-30m", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Longitud de cola (mensajes encolados)",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [
+            {"expr": "sum(rabbitmq_queue_messages)", "legendFormat": "mensajes en cola"}
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Mensajes listos y sin acuse",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [
+            {"expr": "sum(rabbitmq_queue_messages_ready)", "legendFormat": "listos"},
+            {"expr": "sum(rabbitmq_queue_messages_unacked)", "legendFormat": "sin acuse"}
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Tasa de publicación",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+          "targets": [
+            {"expr": "sum(rate(rabbitmq_channel_messages_published_total[1m]))", "legendFormat": "publicados/s"}
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Tasa de consumo (ack)",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+          "targets": [
+            {"expr": "sum(rate(rabbitmq_channel_messages_acked_total[1m]))", "legendFormat": "ack/s"}
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Tickets procesados (rango visible)",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+          "targets": [
+            {"expr": "round(sum(increase(rabbitmq_channel_messages_acked_total[$__range])))", "legendFormat": "procesados"}
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+            }
+          }
+        }
+      ]
+    }

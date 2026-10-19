@@ -1,0 +1,32 @@
+# Valores de Helm para kube-prometheus-stack (Práctica 10).
+# Uso:
+#   helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+#     -n monitoring --version 92.3.0 -f grafana-values.yaml
+# La contraseña de admin NO va aquí: vive en el Secret grafana-admin (ver README).
+alertmanager:
+  enabled: false
+grafana:
+  enabled: true
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  # Acceso público de solo lectura a los tableros (requisito del enunciado).
+  grafana.ini:
+    server:
+      root_url: https://grafana.academix.34.123.206.113.sslip.io
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+  # uid fijo para que coincida con los JSON de los dashboards.
+  sidecar:
+    datasources:
+      uid: prometheus
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: monitoring
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 512Mi}

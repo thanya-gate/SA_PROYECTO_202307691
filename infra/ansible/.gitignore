@@ -1,0 +1,3 @@
+# Generado por Terraform en cada apply (IPs efimeras).
+inventory.ini
+*.retry

@@ -1,0 +1,14 @@
+# Cobertura unitaria (Fase 3, umbral 75%): dominio, casos de uso e interfaz gRPC.
+# Se excluyen el arranque y los adaptadores que requieren PostgreSQL/Redis reales.
+[run]
+source = src
+omit =
+    src/analitica/main.py
+    src/analitica/config.py
+    src/analitica/container.py
+    src/analitica/healthcheck.py
+    src/analitica/infrastructure/*
+
+[report]
+fail_under = 75
+show_missing = False

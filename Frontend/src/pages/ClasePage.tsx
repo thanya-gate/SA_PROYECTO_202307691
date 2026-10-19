@@ -19,6 +19,7 @@ import { ForoDudas } from '../components/ForoDudas';
 import type { DudaBarra } from '../components/PlayerProgressBar';
 import { YT_STATE, YouTubePlayer } from '../components/YouTubePlayer';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
+import { TalleresPanel } from '../components/TalleresPanel';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
 import { TextField } from '../components/ui/TextField';
@@ -724,6 +725,8 @@ export default function ClasePage() {
                 {errorCalificacion && <Alert tone="error">{errorCalificacion}</Alert>}
               </form>
             )}
+
+            <TalleresPanel curso={clase.curso} token={token ?? ''} />
 
             <div className="clase__ficha" aria-label="Ficha técnica de la clase">
               <h2 className="clase__ficha-titulo">Ficha técnica</h2>

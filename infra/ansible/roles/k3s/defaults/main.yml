@@ -1,0 +1,7 @@
+---
+k3s_install_url: https://get.k3s.io
+k3s_config_file: /etc/rancher/k3s/config.yaml
+k3s_remote_kubeconfig: /etc/rancher/k3s/k3s.yaml
+# GCP asigna un hostname FQDN de mas de 63 caracteres, invalido como etiqueta
+# de Kubernetes: el nodo nunca se registra. Se fija un nombre corto.
+k3s_node_name: "{{ inventory_hostname }}"

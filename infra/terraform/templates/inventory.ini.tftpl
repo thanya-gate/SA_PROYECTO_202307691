@@ -1,0 +1,15 @@
+# =====================================================================
+# inventory.ini - GENERADO POR TERRAFORM (ansible.tf). No editar a mano:
+# se sobrescribe en cada `terraform apply` con las IPs nuevas.
+# =====================================================================
+
+[development]
+${development_name} ansible_host=${development_public_ip} internal_ip=${development_internal_ip}
+
+[production]
+${production_name} ansible_host=${production_public_ip} internal_ip=${production_internal_ip}
+
+[all:vars]
+ansible_user=${ssh_username}
+ansible_ssh_private_key_file=${ssh_private_key_path}
+ansible_python_interpreter=/usr/bin/python3

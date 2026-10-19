@@ -1,0 +1,66 @@
+---
+# Instalacion oficial de Docker Engine para Ubuntu:
+# https://docs.docker.com/engine/install/ubuntu/
+- name: Quitar paquetes de Docker no oficiales que entran en conflicto
+  ansible.builtin.apt:
+    name: [docker.io, docker-compose, docker-compose-v2, podman-docker, containerd, runc]
+    state: absent
+    lock_timeout: 300
+
+- name: Crear el directorio de keyrings de apt
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Descargar la clave GPG oficial de Docker
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+
+- name: Agregar el repositorio oficial de Docker
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: https://download.docker.com/linux/ubuntu
+    suites: "{{ ansible_distribution_release }}"
+    components: stable
+    architectures: "{{ docker_apt_arch }}"
+    signed_by: /etc/apt/keyrings/docker.asc
+  register: docker_repo
+
+- name: Instalar Docker Engine y el plugin de Docker Compose
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: "{{ docker_repo is changed }}"
+    lock_timeout: 300
+
+- name: Arrancar y habilitar Docker
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Agregar usuarios al grupo docker
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: "{{ docker_users }}"
+  register: docker_group
+
+# La sesion SSH abierta no ve el grupo nuevo hasta reconectar.
+- name: Reconectar para aplicar el grupo docker
+  ansible.builtin.meta: reset_connection
+
+- name: Verificar Docker y Docker Compose sin sudo
+  ansible.builtin.command: docker compose version
+  become: false
+  changed_when: false
+  register: docker_compose_version
+
+- name: Mostrar version de Docker Compose
+  ansible.builtin.debug:
+    msg: "{{ docker_compose_version.stdout }}"

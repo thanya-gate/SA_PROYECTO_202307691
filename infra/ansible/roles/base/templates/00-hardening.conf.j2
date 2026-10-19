@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# Endurecimiento de SSH - Academix Pass.
+PermitRootLogin {{ ssh_permit_root_login }}
+PasswordAuthentication {{ ssh_password_authentication }}
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+PubkeyAuthentication yes
+MaxAuthTries {{ ssh_max_auth_tries }}
+X11Forwarding no
+ClientAliveInterval {{ ssh_client_alive_interval }}
+ClientAliveCountMax {{ ssh_client_alive_count_max }}

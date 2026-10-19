@@ -1,0 +1,11 @@
+---
+# Si la configuracion es invalida, falla aqui y NO se reinicia: asi nunca
+# se pierde el acceso SSH a la VM.
+- name: Validar configuracion de sshd
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false
+
+- name: Reiniciar ssh
+  ansible.builtin.service:
+    name: ssh
+    state: restarted

@@ -52,6 +52,25 @@ const envSchema = z.object({
   YOUTUBE_API_KEY: z.string().default(''),
 
   PUBLIC_PATHS: z.string().default('/health'),
+
+  // Federación de catálogos (docs/federacion). Claves que entregamos a grupos aliados (CSV).
+  FEDERATION_API_KEYS: z
+    .string()
+    .default('')
+    .transform((v) => v.split(',').map((k) => k.trim()).filter(Boolean)),
+  FEDERATION_RATE_LIMIT: z.coerce.number().int().positive().default(60),
+  FEDERATION_ORIGEN_GRUPO: z.string().default('YoUSAC G4'),
+  FEDERATION_ORIGEN_INSTITUCION: z.string().default('Facultad de Ingeniería USAC'),
+  // Base para volver absolutas las URLs de video relativas (/media/...) que salen hacia otros grupos.
+  FEDERATION_PUBLIC_BASE_URL: z.string().default('https://yousac-thany.duckdns.org'),
+  // Catálogo del grupo aliado que consumimos. Vacío = sin federación. Para probar
+  // sin el aliado, apuntar a nuestro propio https://<dominio>/federation/v1.
+  FEDERATION_REMOTE_URL: z.string().default(''),
+  FEDERATION_REMOTE_KEY: z.string().default(''),
+  FEDERATION_REMOTE_NOMBRE: z.string().default('Grupo aliado'),
+
+  // Academix Pass & CertiHub (Prácticas 7–10). Vacío = integración deshabilitada (503).
+  ACADEMIX_BASE_URL: z.string().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

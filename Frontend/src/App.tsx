@@ -7,6 +7,7 @@ import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ClasePage from './pages/ClasePage';
+import ClaseExternaPage from './pages/ClaseExternaPage';
 import HistorialPage from './pages/HistorialPage';
 import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetallePage from './pages/PlaylistDetallePage';
@@ -93,6 +94,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <ClasePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/catalogo/externa/:id"
+            element={
+              <RequireAuth>
+                <ClaseExternaPage />
               </RequireAuth>
             }
           />

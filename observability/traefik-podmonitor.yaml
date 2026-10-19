@@ -1,0 +1,20 @@
+# Traefik (Ingress de K3s) ya expone métricas Prometheus en el puerto "metrics" (:9100)
+# del pod, pero el Service no lo publica; por eso PodMonitor y no ServiceMonitor.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: academix-traefik
+  labels:
+    app.kubernetes.io/part-of: academix
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  podMetricsEndpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics
