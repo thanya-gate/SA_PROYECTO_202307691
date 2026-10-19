@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { catalogApi, type ClaseResumen, type SemestreResumen } from '../api/catalog';
+import { catalogApi, type ClaseExterna, type ClaseResumen, type SemestreResumen } from '../api/catalog';
 import { useAuth } from '../auth/auth-context';
-import { ClaseCard } from '../components/ClaseCard';
+import { ClaseCard, ClaseExternaCard } from '../components/ClaseCard';
 import { AppLayout } from '../components/AppLayout';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
@@ -22,6 +22,7 @@ export default function CatalogPage() {
   const { token } = useAuth();
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS);
   const [clases, setClases] = useState<ClaseResumen[]>([]);
+  const [externas, setExternas] = useState<ClaseExterna[]>([]);
   const [semestres, setSemestres] = useState<SemestreResumen[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +74,22 @@ export default function CatalogPage() {
       active = false;
     };
   }, [filtros, pagina, tokenActual]);
+
+  // Catálogo federado: el aliado solo filtra por tema; si no responde, la lista queda vacía.
+  useEffect(() => {
+    let active = true;
+    catalogApi
+      .externos(filtros.tema, pagina, tokenActual)
+      .then((res) => {
+        if (active) setExternas(res.resultados);
+      })
+      .catch(() => {
+        if (active) setExternas([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [filtros.tema, pagina, tokenActual]);
 
   function actualizar(campo: keyof Filtros, valor: string) {
     setPagina(1);
@@ -182,16 +199,20 @@ export default function CatalogPage() {
             <p className="catalogo__estado" role="status">
               Cargando catálogo…
             </p>
-          ) : clases.length === 0 ? (
+          ) : clases.length === 0 && externas.length === 0 ? (
             <p className="catalogo__estado">No se encontraron clases con los filtros seleccionados.</p>
           ) : (
             <>
               <p className="catalogo__estado">
                 {total} clase{total === 1 ? '' : 's'} encontrada{total === 1 ? '' : 's'}
+                {externas.length > 0 && ` · ${externas.length} de grupos aliados`}
               </p>
               <div className="catalogo__grid">
                 {clases.map((clase) => (
-                  <ClaseCard key={clase.claseId} clase={clase} />
+                  <ClaseCard key={clase.claseId} clase={clase} mostrarOrigen />
+                ))}
+                {externas.map((clase) => (
+                  <ClaseExternaCard key={`ext-${clase.id}`} clase={clase} />
                 ))}
               </div>
               {totalPaginas > 1 && (

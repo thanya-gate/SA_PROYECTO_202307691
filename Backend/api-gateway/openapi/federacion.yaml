@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info:
+  title: YoUSAC — API de Catálogo Federado
+  version: 1.0.0
+  description: |
+    Contrato de solo lectura para compartir clases grabadas entre instancias de YoUSAC.
+    Cada grupo **expone** estas rutas y **consume** las del grupo aliado con el mismo formato.
+    Guía para implementarlo: `docs/federacion/README.md` del repositorio YoUSAC G4.
+servers:
+  - url: https://yousac-thany.duckdns.org/federation/v1
+    description: Producción YoUSAC G4
+security:
+  - ApiKey: []
+paths:
+  /salud:
+    get:
+      summary: Estado del servicio (sin API key, usado por smoke tests)
+      operationId: obtenerSalud
+      security: []
+      responses:
+        '200':
+          description: Servicio disponible
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [ok] }
+  /clases:
+    get:
+      summary: Buscar y listar clases publicadas
+      operationId: buscarClases
+      parameters:
+        - { name: q, in: query, required: false, description: Texto a buscar en el tema de la clase, schema: { type: string } }
+        - { name: curso, in: query, required: false, description: Nombre o código del curso, schema: { type: string } }
+        - { name: page, in: query, required: false, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 20, default: 10 } }
+      responses:
+        '200':
+          description: Página de resultados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginaClases' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+        '429': { $ref: '#/components/responses/DemasiadasPeticiones' }
+  /clases/{id}:
+    get:
+      summary: Detalle de una clase con capítulos (marcadores de tiempo)
+      operationId: obtenerClase
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Clase encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClaseFederada' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '429': { $ref: '#/components/responses/DemasiadasPeticiones' }
+components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Capitulo:
+      type: object
+      required: [titulo, inicioSeg, finSeg]
+      properties:
+        titulo: { type: string, example: Introducción }
+        inicioSeg: { type: integer, minimum: 0, example: 0 }
+        finSeg: { type: integer, minimum: 0, example: 420 }
+    Origen:
+      type: object
+      required: [grupo, institucion]
+      properties:
+        grupo: { type: string, example: YoUSAC G4 }
+        institucion: { type: string, example: Facultad de Ingeniería USAC }
+    ClaseFederada:
+      type: object
+      required: [id, titulo, curso, videoUrl, tipoVideo, capitulos, origen]
+      properties:
+        id: { type: string, example: 3f2a9c1e-0b7d-4c5e-9a11-2d4e6f8a0b1c }
+        titulo: { type: string, description: Tema de la clase, example: Subredes VLSM }
+        curso: { type: string, example: Redes de Computadoras 1 }
+        codigoCurso: { type: string, example: '0770' }
+        unidad: { type: string, example: Unidad 2 }
+        semestre: { type: string, example: Segundo Semestre }
+        anio: { type: integer, example: 2026 }
+        catedratico: { type: string, example: Ing. Pérez }
+        duracionSeg: { type: integer, minimum: 0, example: 3600 }
+        videoUrl: { type: string, format: uri, description: URL reproducible directamente (archivo público o YouTube) }
+        tipoVideo: { type: string, enum: [archivo, youtube] }
+        miniaturaUrl: { type: string, format: uri }
+        notasMd: { type: string, description: Notas de la clase en Markdown (puede venir vacío) }
+        capitulos:
+          type: array
+          description: En el listado puede venir vacío; el detalle lo trae completo.
+          items: { $ref: '#/components/schemas/Capitulo' }
+        origen: { $ref: '#/components/schemas/Origen' }
+    PaginaClases:
+      type: object
+      required: [resultados, total, page, pageSize, totalPages]
+      properties:
+        resultados:
+          type: array
+          items: { $ref: '#/components/schemas/ClaseFederada' }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalPages: { type: integer }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: API_KEY_INVALIDA }
+            message: { type: string }
+  responses:
+    NoAutorizado:
+      description: Falta la API key o no es válida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NoEncontrado:
+      description: La clase no existe
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    DemasiadasPeticiones:
+      description: Se superó el límite de 60 peticiones por minuto por API key
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

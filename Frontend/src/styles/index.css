@@ -5346,3 +5346,59 @@ body {
   color: var(--color-text-muted);
 }
 
+
+/* Federación: etiqueta de origen en tarjetas y vista de clase externa. */
+.clase-card__origen {
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface-muted, rgba(127, 127, 127, 0.15));
+  color: var(--color-text-muted, inherit);
+}
+
+.clase-card__origen--externa {
+  background: var(--color-accent);
+  /* El acento es amarillo en ambos temas: texto oscuro para mantener contraste. */
+  color: #1a1a1a;
+}
+
+/* Academix Pass: talleres en la vista de clase y billetera de certificados. */
+.talleres {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.talleres__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border, rgba(127, 127, 127, 0.2));
+}
+
+.talleres__item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.talleres__meta {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.talleres__estado {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.talleres__estado--ok {
+  color: var(--color-success, #1d7a46);
+}

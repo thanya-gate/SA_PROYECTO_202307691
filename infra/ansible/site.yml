@@ -1,0 +1,12 @@
+---
+# site.yml - Punto de entrada unico.
+#   ansible-playbook -i inventory.ini site.yml
+# Orden: base (todas) -> docker (development) -> k3s (production).
+- name: Configuracion base de todas las VMs
+  import_playbook: playbooks/base.yml
+
+- name: Docker y Docker Compose en el entorno de desarrollo
+  import_playbook: playbooks/docker.yml
+
+- name: K3s control-plane en el entorno de produccion
+  import_playbook: playbooks/k3s.yml

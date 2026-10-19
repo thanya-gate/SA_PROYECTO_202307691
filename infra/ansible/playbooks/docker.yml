@@ -1,0 +1,6 @@
+---
+- name: Playbook Docker
+  hosts: development
+  become: true
+  roles:
+    - docker

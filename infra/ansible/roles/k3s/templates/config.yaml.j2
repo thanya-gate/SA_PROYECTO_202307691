@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# Configuracion del servidor K3s (equivale a los flags de `k3s server`).
+node-name: {{ k3s_node_name }}
+node-ip: {{ internal_ip }}
+node-external-ip: {{ ansible_host }}
+write-kubeconfig-mode: "0644"
+# La IP publica entra al certificado del API server: sin ella, kubectl desde
+# la maquina de administracion falla con "x509: certificate is valid for ...".
+tls-san:
+  - {{ ansible_host }}
+  - {{ internal_ip }}

@@ -1,0 +1,74 @@
+---
+# La configuracion va antes de instalar: el servicio arranca ya con ella.
+- name: Crear el directorio de configuracion de K3s
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: "0755"
+
+- name: Escribir la configuracion del servidor K3s
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "{{ k3s_config_file }}"
+    mode: "0600"
+  notify: Reiniciar k3s
+
+- name: Descargar el instalador oficial de K3s
+  ansible.builtin.get_url:
+    url: "{{ k3s_install_url }}"
+    dest: /usr/local/bin/k3s-install.sh
+    mode: "0755"
+
+# `creates` hace la tarea idempotente: si el binario ya existe, no reinstala.
+- name: Instalar K3s en modo server / control-plane
+  ansible.builtin.command: /usr/local/bin/k3s-install.sh
+  args:
+    creates: /usr/local/bin/k3s
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: server
+
+- name: Arrancar y habilitar el servicio k3s
+  ansible.builtin.service:
+    name: k3s
+    state: started
+    enabled: true
+
+# Si cambio la configuracion, reinicia ahora y no al final del play.
+- name: Aplicar reinicio pendiente de k3s
+  ansible.builtin.meta: flush_handlers
+
+- name: Esperar a que el API server responda en 6443
+  ansible.builtin.wait_for:
+    port: 6443
+    timeout: 300
+
+- name: Esperar a que el nodo este Ready
+  ansible.builtin.command: k3s kubectl get node {{ k3s_node_name }} --no-headers
+  register: k3s_node
+  until: k3s_node.rc == 0 and ' Ready ' in k3s_node.stdout
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Leer el kubeconfig generado por K3s
+  ansible.builtin.slurp:
+    src: "{{ k3s_remote_kubeconfig }}"
+  register: k3s_kubeconfig
+
+# Se escribe ya con la IP publica en vez de 127.0.0.1. copy solo reporta
+# cambio si el contenido difiere, asi la tarea es idempotente.
+- name: Guardar el kubeconfig en la maquina de administracion
+  ansible.builtin.copy:
+    content: "{{ k3s_kubeconfig.content | b64decode | regex_replace('https://127\\.0\\.0\\.1:6443', 'https://' ~ ansible_host ~ ':6443') }}"
+    dest: "{{ k3s_local_kubeconfig }}"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+
+- name: Mostrar el estado del nodo
+  ansible.builtin.debug:
+    msg:
+      - "{{ k3s_node.stdout }}"
+      - "kubeconfig: {{ k3s_local_kubeconfig }}"
+      - "Uso: KUBECONFIG={{ k3s_local_kubeconfig }} kubectl get nodes"

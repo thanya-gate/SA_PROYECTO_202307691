@@ -119,6 +119,18 @@ spec:
                   name: yousac-runtime
                   key: YOUTUBE_API_KEY
                   optional: true
+            - name: FEDERATION_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: FEDERATION_API_KEYS
+                  optional: true
+            - name: FEDERATION_REMOTE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: FEDERATION_REMOTE_KEY
+                  optional: true
           volumeMounts:
             - name: temporary-media
               mountPath: /tmp/media

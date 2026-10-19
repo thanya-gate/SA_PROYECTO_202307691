@@ -1,0 +1,50 @@
+# =====================================================================
+# .gitignore de la capa Terraform - Practica 9
+# =====================================================================
+# Este archivo es una medida de SEGURIDAD exigida por la practica: "Queda
+# prohibido subir el archivo .tfstate con credenciales".
+#
+# terraform.tfstate contiene el estado completo de la infraestructura en
+# texto plano. Ademas de las IPs y los IDs, si alguien deja una contrasena o
+# un token como valor de variable, ese valor queda escrito ahi. El archivo
+# .tfstate no se puede marcar sensible de forma retroactiva: una vez
+# versionado, queda en el historial de Git para siempre.
+#
+# Lo que SI se versiona: los .tf, el .terraform.lock.hcl y los .tfvars.example.
+
+# Estado de Terraform: NUNCA versionar.
+# El estado real de produccion vive en Terraform Cloud o en un bucket GCS
+# bloqueado con IAM, no en el repositorio.
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+
+# Valores variables con secretos.
+# Los .tfvars.example SI se versionan porque documentan que variables existen.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Planos guardados: pueden contener atributos marcados como sensibles ya
+# resueltos en texto plano.
+*.tfplan
+*.tfplan.*
+tfplan
+
+# Claves de credenciales de la nube, por si alguien las deja caer aqui.
+# La clave real de esta practica vive en ~/.gcp/, fuera del repositorio.
+*.pem
+*.key
+*-sa.json
+service-account*.json
+credentials.json
+gcp-credentials*.json
+
+# Planos especificos por entorno que alguien commenta en su maquina.
+override.tf
+override_*.tf
+*_override.tf
+*_override.tf.json

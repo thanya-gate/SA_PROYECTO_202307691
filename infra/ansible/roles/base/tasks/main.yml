@@ -1,0 +1,68 @@
+---
+# Una VM recien creada por Terraform tarda en aceptar SSH.
+- name: Esperar a que la VM acepte conexiones SSH
+  ansible.builtin.wait_for_connection:
+    delay: 5
+    timeout: 300
+
+# cloud-init escribe el authorized_keys y usa apt al arrancar: si Ansible
+# entra antes, choca con el lock de dpkg.
+- name: Esperar a que cloud-init termine el primer arranque
+  ansible.builtin.command: cloud-init status --wait
+  changed_when: false
+  failed_when: false
+
+- name: Recoger facts del sistema
+  ansible.builtin.setup:
+
+# Sin timeout, una descarga que se queda colgada bloquea apt indefinidamente
+# (pasa en la e2-micro). Con esto apt corta y reintenta.
+- name: Configurar timeout y reintentos de apt
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/80-academix-retries
+    content: |
+      Acquire::Retries "5";
+      Acquire::http::Timeout "30";
+      Acquire::https::Timeout "30";
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Actualizar la cache de repositorios
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300
+
+# Desactivado por defecto: en una VM recien creada baja el kernel completo y
+# en la e2-micro tarda mas de 30 min. Activar con -e base_apt_upgrade=true.
+- name: Aplicar actualizaciones de paquetes (opcional)
+  ansible.builtin.apt:
+    upgrade: safe
+    lock_timeout: 300
+  when: base_apt_upgrade | bool
+
+- name: Instalar utilitarios base
+  ansible.builtin.apt:
+    name: "{{ base_packages }}"
+    state: present
+    lock_timeout: 300
+
+# Drop-in en sshd_config.d: sshd usa el PRIMER valor que encuentra, y 00-
+# se lee antes que el 50-cloud-init.conf de Ubuntu.
+- name: Securizar SSH
+  ansible.builtin.template:
+    src: 00-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/00-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Validar configuracion de sshd
+    - Reiniciar ssh
+
+- name: Habilitar fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true

@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-academix-infra
+  labels:
+    grafana_dashboard: "1"
+data:
+  academix-infra.json: |
+    {
+      "uid": "academix-infra",
+      "title": "Academix · Infraestructura",
+      "tags": ["academix"],
+      "schemaVersion": 39,
+      "version": 1,
+      "timezone": "america/guatemala",
+      "refresh": "10s",
+      "time": {"from": "now-15m", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "CPU de pods (academix-prod)",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [
+            {"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"academix-prod\", container!=\"\"}[5m])) by (pod)", "legendFormat": "{{pod}}"}
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Memoria de pods (working set)",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [
+            {"expr": "sum(container_memory_working_set_bytes{namespace=\"academix-prod\", container!=\"\"}) by (pod)", "legendFormat": "{{pod}}"}
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Nodos K3s listos",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+          "targets": [
+            {"expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"})", "legendFormat": "Listos"}
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Pods por fase",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+          "targets": [
+            {"expr": "sum(kube_pod_status_phase) by (phase)", "legendFormat": "{{phase}}"}
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Tráfico de red (academix-prod)",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+          "targets": [
+            {"expr": "sum(rate(container_network_receive_bytes_total{namespace=\"academix-prod\"}[5m]))", "legendFormat": "Recibidos"},
+            {"expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"academix-prod\"}[5m]))", "legendFormat": "Transmitidos"}
+          ]
+        }
+      ]
+    }

@@ -34,6 +34,8 @@ readonly REQUIRED_NAMESPACE="yousac-prod"
 : "${K8S_GOOGLE_CLIENT_ID:=}"
 : "${K8S_GOOGLE_CLIENT_SECRET:=}"
 : "${K8S_YOUTUBE_API_KEY:=}"
+: "${K8S_FEDERATION_API_KEYS:=}"
+: "${K8S_FEDERATION_REMOTE_KEY:=}"
 : "${K8S_SMTP_USER:=}"
 : "${K8S_SMTP_PASS:=}"
 : "${K8S_SMTP_FROM:=no-responder@yousac.edu.gt}"
@@ -130,6 +132,8 @@ kubectl create secret generic yousac-runtime \
   --from-literal=GOOGLE_CLIENT_ID="$K8S_GOOGLE_CLIENT_ID" \
   --from-literal=GOOGLE_CLIENT_SECRET="$K8S_GOOGLE_CLIENT_SECRET" \
   --from-literal=YOUTUBE_API_KEY="$K8S_YOUTUBE_API_KEY" \
+  --from-literal=FEDERATION_API_KEYS="$K8S_FEDERATION_API_KEYS" \
+  --from-literal=FEDERATION_REMOTE_KEY="$K8S_FEDERATION_REMOTE_KEY" \
   --from-literal=SMTP_USER="$K8S_SMTP_USER" \
   --from-literal=SMTP_PASS="$K8S_SMTP_PASS" \
   --from-literal=SMTP_FROM="$K8S_SMTP_FROM" \

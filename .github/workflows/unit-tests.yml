@@ -38,7 +38,7 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
       - name: Ejecutar pruebas unitarias
-        run: npm test -- --runInBand
+        run: npm test -- --runInBand --coverage
 
   go-tests:
     name: Go — reproducción
@@ -55,7 +55,12 @@ jobs:
           go-version: '1.24'
           cache: true
       - name: Ejecutar pruebas unitarias
-        run: go test ./... -v
+        # Umbral 75%: se excluyen el arranque (cmd), el código generado (gen) y la config.
+        run: |
+          go list ./... | grep -vE '/cmd/|/gen/|/config$' | xargs go test -v -coverprofile=coverage.out
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {sub("%","",$3); print $3}')
+          echo "Cobertura Go: ${total}%"
+          awk -v t="$total" 'BEGIN { exit (t + 0 < 75) }' || { echo "::error::Cobertura Go ${total}% menor al 75%"; exit 1; }
 
   python-tests:
     name: Python — analítica
@@ -80,7 +85,7 @@ jobs:
       - name: Ejecutar pruebas unitarias
         run: |
           source .venv/bin/activate
-          python3 -m pytest -v
+          python3 -m pytest -v --cov --cov-config=.coveragerc
 
   typescript-build:
     name: Build TypeScript — ${{ matrix.package }}

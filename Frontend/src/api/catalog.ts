@@ -175,9 +175,40 @@ function toQuery(params: SearchParams): string {
   return raw.length > 0 ? `?${raw}` : '';
 }
 
+// Clase del grupo aliado (contrato openapi/federacion.yaml del gateway).
+export interface ClaseExterna {
+  id: string;
+  titulo: string;
+  curso: string;
+  codigoCurso?: string;
+  unidad?: string;
+  semestre?: string;
+  anio?: number;
+  catedratico?: string;
+  duracionSeg?: number;
+  videoUrl: string;
+  tipoVideo: 'archivo' | 'youtube';
+  notasMd?: string;
+  capitulos: Array<{ titulo: string; inicioSeg: number; finSeg: number }>;
+  origen: { grupo: string; institucion: string };
+}
+
+export interface ExternosResponse {
+  aliado: string | null;
+  resultados: ClaseExterna[];
+}
+
 export const catalogApi = {
   search: (params: SearchParams, token: string): Promise<PaginaClases> =>
     apiFetch<PaginaClases>(`/catalog/classes${toQuery(params)}`, { token }),
+
+  externos: (q: string, page: number, token: string): Promise<ExternosResponse> =>
+    apiFetch<ExternosResponse>(`/catalog/externos?${new URLSearchParams({ q: q.trim(), page: String(page) })}`, {
+      token,
+    }),
+
+  getExterna: (id: string, token: string): Promise<{ clase: ClaseExterna }> =>
+    apiFetch<{ clase: ClaseExterna }>(`/catalog/externo/${encodeURIComponent(id)}`, { token }),
 
   getClase: (claseId: string, token: string): Promise<GetClaseResponse> =>
     apiFetch<GetClaseResponse>(`/catalog/classes/${claseId}`, { token }),

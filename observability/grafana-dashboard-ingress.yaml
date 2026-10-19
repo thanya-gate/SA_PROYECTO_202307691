@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-academix-ingress
+  labels:
+    grafana_dashboard: "1"
+data:
+  academix-ingress.json: |
+    {
+      "uid": "academix-ingress",
+      "title": "Academix · Ingress y Experiencia de Usuario",
+      "tags": ["academix"],
+      "schemaVersion": 39,
+      "version": 2,
+      "timezone": "america/guatemala",
+      "refresh": "10s",
+      "time": {"from": "now-15m", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Peticiones por segundo por servicio",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+          "targets": [
+            {"expr": "sum(rate(traefik_service_requests_total{service=~\"academix-prod-.*\"}[1m])) by (service)", "legendFormat": "{{service}}"}
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Latencia p95 / p99 del Ingress",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "fieldConfig": {"defaults": {"unit": "s", "custom": {"spanNulls": true, "showPoints": "always"}}, "overrides": []},
+          "targets": [
+            {"expr": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{service=~\"academix-prod-.*\"}[2m])) by (le, service))", "legendFormat": "p95 {{service}}"},
+            {"expr": "histogram_quantile(0.99, sum(rate(traefik_service_request_duration_seconds_bucket{service=~\"academix-prod-.*\"}[2m])) by (le))", "legendFormat": "p99 global"}
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Respuestas por código HTTP",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"stacking": {"mode": "normal"}, "fillOpacity": 30}}, "overrides": [{"matcher": {"id": "byRegexp", "options": "^2..$"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "green"}}]}, {"matcher": {"id": "byRegexp", "options": "^3..$"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "blue"}}]}, {"matcher": {"id": "byRegexp", "options": "^4..$"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "orange"}}]}, {"matcher": {"id": "byRegexp", "options": "^5..$"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]}]},
+          "targets": [
+            {"expr": "sum(rate(traefik_service_requests_total{service=~\"academix-prod-.*\"}[1m])) by (code)", "legendFormat": "{{code}}"}
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Tasa de errores 5xx",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 6, "x": 12, "y": 8},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 2, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 0.01}, {"color": "red", "value": 0.05}]}}, "overrides": []},
+          "targets": [
+            {"expr": "(sum(rate(traefik_service_requests_total{service=~\"academix-prod-.*\", code=~\"5..\"}[1m])) or vector(0)) / clamp_min(sum(rate(traefik_service_requests_total{service=~\"academix-prod-.*\"}[1m])), 1e-9)", "legendFormat": "5xx"}
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Disponibilidad (SLO 99%, rango visible)",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 2, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0.99}]}}, "overrides": []},
+          "targets": [
+            {"expr": "1 - ((sum(increase(traefik_service_requests_total{service=~\"academix-prod-.*\", code=~\"5..\"}[$__range])) or vector(0)) / clamp_min(sum(increase(traefik_service_requests_total{service=~\"academix-prod-.*\"}[$__range])), 1e-9))", "legendFormat": "Disponibilidad"}
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Reinicios de contenedores (rango visible)",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+          "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
+          "targets": [
+            {"expr": "round(sum(increase(kube_pod_container_status_restarts_total{namespace=\"academix-prod\"}[$__range])) by (container))", "legendFormat": "{{container}}"}
+          ]
+        }
+      ]
+    }

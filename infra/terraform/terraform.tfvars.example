@@ -1,0 +1,93 @@
+# =====================================================================
+# terraform.tfvars.example - Plantilla de variables para Academix Pass
+# =====================================================================
+# Este archivo SI se versiona a proposito: documenta que variables acepta el
+# modulo y con que valores tiene sentido ejecutarlo.
+#
+# Para usarlo:
+#   1. cp terraform.tfvars.example terraform.tfvars
+#   2. ajusta lo que necesites
+#   3. terraform plan
+#
+# El terraform.tfvars que crees NO se versiona: esta en el .gitignore, junto
+# con los .tfstate, porque son los archivos donde un secreto terminaria
+# guardado en texto plano.
+#
+# En la practica NO hace falta crear el .tfvars: todas las variables ya
+# tienen valores por defecto, asi que `terraform plan` funciona directo. Este
+# archivo sirve sobre todo para cambiar de region o de tamano de maquina
+# sin tocar el codigo .tf.
+# =====================================================================
+
+# --- Proyecto y ubicacion ---------------------------------------------------
+
+project_id = "yousac-202300396-2026"
+region     = "us-central1"
+zone       = "us-central1-a"
+
+# --- Red -------------------------------------------------------------------
+
+network_name              = "vpc-academix-pass"
+vpc_cidr                  = "10.10.0.0/16"
+subnet_development        = "subnet-development"
+subnet_development_cidr   = "10.10.1.0/24"
+subnet_production         = "subnet-production"
+subnet_production_cidr    = "10.10.2.0/24"
+
+# IPs internas estaticas. Deben caer dentro del CIDR de su subred; si no, la
+# API de Compute Engine rechaza la instancia.
+development_internal_ip = "10.10.1.10"
+production_internal_ip  = "10.10.2.10"
+
+# --- Computo ----------------------------------------------------------------
+
+development_instance_name = "vm-development"
+development_machine_type = "e2-micro"
+
+production_instance_name = "vm-production-k3s"
+production_machine_type  = "e2-medium"
+
+# 20 GB es el minimo que acepta la validacion. 30 GB deja margen para que K3s
+# guarde imagenes de contenedor sin quedarse sin disco.
+boot_disk_image  = "ubuntu-os-cloud/ubuntu-2404-lts-amd64"
+boot_disk_size_gb = 30
+
+# --- Acceso SSH -------------------------------------------------------------
+
+ssh_username = "ubuntu"
+# Una .pub por integrante; todas quedan autorizadas en ambas VMs.
+ssh_public_key_paths = [
+  "~/.ssh/academix_pass_ed25519.pub",
+  # "~/.ssh/companero_ed25519.pub",
+]
+ssh_private_key_path = "~/.ssh/academix_pass_ed25519"
+
+# --- Firewall ---------------------------------------------------------------
+
+# 0.0.0.0/0 deja entrar SSH desde cualquier parte de internet. Es lo que
+# permite que el evaluador se conecte durante la demostracion, y tambien lo
+# que un revisor de seguridad marcaria primero.
+#
+# Las dos opciones para endurecerlo, en orden de preferencia:
+#
+#   1) Solo la IP publica de quien va a conectarse:
+#        allowed_ssh_cidr = "203.0.113.45/32"
+#      Limitacion: hay que editar el .tfvars antes de cada demostracion.
+#
+#   2) Tunel de Identity-Aware Proxy, que es la opcion correcta en GCP:
+#        allowed_ssh_cidr = "35.235.240.0/20"
+#      No se abre el puerto 22 a internet: Google enruta la conexion. Ademas
+#      exige que la cuenta de servicio tenga el rol
+#      roles/iap.httpsResourceAccessor.
+#      El comando de conexion seria:
+#        gcloud compute ssh vm-development --tunnel-through-iap
+allowed_ssh_cidr = "0.0.0.0/0"
+
+allowed_http_cidr   = "0.0.0.0/0"
+allowed_https_cidr  = "0.0.0.0/0"
+allowed_k3s_api_cidr = "0.0.0.0/0"
+
+# Etiquetas de red. Las reglas de firewall apuntan a estas etiquetas, nunca a
+# una IP, para que sobrevivan a un cambio de direccion.
+network_tags    = ["academix-pass"]
+environment_tag = "production"
