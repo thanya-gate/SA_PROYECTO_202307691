@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { BilleteraCertificados } from '../components/BilleteraCertificados';
 import { Link } from 'react-router-dom';
 import {
   inscripcionApi,
@@ -10,11 +11,12 @@ import { AppLayout } from '../components/AppLayout';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
 
-type Seccion = 'credenciales' | 'cursos' | 'documentos' | 'preferencias';
+type Seccion = 'credenciales' | 'cursos' | 'certificados' | 'documentos' | 'preferencias';
 
 const SECCIONES: Array<{ id: Seccion; label: string }> = [
   { id: 'credenciales', label: 'Credenciales' },
   { id: 'cursos', label: 'Cursos asignados' },
+  { id: 'certificados', label: 'Mis certificados' },
   { id: 'documentos', label: 'Documentos' },
   { id: 'preferencias', label: 'Preferencias' },
 ];
@@ -482,6 +484,8 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
+
+            {seccion === 'certificados' && <BilleteraCertificados token={token ?? ''} />}
 
             {seccion === 'preferencias' && (
               <div>
