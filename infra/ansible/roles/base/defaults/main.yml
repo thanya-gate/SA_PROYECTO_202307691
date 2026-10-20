@@ -1,16 +1,18 @@
 ---
-# apt upgrade completo. La practica pide actualizar repositorios (apt update);
+# apt upgrade completo. El proyecto pide actualizar repositorios (apt update);
 # el upgrade de todo el sistema es opcional por el tiempo que toma.
 base_apt_upgrade: false
 
 base_packages:
   - git
   - curl
+  - jq
   - htop
   - net-tools
   - ca-certificates
   - gnupg
   - fail2ban
+  - unattended-upgrades
 
 # Valores del drop-in de sshd (templates/00-hardening.conf.j2).
 ssh_permit_root_login: "no"

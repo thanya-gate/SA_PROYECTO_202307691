@@ -1,17 +1,20 @@
 ###############################################################################
-# firewall.tf - Reglas de firewall de la VPC.
+# firewall.tf - Reglas de firewall de la VPC de YoUSAC.
 #
 # En Google Cloud la regla se adjunta a la red, no a la VM. Cada una declara
 # puertos y protocolos (allow), origen (source_ranges) y a que se aplica
 # (target_tags). Google evalua por prioridad ASCENDENTE: 1000 antes que 1010.
+#
+# Las VMs no llevan IP publica: el acceso administrativo es por Identity-Aware
+# Proxy. El ingress publico de produccion lo publica el Ingress del cluter GKE.
 ###############################################################################
 
-# SSH (22). Aplica a las dos VMs porque ambas llevan la etiqueta comun.
+# SSH (22). Origen restringido a Identity-Aware Proxy por defecto.
 resource "google_compute_firewall" "allow_ssh" {
   project     = var.project_id
-  name        = "fw-allow-ssh"
+  name        = "fw-yousac-allow-ssh"
   network     = google_compute_network.vpc.name
-  description = "SSH (22) para administracion y Ansible. Origen: ${var.allowed_ssh_cidr}"
+  description = "SSH (22) para Ansible y administracion via IAP. Origen: ${var.allowed_ssh_cidr}"
 
   direction = "INGRESS"
   priority  = 1000
@@ -26,17 +29,18 @@ resource "google_compute_firewall" "allow_ssh" {
   target_tags = var.network_tags
 }
 
-# HTTP (80) - trafico web publico de la aplicacion.
+# HTTP (80). Lo consume la VM de observabilidad para el redirect a HTTPS de
+# Kibana (Caddy). El trafico publico de la aplicacion llega por el Ingress.
 resource "google_compute_firewall" "allow_http" {
   project     = var.project_id
-  name        = "fw-allow-http"
+  name        = "fw-yousac-allow-http"
   network     = google_compute_network.vpc.name
-  description = "HTTP (80) para el trafico web publico de Academix Pass."
+  description = "HTTP (80) para redireccion a HTTPS de Kibana y comprobaciones de salud."
 
   direction = "INGRESS"
   priority  = 1010
 
-  source_ranges = [var.allowed_http_cidr]
+  source_ranges = ["0.0.0.0/0"]
 
   allow {
     protocol = "tcp"
@@ -46,17 +50,17 @@ resource "google_compute_firewall" "allow_http" {
   target_tags = var.network_tags
 }
 
-# HTTPS (443) - trafico TLS de la aplicacion.
+# HTTPS (443). Lo consume la VM de observabilidad (Kibana con TLS de Caddy).
 resource "google_compute_firewall" "allow_https" {
   project     = var.project_id
-  name        = "fw-allow-https"
+  name        = "fw-yousac-allow-https"
   network     = google_compute_network.vpc.name
-  description = "HTTPS (443) para el trafico TLS de Academix Pass."
+  description = "HTTPS (443) para Kibana con TLS terminado en la VM de observabilidad."
 
   direction = "INGRESS"
   priority  = 1020
 
-  source_ranges = [var.allowed_https_cidr]
+  source_ranges = ["0.0.0.0/0"]
 
   allow {
     protocol = "tcp"
@@ -66,58 +70,79 @@ resource "google_compute_firewall" "allow_https" {
   target_tags = var.network_tags
 }
 
-# K3s API (6443). Solo la VM de produccion.
-resource "google_compute_firewall" "allow_k3s_api" {
+# Elasticsearch (9200) y Logstash (5044/5000): SOLO desde el cluter GKE.
+# Fluent Bit reenvia los logs de los pods a Logstash y Prometheus puede raspar.
+resource "google_compute_firewall" "allow_observability_from_gke" {
   project     = var.project_id
-  name        = "fw-allow-k3s-api"
+  name        = "fw-yousac-allow-observability"
   network     = google_compute_network.vpc.name
-  description = "K3s API server (6443). Exclusivo de vm-production-k3s."
+  description = "Elasticsearch/Logstash solo aceptan trafico desde el cluter GKE (${join(", ", var.gke_source_ranges)})."
 
   direction = "INGRESS"
   priority  = 1030
 
-  source_ranges = [var.allowed_k3s_api_cidr]
+  source_ranges = var.gke_source_ranges
 
   allow {
     protocol = "tcp"
-    ports    = ["6443"]
+    ports    = ["9200", "5044", "5000", "9100", "9115"]
   }
 
-  target_tags = [var.environment_tag]
+  target_tags = [var.observability_tag]
 }
 
-# Telemetria e interna del cluster K3s: etcd, Flannel, Kubelet, webhook y
-# NodePort. Solo la VM de produccion y solo trafico de la propia VPC.
-resource "google_compute_firewall" "allow_k3s_telemetry" {
+# Kibana (5601). El proxy /health del API Gateway consulta Kibana desde los
+# pods del cluter GKE.
+resource "google_compute_firewall" "allow_kibana_from_gke" {
   project     = var.project_id
-  name        = "fw-allow-k3s-telemetry"
+  name        = "fw-yousac-allow-kibana"
   network     = google_compute_network.vpc.name
-  description = "Puertos de telemetria e internos del cluster K3s. Exclusivo de vm-production-k3s."
+  description = "Kibana (5601) solo acepta trafico desde el cluter GKE."
 
   direction = "INGRESS"
-  priority  = 1040
+  priority  = 1031
 
-  source_ranges = [var.vpc_cidr]
+  source_ranges = var.gke_source_ranges
 
   allow {
     protocol = "tcp"
-    ports    = ["2379-2380", "4443", "10250", "30000-32767"]
+    ports    = ["5601"]
   }
 
-  allow {
-    protocol = "udp"
-    ports    = ["8472", "10250", "30000-32767"]
-  }
-
-  target_tags = [var.environment_tag]
+  target_tags = [var.observability_tag]
 }
 
-# Trafico interno de la VPC: development <-> production.
+# Kibana (5601) desde los rangos del balanceador de Google. El Ingress de GKE
+# expone Kibana (host kibana.yousac-thany.duckdns.org) apuntando por Endpoints
+# a la VM de observabilidad; las sondas de salud y el trafico del proxy del
+# balanceador global no pertenecen al rango de pods, por eso se declara aparte.
+resource "google_compute_firewall" "allow_kibana_from_lb" {
+  project     = var.project_id
+  name        = "fw-yousac-allow-kibana-lb"
+  network     = google_compute_network.vpc.name
+  description = "Kibana (5601) accesible por el Ingress de GKE desde los rangos del balanceador de Google (sondas de salud y proxy)."
+
+  direction = "INGRESS"
+  priority  = 1032
+
+  # 130.211.0.0/22 y 35.191.0.0/16 son los rangos oficiales de las sondas de
+  # salud y el proxy del balanceador de aplicacion de Google Cloud.
+  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["5601"]
+  }
+
+  target_tags = [var.observability_tag]
+}
+
+# Trafico interno de la VPC: aplicacion <-> datos <-> perimetral.
 resource "google_compute_firewall" "allow_internal" {
   project     = var.project_id
-  name        = "fw-allow-internal-vpc"
+  name        = "fw-yousac-allow-internal-vpc"
   network     = google_compute_network.vpc.name
-  description = "Trafico entre las VMs de la VPC (development <-> production, gossip de Flannel, etc.)."
+  description = "Trafico entre las tres subredes de vpc-yousac (aplicacion, datos y perimetral)."
 
   direction = "INGRESS"
   priority  = 1050
@@ -131,31 +156,12 @@ resource "google_compute_firewall" "allow_internal" {
   target_tags = var.network_tags
 }
 
-# Sondas de salud de Google: rangos fijos de los balanceadores de Google Cloud.
-resource "google_compute_firewall" "allow_health_checks" {
-  project     = var.project_id
-  name        = "fw-allow-health-checks"
-  network     = google_compute_network.vpc.name
-  description = "Sondas de salud del balanceador de Google. Rangos oficiales de Google Cloud."
-
-  direction = "INGRESS"
-  priority  = 1060
-
-  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
-
-  allow {
-    protocol = "tcp"
-  }
-
-  target_tags = var.network_tags
-}
-
 # Egreso. Se declara la regla para que quede explicito que no se restringe.
 resource "google_compute_firewall" "allow_egress" {
   project     = var.project_id
-  name        = "fw-allow-egress"
+  name        = "fw-yousac-allow-egress"
   network     = google_compute_network.vpc.name
-  description = "Trafico de salida (apt, Docker registry, get.k3s.io). Se documenta la limitacion en el informe tecnico."
+  description = "Trafico de salida (apt, Docker registry, downloads de ELK). Se documenta la limitacion en el informe tecnico."
 
   direction = "EGRESS"
   priority  = 1000

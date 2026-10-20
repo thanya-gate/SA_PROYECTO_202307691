@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: yousac-prod
+
+configMapGenerator:
+  - name: yousac-migraciones-sql
+    files:
+      - sql/01_auth_cronjob_purga.sql
+      - sql/02_inscripcion_cronjob_repaso.sql
+      - sql/03_notificaciones_cronjob_repaso.sql
+      - sql/04_analitica_cronjob_tendencias.sql
+    options:
+      disableNameSuffixHash: true
+
+resources:
+  - job.yaml

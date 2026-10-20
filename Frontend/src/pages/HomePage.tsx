@@ -110,7 +110,7 @@ export default function HomePage() {
             const items: RecomendacionConClase[] = await Promise.all(
               res.items.map(async (item) => ({
                 ...item,
-                clase: await buscarClase(item.claseId),
+                clase: await buscarClase(item.claseId).catch(() => undefined),
               })),
             );
             if (active) setRecomendaciones(items);
@@ -178,7 +178,7 @@ export default function HomePage() {
             {puedeRecomendaciones && recomendaciones.length > 0 && (
               <section className="home__section" aria-label="Recomendaciones">
                 <div className="home__section-header">
-                  <h2 className="home__section-title">Recomendado para ti</h2>
+                  <h2 className="home__section-title">Clases recomendadas para tu preparación de exámenes</h2>
                   <Link to="/analitica" className="home__section-link">
                     Ver analítica
                   </Link>

@@ -1,0 +1,25 @@
+---
+- name: Diagnostico de fluent-bit (ambos hosts)
+  hosts: yousac_vms
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Estado (is-active)
+      ansible.builtin.command: systemctl show -p ActiveState -p SubState -p Result fluent-bit
+      register: st
+      changed_when: false
+      failed_when: false
+
+    - name: Ver estado
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ st.stdout_lines }}"
+
+    - name: Ultimas 20 lineas del journal
+      ansible.builtin.command: journalctl -u fluent-bit -n 20 --no-pager -o cat
+      register: jr
+      changed_when: false
+      failed_when: false
+
+    - name: Ver journal
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} journal: {{ jr.stdout_lines }}"

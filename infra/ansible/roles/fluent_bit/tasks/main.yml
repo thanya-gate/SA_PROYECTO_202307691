@@ -1,0 +1,65 @@
+---
+# Se usa el script oficial de instalacion (gestiona la clave GPG y el repo).
+- name: Descargar el instalador oficial de Fluent Bit
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh
+    dest: /tmp/fluent-bit-install.sh
+    mode: "0755"
+
+- name: Instalar Fluent Bit
+  ansible.builtin.command: /tmp/fluent-bit-install.sh
+  args:
+    creates: /opt/fluent-bit/bin/fluent-bit
+
+- name: Crear el directorio de configuracion de Fluent Bit
+  ansible.builtin.file:
+    path: "{{ fluent_bit_config_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Crear el directorio de base de datos de Fluent Bit
+  ansible.builtin.file:
+    path: "{{ fluent_bit_db_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Se escribe fuera de /opt para que una reinstalacion no la sobrescriba.
+- name: Escribir la configuracion de Fluent Bit
+  ansible.builtin.template:
+    src: fluent-bit.conf.j2
+    dest: "{{ fluent_bit_config_dir }}/fluent-bit.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reiniciar fluent-bit
+
+- name: Instalar la unidad systemd de Fluent Bit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/fluent-bit.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Fluent Bit
+      Requires=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      ExecStart=/opt/fluent-bit/bin/fluent-bit -c {{ fluent_bit_config_dir }}/fluent-bit.conf
+      Restart=on-failure
+      RestartSec=5
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Reiniciar fluent-bit
+
+- name: Arrancar y habilitar Fluent Bit
+  ansible.builtin.service:
+    name: fluent-bit
+    state: started
+    enabled: true

@@ -1,0 +1,133 @@
+# ============================================================================
+# Puente entre el Ingress de GKE y el Kibana que corre en la VM de
+# observabilidad (fuera del cluter, capa de datos de vpc-yousac).
+#
+# El Ingress de GKE crea NEGs (GCE_VM_IP_PORT) que solo pueden referenciar
+# VMs de la MISMA VPC de la red del cluter (`default`). La VM de Kibana vive
+# en vpc-yousac, por lo que el Ingress no puede enrutar directo a 10.20.3.10.
+# Solucion: un proxy nginx minimo dentro del cluter (red default) que hace
+# proxy_pass a http://10.20.3.10:5601 por el peering VPC. El Ingress apunta al
+# Service del proxy con selector normal, de modo que los NEG se crean sobre
+# las replicas del proxy (pods en la red default) y la salud se propaga.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-proxy-config
+  labels:
+    app.kubernetes.io/name: kibana-proxy
+    app.kubernetes.io/part-of: yousac
+data:
+  nginx.conf: |
+    worker_processes auto;
+    events { worker_connections 1024; }
+    http {
+      # Kibana usa su propio valor de Host/puerto; no reescribimos el Host para
+      # que server.publicBaseUrl y los enlaces del dashboard sean consistentes.
+      server {
+        listen 5601;
+        server_name _;
+        location / {
+          proxy_pass http://10.20.3.10:5601;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana-proxy
+  labels:
+    app.kubernetes.io/name: kibana-proxy
+    app.kubernetes.io/part-of: yousac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kibana-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kibana-proxy
+        app.kubernetes.io/part-of: yousac
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - name: http
+              containerPort: 5601
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 5601
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 5601
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: config
+          configMap:
+            name: kibana-proxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  labels:
+    app.kubernetes.io/name: kibana-proxy
+    app.kubernetes.io/part-of: yousac
+  annotations:
+    # El health check por defecto del Ingress golpea la raiz "/", pero Kibana
+    # responde 302 (redirige al login). BackendConfig apunta la sonda a
+    # /api/status, que responde 200 cuando Kibana esta disponible (nginx lo
+    # reenvia a Kibana a traves del peering).
+    cloud.google.com/backend-config: '{"default": "kibana-backendconfig"}'
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: kibana-proxy
+  ports:
+    - name: http
+      port: 5601
+      targetPort: 5601
+      protocol: TCP
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: kibana-backendconfig
+  labels:
+    app.kubernetes.io/name: kibana-proxy
+    app.kubernetes.io/part-of: yousac
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /api/status
+    port: 5601
+    checkIntervalSec: 15
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3

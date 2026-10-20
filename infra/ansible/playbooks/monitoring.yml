@@ -1,0 +1,9 @@
+---
+- name: Playbook de agentes de observabilidad
+  hosts: yousac_vms
+  become: true
+  roles:
+    # node-exporter expone CPU/RAM/disco para que Prometheus los raspe.
+    - node_exporter
+    # Fluent Bit reenvia los logs de los servicios hacia Logstash.
+    - fluent_bit

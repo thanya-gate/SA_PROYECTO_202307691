@@ -1,0 +1,37 @@
+---
+- name: Diagnostico del pipeline (Fluent Bit y conectividad)
+  hosts: development
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Fluent Bit activo
+      ansible.builtin.command: systemctl is-active fluent-bit
+      register: a
+      changed_when: false
+      failed_when: false
+
+    - name: Ver estado
+      ansible.builtin.debug:
+        msg: "fluent-bit={{ a.stdout }}"
+
+    - name: Ultimas lineas del journal de Fluent Bit
+      ansible.builtin.command: journalctl -u fluent-bit -n 25 --no-pager -o cat
+      register: j
+      changed_when: false
+      failed_when: false
+
+    - name: Ver journal
+      ansible.builtin.debug:
+        var: j.stdout_lines
+
+    - name: Probar conexion TCP a Logstash 10.20.3.10:5044
+      ansible.builtin.wait_for:
+        host: "{{ logstash_host }}"
+        port: "{{ logstash_port }}"
+        timeout: 10
+      register: conn
+      failed_when: false
+
+    - name: Ver conectividad
+      ansible.builtin.debug:
+        msg: "conexion a Logstash: {{ 'OK' if not conn.failed else 'FALLO: ' ~ conn.msg }}"

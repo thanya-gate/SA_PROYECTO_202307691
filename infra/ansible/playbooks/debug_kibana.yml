@@ -1,0 +1,25 @@
+---
+- name: Diagnostico de Kibana y Logstash
+  hosts: observability
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Logs de Kibana
+      ansible.builtin.command: docker logs --tail 40 yousac-kibana
+      register: kib
+      changed_when: false
+      failed_when: false
+
+    - name: Ver logs Kibana
+      ansible.builtin.debug:
+        var: kib.stdout_lines
+
+    - name: Logs de Logstash
+      ansible.builtin.command: docker logs --tail 40 yousac-logstash
+      register: ls
+      changed_when: false
+      failed_when: false
+
+    - name: Ver logs Logstash
+      ansible.builtin.debug:
+        var: ls.stdout_lines
