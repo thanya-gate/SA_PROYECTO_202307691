@@ -1,0 +1,140 @@
+# {{ ansible_managed }}
+# Logstash - recibe los logs de Fluent Bit (JSON por TCP en 5044) y los indexa
+# en Elasticsearch. Un indice por dia con prefijo yousac-logs-*.
+#
+# Ademas de indexar, este pipeline NORMALIZA la severidad en un campo `level`
+# (INFO/WARN/ERROR) y etiqueta los eventos de autenticacion para que Kibana
+# pueda filtrar por severidad y visualizar intentos de login no autorizados.
+input {
+  # Fluent Bit envia JSON line-delimited por TCP (ver el output del rol).
+  tcp {
+    port => 5044
+    codec => json_lines
+  }
+  # Entrada TCP de respaldo por si un emisor envia JSON con salida tcp.
+  tcp {
+    port => 5000
+    codec => json_lines
+  }
+}
+
+filter {
+  # Todos los eventos pertenecen a la plataforma YoUSAC.
+  mutate {
+    add_field => { "platform" => "yousac" }
+  }
+
+  # -------------------------------------------------------------------------
+  # 1) Logs en JSON estructurado embebidos en el campo `log`
+  #    (formato del stack ELK/Caddy: {"level":"error","logger":"...","msg":...}
+  #     o del API Gateway: {"nivel":"INFO","evento":"federacion_peticion",...})
+  # -------------------------------------------------------------------------
+  if [log] =~ /^\s*\{/ {
+    # Intenta parsear el JSON embebido en `log`.
+    json {
+      source => "log"
+      target => "doc"
+      skip_on_invalid_json => true
+    }
+    if [doc][level] {
+      mutate { add_field => { "level" => "%{[doc][level]}" } }
+    }
+    if [doc][nivel] {
+      mutate { add_field => { "level" => "%{[doc][nivel]}" } }
+    }
+    if [doc][logger] {
+      mutate { add_field => { "service" => "%{[doc][logger]}" } }
+    }
+    if [doc][service] {
+      mutate { add_field => { "service" => "%{[doc][service]}" } }
+    }
+    if [doc][msg] {
+      mutate { add_field => { "message" => "%{[doc][msg]}" } }
+    } else if [doc][evento] {
+      mutate { add_field => { "message" => "%{[doc][evento]}" } }
+    }
+  }
+
+  # -------------------------------------------------------------------------
+  # 2) Logs en texto plano con nivel embebido.
+  #    - Python:  "2026-10-19 12:00:00,123 INFO analitica.grpc: mensaje"
+  #    - Logstash/Java: "[2026-10-20T02:04:35,905][ERROR][logger] mensaje"
+  # -------------------------------------------------------------------------
+  if ![level] {
+    grok {
+      match => {
+        "log" => [
+          "^\[%{TIMESTAMP_ISO8601:ts}\]\[%{LOGLEVEL:level}\]\[%{DATA:service}\] %{GREEDYDATA:message}",
+          "^%{TIMESTAMP_ISO8601:ts} %{WORD:level} %{DATA:service}: %{GREEDYDATA:message}",
+          "^%{TIMESTAMP_ISO8601:ts}\s+%{LOGLEVEL:level}\s+%{GREEDYDATA:message}"
+        ]
+      }
+      overwrite => ["message"]
+    }
+  }
+
+  # -------------------------------------------------------------------------
+  # 3) Texto plano de Go/TS: "[servicio] mensaje" (sin nivel explicito).
+  #    Se infiere el nivel desde el stream (stderr => ERROR, si no INFO).
+  # -------------------------------------------------------------------------
+  if ![level] {
+    if [log] =~ /^\[(?<svc>[a-zA-Z0-9_-]+)\]\s*(?<msg>.+)/ {
+      mutate {
+        add_field => { "service" => "%{svc}" }
+        add_field => { "message" => "%{msg}" }
+      }
+    } else {
+      mutate { add_field => { "message" => "%{log}" } }
+    }
+    if [stream] == "stderr" {
+      mutate { add_field => { "level" => "ERROR" } }
+    } else {
+      mutate { add_field => { "level" => "INFO" } }
+    }
+  }
+
+  # Normaliza el nivel a mayusculas (JSON de Caddy usa minusculas).
+  mutate { uppercase => [ "level" ] }
+
+  # Por si el grok no capturo servicio, usa el `source`/host como fallback.
+  if ![service] {
+    mutate { add_field => { "service" => "%{source}" } }
+  }
+
+  # -------------------------------------------------------------------------
+  # 4) Clasificacion para el dashboard de auditoria/seguridad.
+  #    - auth_failed: intentos de inicio de sesion no autorizados.
+  #    - audit: eventos de auditoria (cambios de password/rol, altas).
+  # El backend emite lineas como:
+  #    "[auth-service] LOGIN_FALLIDO usuario=... ip=... motivo=..."
+  #    "[api-gateway] TOKEN_INVALIDO ruta=... ip=..."
+  # -------------------------------------------------------------------------
+  if [message] =~ /(?i)LOGIN_FALLIDO|CREDENCIALES_INVALIDAS|TOKEN_INVALIDO|NO_AUTORIZADO|UNAUTHORIZED|NO AUTORIZADO|SESION_INVALIDA|INVALID.*TOKEN|FAILED_LOGIN/ {
+    mutate {
+      add_tag => [ "auth_failed" ]
+      add_field => { "security_event" => "login_no_autorizado" }
+    }
+  }
+  if [message] =~ /(?i)AUDITORIA|AUDIT|CAMBIO_PASSWORD|CAMBIO_ROL|PASSWORD_ACTUALIZADO|ROL_ACTUALIZADO/ {
+    mutate { add_tag => [ "audit" ] }
+  }
+
+  # Refuerza el nivel cuando el evento es de seguridad fallida.
+  if "auth_failed" in [tags] and [level] == "INFO" {
+    mutate { replace => { "level" => "WARN" } }
+  }
+
+  # Limpieza del objeto temporal de parseo.
+  mutate { remove_field => [ "doc", "svc", "msg" ] }
+}
+
+output {
+  elasticsearch {
+    hosts => ["http://elasticsearch:9200"]
+    user => "elastic"
+    password => "{{ elastic_password }}"
+    index => "yousac-logs-%{+YYYY.MM.dd}"
+  }
+  # Salida de depuracion en la consola del contenedor.
+  stdout { codec => rubydebug }
+}

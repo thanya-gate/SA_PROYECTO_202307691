@@ -6,4 +6,6 @@ resources:
   - serviceaccounts.yaml
   - configmap.yaml
   - services.yaml
+  - kibana-service.yaml
   - deployments.yaml
+  - cronjobs.yaml

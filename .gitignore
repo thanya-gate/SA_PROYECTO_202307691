@@ -6,6 +6,9 @@
 gha-creds-*.json
 gha-kubeconfig-*
 
+# Secretos de Ansible (el template .example SI se sube)
+infra/ansible/group_vars/all/secrets.yml
+
 # Plantillas de variables de entorno (sí se suben)
 !.env.example
 !.env.cloud.example

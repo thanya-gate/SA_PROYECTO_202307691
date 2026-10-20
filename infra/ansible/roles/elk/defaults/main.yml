@@ -1,0 +1,6 @@
+---
+# Stack ELK (Elasticsearch, Logstash, Kibana) sobre Docker Compose en la VM de
+# observabilidad. Las versiones llegan de group_vars/all/main.yml y las
+# contrasenas de group_vars/all/secrets.yml (no versionado; ver secrets.yml.example).
+elk_dir: /opt/yousac-elk
+elk_es_heap: 2g

@@ -1,0 +1,61 @@
+---
+- name: Verificacion del stack ELK
+  hosts: observability
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Contenedores ELK
+      ansible.builtin.command: docker ps --format table
+      register: ps
+      changed_when: false
+
+    - name: Ver contenedores
+      ansible.builtin.debug:
+        msg: "{{ ps.stdout_lines }}"
+
+    - name: Salud del cluter
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:9200/_cluster/health?pretty"
+        user: elastic
+        password: "{{ elastic_password }}"
+        force_basic_auth: true
+        status_code: 200
+      register: health
+      changed_when: false
+
+    - name: Ver salud
+      ansible.builtin.debug:
+        msg: "status={{ health.json.status }} nodes={{ health.json.number_of_nodes }}"
+
+    - name: Indices en Elasticsearch
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:9200/_cat/indices?v"
+        user: elastic
+        password: "{{ elastic_password }}"
+        force_basic_auth: true
+        status_code: 200
+        return_content: true
+      register: idx
+      changed_when: false
+
+    - name: Ver indices
+      ansible.builtin.debug:
+        var: idx.content
+
+    - name: Puerto de Logstash (beats)
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 5044
+        timeout: 30
+
+    - name: Kibana responde
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:5601/api/status"
+        status_code: 200
+      register: kib
+      changed_when: false
+      failed_when: false
+
+    - name: Ver Kibana
+      ansible.builtin.debug:
+        msg: "Kibana HTTP {{ kib.status }}"

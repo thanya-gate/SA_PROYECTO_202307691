@@ -1,0 +1,6 @@
+---
+- name: Playbook del stack ELK
+  hosts: observability
+  become: true
+  roles:
+    - elk

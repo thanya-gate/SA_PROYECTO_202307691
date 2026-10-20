@@ -1,0 +1,53 @@
+# {{ ansible_managed }}
+# Fluent Bit - recolecta logs de servicios y contenedores y los envia a
+# Logstash. Configuracion de YoUSAC Fase 3.
+[SERVICE]
+    Flush        5
+    Daemon       Off
+    Log_Level    info
+    parsers_file /etc/fluent-bit/parsers.conf
+
+# --- Logs del sistema (systemd/journald) ------------------------------------
+# Se recolectan todos los mensajes del journal (se excluye el ruido mas
+# frecuente) para que sirvan como pista de auditoria.
+[INPUT]
+    Name            systemd
+    Tag             host.{{ inventory_hostname }}.systemd
+    Path            /var/log/journal
+    DB              {{ fluent_bit_db_dir }}/systemd.db
+    Systemd_Filter  _SYSTEMD_UNIT=docker.service
+    Systemd_Filter  _SYSTEMD_UNIT=ssh.service
+    Read_From_Tail  On
+
+# --- Logs de contenedores Docker --------------------------------------------
+# El parser docker decodifica el JSON con el formato del driver json-file.
+[INPUT]
+    Name              tail
+    Tag               host.{{ inventory_hostname }}.docker
+    Path              /var/lib/docker/containers/*/*.log
+    Parser            docker
+    DB                {{ fluent_bit_db_dir }}/docker.db
+    Mem_Buf_Limit     16MB
+    Skip_Long_Lines   On
+    Refresh_Interval  10
+
+# --- Enriquecimiento --------------------------------------------------------
+[FILTER]
+    Name    record_modifier
+    Match   *
+    Record  host ${HOSTNAME}
+    Record  environment production
+    Record  source yousac-vm
+
+# --- Salida hacia Logstash --------------------------------------------------
+# Se usa el plugin tcp con formato json (no forward/msgpack) porque el pipeline
+# de Logstash escucha JSON, no el protocolo binario de Beats/Fluent Forward.
+[OUTPUT]
+    Name          tcp
+    Match         *
+    Host          {{ logstash_host }}
+    Port          {{ logstash_port }}
+    Format        json
+    Json_date_key time
+    Json_date_format iso8601
+    Retry_Limit   False

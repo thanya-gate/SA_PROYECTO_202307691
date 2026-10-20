@@ -1,6 +1,0 @@
----
-- name: Playbook K3s
-  hosts: production
-  become: true
-  roles:
-    - k3s

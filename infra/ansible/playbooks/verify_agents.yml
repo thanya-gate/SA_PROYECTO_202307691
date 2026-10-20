@@ -1,0 +1,26 @@
+---
+- name: Verificacion de agentes de observabilidad
+  hosts: yousac_vms
+  gather_facts: false
+  become: true
+  tasks:
+    - name: node-exporter responde
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:9100/metrics"
+        status_code: 200
+      register: ne
+      changed_when: false
+
+    - name: Estado del servicio fluent-bit
+      ansible.builtin.command: systemctl is-active fluent-bit
+      register: fb
+      changed_when: false
+
+    - name: Estado del servicio node-exporter
+      ansible.builtin.command: systemctl is-active node-exporter
+      register: ne_svc
+      changed_when: false
+
+    - name: Resumen
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: node-exporter={{ ne_svc.stdout }}, fluent-bit={{ fb.stdout }}, metrics_ok={{ ne.status == 200 }}"

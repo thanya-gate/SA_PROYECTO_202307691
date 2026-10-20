@@ -16,19 +16,39 @@ const grpcToHttp: Record<number, number> = {
   [grpc.status.UNAVAILABLE]: 503,
 };
 
+/**
+ * Auditoria de seguridad: registra intentos de acceso no autorizado
+ * (login fallido, token invalido, sesion revocada, permiso denegado) para que
+ * Logstash los etiquete y Kibana los visualice en el dashboard.
+ */
+function logAuthFailure(
+  req: Request,
+  code: string,
+  httpStatus: number,
+  message: string,
+): void {
+  if (httpStatus !== 401 && httpStatus !== 403) return;
+  // eslint-disable-next-line no-console
+  console.error(
+    `[api-gateway] LOGIN_FALLIDO code=${code} ruta=${req.method} ${req.originalUrl} ip=${req.ip} detalle="${message}"`,
+  );
+}
+
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
   if (isDomainError(err)) {
+    logAuthFailure(req, err.code, err.httpStatus, err.message);
     res.status(err.httpStatus).json({ error: { code: err.code, message: err.message } });
     return;
   }
 
   if (err instanceof GrpcError) {
     const status = grpcToHttp[err.grpcCode] ?? 500;
+    logAuthFailure(req, grpcCodeToDomain(err.grpcCode), status, err.message);
     res.status(status).json({
       error: {
         code: grpcCodeToDomain(err.grpcCode),

@@ -1,0 +1,11 @@
+---
+- name: Prueba de conectividad via IAP
+  hosts: yousac_vms
+  gather_facts: true
+  tasks:
+    - name: Ping
+      ansible.builtin.ping:
+
+    - name: Mostrar datos del host
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} -> {{ ansible_distribution }} {{ ansible_distribution_version }} ({{ ansible_architecture }})"

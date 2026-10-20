@@ -1,6 +1,8 @@
 ---
 - name: Playbook Docker
-  hosts: development
+  # El entorno de desarrollo aloja los servicios; la VM de observabilidad
+  # aloja el stack ELK. Ambas necesitan Docker Engine + Compose.
+  hosts: yousac_vms
   become: true
   roles:
     - docker

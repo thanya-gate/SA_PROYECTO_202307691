@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# Kibana - sirve el dashboard de auditoria y busqueda de logs.
+server.name: yousac-kibana
+server.host: "0.0.0.0"
+server.port: 5601
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+monitoring.ui.container.elasticsearch.enabled: true
+# Kibana se coloca detras del proxy Caddy, que termina el TLS.
+server.publicBaseUrl: "https://{{ kibana_domain }}"
+# Claves de cifrado fijas (>=32 caracteres). Sin ellas Kibana genera claves
+# aleatorias en cada arranque y deshabilita alerting/actions/saved objects.
+xpack.security.encryptionKey: "{{ kibana_encryption_key }}"
+xpack.encryptedSavedObjects.encryptionKey: "{{ kibana_encryption_key }}"
+xpack.reporting.encryptionKey: "{{ kibana_encryption_key }}"

@@ -30,9 +30,9 @@ crash.*.log
 
 # Planos guardados: pueden contener atributos marcados como sensibles ya
 # resueltos en texto plano.
+tfplan*
 *.tfplan
 *.tfplan.*
-tfplan
 
 # Claves de credenciales de la nube, por si alguien las deja caer aqui.
 # La clave real de esta practica vive en ~/.gcp/, fuera del repositorio.

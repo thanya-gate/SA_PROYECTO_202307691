@@ -28,19 +28,44 @@ export const domainErrorToGrpcCode: Record<string, number> = {
   CONFLICTO_ALMACENAMIENTO: 9, // FAILED_PRECONDITION
 };
 
+/**
+ * Codigos de dominio que representan un intento de acceso no autorizado.
+ * Se registran como auditoria de seguridad para que el Stack ELK (Logstash)
+ * los etiquete y Kibana los pueda visualizar en el dashboard.
+ */
+const AUTH_FAILURE_CODES = new Set<string>([
+  'CREDENCIALES_INVALIDAS',
+  'CUENTA_BLOQUEADA',
+  'CUENTA_INACTIVA',
+  'SESION_INVALIDA',
+  'SESION_EXPIRADA',
+  'SESION_REVOCADA',
+  'TOKEN_INVALIDO',
+  'TOKEN_EXPIRADO',
+  'PERMISO_DENEGADO',
+  'DOMINIO_NO_AUTORIZADO',
+]);
+
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
   if (isDomainError(err)) {
+    // Auditoria de seguridad: intentos de login/uso de token no autorizados.
+    if (AUTH_FAILURE_CODES.has(err.code)) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[auth-service] LOGIN_FALLIDO code=${err.code} ruta=${req.method} ${req.originalUrl} ip=${req.ip}`,
+      );
+    }
     res.status(err.httpStatus).json({
       error: {
         code: err.code,
         message: err.message,
         details: err.details,
-        requestId: _req.id,
+        requestId: req.id,
       },
     });
     return;

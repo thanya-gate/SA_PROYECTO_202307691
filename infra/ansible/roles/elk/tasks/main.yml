@@ -1,0 +1,176 @@
+---
+# Requisitos del kernel para Elasticsearch: sin vm.max_map_count alto, el
+# contenedor no arranca ("max virtual memory areas vm.max_map_count is too low").
+- name: Ajustar vm.max_map_count para Elasticsearch
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-yousac-elastic.conf
+    content: |
+      vm.max_map_count=262144
+    owner: root
+    group: root
+    mode: "0644"
+  register: sysctl_drop_in
+
+- name: Aplicar la configuracion de sysctl
+  ansible.builtin.command: sysctl --system
+  when: sysctl_drop_in is changed
+  changed_when: sysctl_drop_in is changed
+
+- name: Crear el directorio del stack ELK
+  ansible.builtin.file:
+    path: "{{ elk_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Crear el directorio de datos de Elasticsearch
+  ansible.builtin.file:
+    path: "{{ elk_dir }}/esdata"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0775"
+
+- name: Escribir el archivo .env del stack ELK
+  ansible.builtin.template:
+    src: elk.env.j2
+    dest: "{{ elk_dir }}/.env"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Reiniciar stack ELK
+
+- name: Escribir el docker-compose.yml del stack ELK
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ elk_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reiniciar stack ELK
+
+- name: Escribir la configuracion de Elasticsearch
+  ansible.builtin.template:
+    src: elasticsearch.yml.j2
+    dest: "{{ elk_dir }}/elasticsearch.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reiniciar stack ELK
+
+- name: Escribir la configuracion de Logstash
+  ansible.builtin.template:
+    src: logstash.conf.j2
+    dest: "{{ elk_dir }}/logstash.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reiniciar stack ELK
+
+- name: Escribir la configuracion de Kibana
+  ansible.builtin.template:
+    src: kibana.yml.j2
+    dest: "{{ elk_dir }}/kibana.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reiniciar stack ELK
+
+- name: Escribir el Caddyfile del proxy TLS de Kibana
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: "{{ elk_dir }}/Caddyfile"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reiniciar stack ELK
+
+- name: Levantar Elasticsearch y Logstash
+  ansible.builtin.command:
+    cmd: docker compose up -d elasticsearch logstash
+    chdir: "{{ elk_dir }}"
+  register: elk_up
+  changed_when: "'Started' in elk_up.stderr or 'Created' in elk_up.stderr or 'Recreated' in elk_up.stderr"
+
+- name: Esperar a que Elasticsearch responda
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:9200/_cluster/health"
+    user: elastic
+    password: "{{ elastic_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: es_health
+  retries: 30
+  delay: 10
+  until: es_health.status == 200
+  changed_when: false
+
+# Kibana se autentica contra Elasticsearch con el usuario interno
+# kibana_system. Esa contrasena no coincide con nuestro valor hasta que se
+# establece explicitamente con la API de seguridad (autenticando como elastic).
+- name: Establecer la contrasena del usuario interno kibana_system
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:9200/_security/user/kibana_system/_password"
+    method: POST
+    user: elastic
+    password: "{{ elastic_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      password: "{{ kibana_system_password }}"
+    status_code: 200
+  # La API siempre responde 200; se deja como no-change para que las
+  # re-ejecuciones reporten idempotencia limpia.
+  changed_when: false
+
+# Con kibana_system listo, se levanta el resto del stack (Kibana + Caddy).
+- name: Levantar Kibana y el proxy Caddy
+  ansible.builtin.command:
+    cmd: docker compose up -d kibana caddy
+    chdir: "{{ elk_dir }}"
+  register: kib_up
+  changed_when: "'Started' in kib_up.stderr or 'Created' in kib_up.stderr or 'Recreated' in kib_up.stderr"
+
+- name: Esperar a que Kibana responda
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:5601/api/status"
+    status_code: 200
+  register: kib_status
+  retries: 30
+  delay: 10
+  until: kib_status.status == 200
+  changed_when: false
+  failed_when: false
+
+# Dashboard de auditoria/busqueda de logs. Se importan los Saved Objects
+# (index pattern yousac-logs-*, visualizaciones, busqueda y dashboard) con
+# overwrite=true para que el playbook sea idempotente entre re-ejecuciones.
+- name: Copiar los Saved Objects de Kibana (dashboards) a la VM
+  ansible.builtin.copy:
+    src: yousac-logs.ndjson
+    dest: "{{ elk_dir }}/yousac-logs.ndjson"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Importar los dashboards de Kibana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:5601/api/saved_objects/_import?overwrite=true"
+    method: POST
+    user: elastic
+    password: "{{ elastic_password }}"
+    force_basic_auth: true
+    headers:
+      kbn-xsrf: "true"
+    body_format: form-multipart
+    body:
+      file:
+        filename: yousac-logs.ndjson
+        content: "{{ lookup('file', 'yousac-logs.ndjson') }}"
+    status_code: 200
+  register: kib_import
+  changed_when: false
+  failed_when: false
+
+- name: Mostrar el estado del cluter Elasticsearch
+  ansible.builtin.debug:
+    msg: "Elasticsearch: {{ (es_health.json).status }} | Kibana HTTP {{ kib_status.status }} | dashboards importados: {{ (kib_import.json | default({})).successCount | default('n/d') }} | https://{{ kibana_domain }}"

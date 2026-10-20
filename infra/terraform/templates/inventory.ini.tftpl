@@ -1,15 +1,27 @@
 # =====================================================================
 # inventory.ini - GENERADO POR TERRAFORM (ansible.tf). No editar a mano:
-# se sobrescribe en cada `terraform apply` con las IPs nuevas.
+# se sobrescribe en cada `terraform apply`.
+#
+# Las VMs no tienen IP publica. Ansible entra por Identity-Aware Proxy con el
+# ProxyCommand de gcloud, que abre un tunel TCP efimero hacia el puerto 22.
+# Requiere que el usuario que ejecuta Ansible tenga el rol
+# roles/iap.tunnelResourceAccessor y gcloud autenticado.
 # =====================================================================
 
 [development]
-${development_name} ansible_host=${development_public_ip} internal_ip=${development_internal_ip}
+${development_name} internal_ip=${development_internal_ip}
 
-[production]
-${production_name} ansible_host=${production_public_ip} internal_ip=${production_internal_ip}
+[observability]
+${observability_name} internal_ip=${observability_internal_ip}
+
+# Las VMs de aplicacion y de datos comparten los roles base (hardening,
+# node-exporter). El stack ELK solo se instala en la capa de datos.
+[yousac_vms:children]
+development
+observability
 
 [all:vars]
 ansible_user=${ssh_username}
 ansible_ssh_private_key_file=${ssh_private_key_path}
 ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_common_args=-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="gcloud compute start-iap-tunnel %h 22 --listen-on-stdin --project=${project_id} --zone=${zone} --verbosity=warning"
