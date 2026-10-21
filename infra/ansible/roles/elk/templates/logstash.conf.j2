@@ -135,6 +135,4 @@ output {
     password => "{{ elastic_password }}"
     index => "yousac-logs-%{+YYYY.MM.dd}"
   }
-  # Salida de depuracion en la consola del contenedor.
-  stdout { codec => rubydebug }
 }
