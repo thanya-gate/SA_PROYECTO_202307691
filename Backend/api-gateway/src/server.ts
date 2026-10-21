@@ -27,6 +27,7 @@ import { createFederationRouter } from './federation/router';
 import { CatalogoExterno, crearCatalogoExterno } from './federation/catalogo-externo';
 import { AcademixApi, crearAcademixApi, nombreCompleto } from './academix/client';
 import { createStorageBackend, StorageBackend } from './storage/storage';
+import { marcarReproduccion, metricsMiddleware, registry } from './metrics';
 import {
   MATERIAL_EXTENSIONS,
   MAX_MATERIAL_BYTES,
@@ -324,6 +325,13 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
   app.use((req, _res, next) => {
     req.url = quitarPrefijoApi(req.url);
     next();
+  });
+  app.use(metricsMiddleware);
+
+  // Solo para Prometheus dentro del clúster: el Ingress no enruta /metrics.
+  app.get('/metrics', async (_req, res) => {
+    res.set('Content-Type', registry.contentType);
+    res.send(await registry.metrics());
   });
 
   // IdP institucional simulado (OAuth 2.0 Authorization Code).
@@ -1782,6 +1790,7 @@ export function createGateway(dependencies: GatewayDependencies = {}): Express {
         segundoActual,
         duracion,
       });
+      marcarReproduccion(req.context!.userId, claseId);
       if (evento === 'inicio' || evento === 'fin') {
         analiticaGrpc.sincronizarVista({
           claseId,
