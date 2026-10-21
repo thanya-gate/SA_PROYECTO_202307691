@@ -64,7 +64,10 @@ spec:
                 limits:
                   cpu: 250m
                   memory: 192Mi
+          # Native sidecar: el kubelet detiene el proxy cuando termina el contenedor principal y el Job completa.
+          initContainers:
             - name: cloud-sql-proxy
+              restartPolicy: Always
               image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
               args:
                 - "--structured-logs"
@@ -204,7 +207,10 @@ spec:
                 limits:
                   cpu: 250m
                   memory: 256Mi
+          # Native sidecar: el kubelet detiene el proxy cuando termina el contenedor principal y el Job completa.
+          initContainers:
             - name: cloud-sql-proxy
+              restartPolicy: Always
               image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
               args:
                 - "--structured-logs"
@@ -358,7 +364,10 @@ spec:
                 limits:
                   cpu: 500m
                   memory: 384Mi
+          # Native sidecar: el kubelet detiene el proxy cuando termina el contenedor principal y el Job completa.
+          initContainers:
             - name: cloud-sql-proxy-auth
+              restartPolicy: Always
               image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
               args:
                 - "--structured-logs"
@@ -379,6 +388,7 @@ spec:
                   cpu: 250m
                   memory: 256Mi
             - name: cloud-sql-proxy-inscripcion
+              restartPolicy: Always
               image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
               args:
                 - "--structured-logs"
@@ -399,6 +409,7 @@ spec:
                   cpu: 250m
                   memory: 256Mi
             - name: cloud-sql-proxy-analitica
+              restartPolicy: Always
               image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
               args:
                 - "--structured-logs"
@@ -419,6 +430,7 @@ spec:
                   cpu: 250m
                   memory: 256Mi
             - name: cloud-sql-proxy-notificaciones
+              restartPolicy: Always
               image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
               args:
                 - "--structured-logs"
