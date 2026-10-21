@@ -1,24 +1,66 @@
-# Valores de Helm para kube-prometheus-stack (Práctica 10).
-# Uso:
-#   helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-#     -n monitoring --version 92.3.0 -f grafana-values.yaml
-# La contraseña de admin NO va aquí: vive en el Secret grafana-admin (ver README).
+# Valores de Helm para kube-prometheus-stack en GKE Autopilot (YoUSAC, Fase 3).
+# Uso (ver README):
+#   helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+#     -n monitoring --create-namespace --version 92.3.0 -f observability/grafana-values.yaml --wait
+# La contraseña de admin NO va aquí: vive en el Secret grafana-admin (namespace yousac-prod).
+
 alertmanager:
   enabled: false
+
+# Autopilot no permite DaemonSets con hostNetwork/hostPath ni expone el plano de
+# control: los nodos se miden con kubelet/cAdvisor + kube-state-metrics.
+nodeExporter:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false
+coreDns:
+  enabled: false
+kubeDns:
+  enabled: false
+
+# Autopilot prohíbe crear objetos en kube-system: el operador publica los
+# endpoints del kubelet (cAdvisor) en monitoring.
+prometheusOperator:
+  kubeletService:
+    namespace: monitoring
+kubelet:
+  namespace: monitoring
+
+prometheus:
+  prometheusSpec:
+    retention: 3d
+    # Lee ServiceMonitors de cualquier namespace sin exigir la etiqueta del release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    resources:
+      requests: {cpu: 250m, memory: 1Gi}
+      limits: {cpu: "1", memory: 2Gi}
+
 grafana:
   enabled: true
+  # Grafana vive junto a la app para colgarse del Ingress yousac-public (un Ingress
+  # GCE no puede apuntar a Services de otro namespace).
+  namespaceOverride: yousac-prod
   admin:
     existingSecret: grafana-admin
     userKey: admin-user
     passwordKey: admin-password
-  # Acceso público de solo lectura a los tableros (requisito del enunciado).
   grafana.ini:
     server:
-      root_url: https://grafana.academix.34.123.206.113.sslip.io
+      root_url: https://grafana.yousac-thany.duckdns.org
+    # Acceso público de solo lectura a los tableros.
     auth.anonymous:
       enabled: true
       org_role: Viewer
-  # uid fijo para que coincida con los JSON de los dashboards.
+  service:
+    annotations:
+      cloud.google.com/backend-config: '{"default": "grafana-backendconfig"}'
   sidecar:
     datasources:
       uid: prometheus
@@ -26,7 +68,7 @@ grafana:
       enabled: true
       label: grafana_dashboard
       labelValue: "1"
-      searchNamespace: monitoring
+      searchNamespace: yousac-prod
   resources:
     requests: {cpu: 100m, memory: 256Mi}
-    limits: {cpu: "1", memory: 512Mi}
+    limits: {cpu: 500m, memory: 512Mi}

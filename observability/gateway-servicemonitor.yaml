@@ -1,0 +1,14 @@
+# Prometheus scrapea /metrics del api-gateway (prom-client). El Ingress no enruta
+# /metrics, por lo que solo es accesible dentro del clúster.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: api-gateway
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

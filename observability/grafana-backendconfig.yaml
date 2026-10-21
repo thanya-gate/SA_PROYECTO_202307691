@@ -1,0 +1,10 @@
+# Sonda del Ingress GCE para Grafana (la anotación está en grafana-values.yaml).
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: grafana-backendconfig
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /api/health
+    port: 3000

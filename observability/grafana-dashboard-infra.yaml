@@ -1,70 +1,252 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-dashboard-academix-infra
+  name: grafana-dashboard-infra
   labels:
     grafana_dashboard: "1"
 data:
-  academix-infra.json: |
+  yousac-infra.json: |
     {
-      "uid": "academix-infra",
-      "title": "Academix · Infraestructura",
-      "tags": ["academix"],
+      "uid": "yousac-infra",
+      "title": "YoUSAC · Infraestructura",
+      "tags": [
+        "yousac"
+      ],
       "schemaVersion": 39,
       "version": 1,
       "timezone": "america/guatemala",
       "refresh": "10s",
-      "time": {"from": "now-15m", "to": "now"},
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
       "panels": [
         {
           "id": 1,
-          "title": "CPU de pods (academix-prod)",
-          "type": "timeseries",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "title": "Nodos listos",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          },
           "targets": [
-            {"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"academix-prod\", container!=\"\"}[5m])) by (pod)", "legendFormat": "{{pod}}"}
+            {
+              "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})",
+              "legendFormat": "listos",
+              "refId": "A"
+            }
           ]
         },
         {
           "id": 2,
-          "title": "Memoria de pods (working set)",
-          "type": "timeseries",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "title": "Pods por fase (yousac-prod)",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 6,
+            "y": 0
+          },
           "targets": [
-            {"expr": "sum(container_memory_working_set_bytes{namespace=\"academix-prod\", container!=\"\"}) by (pod)", "legendFormat": "{{pod}}"}
+            {
+              "expr": "sum(kube_pod_status_phase{namespace=\"yousac-prod\"}) by (phase)",
+              "legendFormat": "{{phase}}",
+              "refId": "A"
+            }
           ]
         },
         {
           "id": 3,
-          "title": "Nodos K3s listos",
-          "type": "stat",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+          "title": "Reinicios de contenedores (1 h)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
           "targets": [
-            {"expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"})", "legendFormat": "Listos"}
+            {
+              "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"yousac-prod\"}[1h])) by (pod) > 0",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
           ]
         },
         {
           "id": 4,
-          "title": "Pods por fase",
-          "type": "stat",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+          "title": "CPU por nodo (cores)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
           "targets": [
-            {"expr": "sum(kube_pod_status_phase) by (phase)", "legendFormat": "{{phase}}"}
-          ]
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) by (node)",
+              "legendFormat": "{{node}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          }
         },
         {
           "id": 5,
-          "title": "Tráfico de red (academix-prod)",
+          "title": "RAM por nodo",
           "type": "timeseries",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
           "targets": [
-            {"expr": "sum(rate(container_network_receive_bytes_total{namespace=\"academix-prod\"}[5m]))", "legendFormat": "Recibidos"},
-            {"expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"academix-prod\"}[5m]))", "legendFormat": "Transmitidos"}
+            {
+              "expr": "sum(container_memory_working_set_bytes{container!=\"\"}) by (node)",
+              "legendFormat": "{{node}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 6,
+          "title": "CPU por pod (yousac-prod)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 13
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"yousac-prod\",container!=\"\"}[5m])) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 7,
+          "title": "RAM por pod (yousac-prod)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 13
+          },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"yousac-prod\",container!=\"\"}) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 8,
+          "title": "Capacidad asignable por nodo",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "targets": [
+            {
+              "expr": "sum(kube_node_status_allocatable{resource=\"cpu\"}) by (node)",
+              "legendFormat": "CPU {{node}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 9,
+          "title": "Réplicas disponibles por deployment",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "targets": [
+            {
+              "expr": "kube_deployment_status_replicas_available{namespace=\"yousac-prod\"}",
+              "legendFormat": "{{deployment}}",
+              "refId": "A"
+            }
           ]
         }
       ]

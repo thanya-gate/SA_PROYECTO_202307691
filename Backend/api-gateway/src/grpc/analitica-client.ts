@@ -3,6 +3,7 @@ import fs from 'fs';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { config } from '../config/env';
+import { observarGrpc } from '../metrics';
 import { GrpcError } from './auth-client';
 
 function resolveProtoPath(): string {
@@ -31,7 +32,7 @@ function createClient(): any {
 }
 
 function unary(method: string, req: Record<string, unknown>): Promise<any> {
-  return new Promise((resolve, reject) => {
+  return observarGrpc('analitica', method, new Promise((resolve, reject) => {
     client[method](req, (err: grpc.ServiceError | null, res: any) => {
       if (err) {
         reject(new GrpcError(err.code, err.message));
@@ -39,7 +40,7 @@ function unary(method: string, req: Record<string, unknown>): Promise<any> {
         resolve(res);
       }
     });
-  });
+  }));
 }
 
 const client = createClient();
