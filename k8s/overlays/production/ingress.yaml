@@ -41,3 +41,15 @@ spec:
                 name: frontend
                 port:
                   number: 80
+    # Kibana vive en la VM de observabilidad (capa de datos). El Service/Endpoints
+    # `kibana` puentea el Ingress hacia 10.20.3.10:5601 por el peering VPC.
+    - host: kibana.yousac-thany.duckdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kibana
+                port:
+                  number: 5601

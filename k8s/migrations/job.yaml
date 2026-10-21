@@ -1,0 +1,196 @@
+# ============================================================================
+# Job de migracion de los objetos SQL de los CronJobs de Fase 3.
+# ----------------------------------------------------------------------------
+# One-off: aplica los archivos de Backend/sql/migrations (montados como
+# ConfigMap) contra las cuatro bases de Cloud SQL. Usa el mismo patron que los
+# CronJob (sidecars cloud-sql-proxy en puertos dedicados + psql), de modo que
+# al ejecutarse valida tambien la conectividad real.
+#
+# Aplicar manualmente:
+#   kubectl apply -k k8s/migrations
+#   kubectl wait --for=condition=complete job/yousac-migraciones -n yousac-prod
+#   kubectl logs -n yousac-prod job/yousac-migraciones
+# ============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: yousac-migraciones
+  labels:
+    app.kubernetes.io/name: yousac-migraciones
+    app.kubernetes.io/part-of: yousac
+    app.kubernetes.io/component: migration
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: yousac-migraciones
+        app.kubernetes.io/part-of: yousac
+    spec:
+      restartPolicy: Never
+      serviceAccountName: yousac-runtime
+      containers:
+        - name: apply
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              # Esperar a que cada sidecar cloud-sql-proxy acepte conexiones.
+              wait_port() {
+                local port="$1" attempt=0
+                echo "Esperando a 127.0.0.1:$port ..."
+                until pg_isready -h 127.0.0.1 -p "$port" -q; do
+                  attempt=$((attempt + 1))
+                  if [ "$attempt" -ge 60 ]; then
+                    echo "ERROR: el proxy en el puerto $port no respondio." >&2
+                    exit 1
+                  fi
+                  sleep 2
+                done
+              }
+              apply() {
+                local url="$1" file="$2"
+                echo "== Aplicando $file =="
+                psql "$url" --no-psqlrc --set=ON_ERROR_STOP=1 -f "/migrations/$file"
+              }
+              AUTH_URL="$(echo "$DATABASE_URL_AUTH" | sed 's/:5432/:5433/')"
+              INSCRIPCION_URL="$(echo "$DATABASE_URL_INSCRIPCION" | sed 's/:5432/:5434/')"
+              NOTIFICACIONES_URL="$(echo "$DATABASE_URL_NOTIFICACIONES" | sed 's/:5432/:5435/')"
+              ANALITICA_URL="$(echo "$DATABASE_URL_ANALITICA" | sed 's/:5432/:5436/')"
+
+              wait_port 5433
+              wait_port 5434
+              wait_port 5435
+              wait_port 5436
+
+              apply "$AUTH_URL" 01_auth_cronjob_purga.sql
+              apply "$INSCRIPCION_URL" 02_inscripcion_cronjob_repaso.sql
+              apply "$NOTIFICACIONES_URL" 03_notificaciones_cronjob_repaso.sql
+              apply "$ANALITICA_URL" 04_analitica_cronjob_tendencias.sql
+
+              echo "Migraciones aplicadas correctamente."
+          env:
+            - name: DATABASE_URL_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_AUTH
+            - name: DATABASE_URL_INSCRIPCION
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_INSCRIPCION
+            - name: DATABASE_URL_NOTIFICACIONES
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_NOTIFICACIONES
+            - name: DATABASE_URL_ANALITICA
+              valueFrom:
+                secretKeyRef:
+                  name: yousac-runtime
+                  key: DATABASE_URL_ANALITICA
+          volumeMounts:
+            - name: migraciones
+              mountPath: /migrations
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+      # Native sidecar: el kubelet detiene el proxy cuando termina el contenedor principal y el Job completa.
+      initContainers:
+        - name: cloud-sql-proxy-auth
+          restartPolicy: Always
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - "--structured-logs"
+            - "--address=0.0.0.0"
+            - "--port=5433"
+            - "$(CLOUD_SQL_CONNECTION_NAME_AUTH)"
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_AUTH
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_AUTH
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+        - name: cloud-sql-proxy-inscripcion
+          restartPolicy: Always
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - "--structured-logs"
+            - "--address=0.0.0.0"
+            - "--port=5434"
+            - "$(CLOUD_SQL_CONNECTION_NAME_INSCRIPCION)"
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_INSCRIPCION
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_INSCRIPCION
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+        - name: cloud-sql-proxy-notificaciones
+          restartPolicy: Always
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - "--structured-logs"
+            - "--address=0.0.0.0"
+            - "--port=5435"
+            - "$(CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES)"
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+        - name: cloud-sql-proxy-analitica
+          restartPolicy: Always
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+          args:
+            - "--structured-logs"
+            - "--address=0.0.0.0"
+            - "--port=5436"
+            - "$(CLOUD_SQL_CONNECTION_NAME_ANALITICA)"
+          env:
+            - name: CLOUD_SQL_CONNECTION_NAME_ANALITICA
+              valueFrom:
+                configMapKeyRef:
+                  name: yousac-cloudsql-config
+                  key: CLOUD_SQL_CONNECTION_NAME_ANALITICA
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+      volumes:
+        - name: migraciones
+          configMap:
+            name: yousac-migraciones-sql

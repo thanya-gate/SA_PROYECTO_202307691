@@ -1,5 +1,5 @@
 ###############################################################################
-# main.tf - VPC, subredes e instancias de computo.
+# main.tf - VPC, subredes, enrutamiento y instancias de computo de YoUSAC.
 ###############################################################################
 
 locals {
@@ -11,41 +11,96 @@ locals {
   ])
 
   # Las reglas de firewall apuntan a target_tags, nunca a una IP.
-  common_tags      = var.network_tags
-  development_tags = concat(var.network_tags, ["development"])
-  production_tags  = concat(var.network_tags, [var.environment_tag])
+  common_tags        = var.network_tags
+  development_tags   = concat(var.network_tags, [var.development_tag])
+  observability_tags = concat(var.network_tags, [var.observability_tag])
 }
 
-# Se declara la red virtual privada.
-# auto_create_subnetworks = false evita las subredes automaticas de cada region.
+# Se declara la red virtual privada de YoUSAC.
+# auto_create_subnetworks = false obliga a definir las tres capas a mano.
 resource "google_compute_network" "vpc" {
   project                 = var.project_id
   name                    = var.network_name
   auto_create_subnetworks = false
   routing_mode            = "REGIONAL"
-  description             = "VPC de Academix Pass. Aisla la infraestructura del proyecto del resto de la red de Google. ${var.vpc_cidr}"
+  description             = "VPC de YoUSAC Fase 3. Aisla la infraestructura del proyecto del resto de la red de Google. ${var.vpc_cidr}"
 }
 
-# Subred de desarrollo. private_ip_google_access habilita la salida a internet.
-resource "google_compute_subnetwork" "development" {
+# --- Capa perimetral ---------------------------------------------------------
+resource "google_compute_subnetwork" "perimetral" {
   project                  = var.project_id
-  name                     = var.subnet_development
+  name                     = var.subnet_perimetral
   region                   = var.region
   network                  = google_compute_network.vpc.id
-  ip_cidr_range            = var.subnet_development_cidr
+  ip_cidr_range            = var.subnet_perimetral_cidr
   private_ip_google_access = true
-  description              = "Subred dedicada a vm-development (Docker Compose). Entorno no productivo."
+  description              = "Capa perimetral de YoUSAC (ingress / borde). ${var.subnet_perimetral_cidr}"
 }
 
-# Subred de produccion.
-resource "google_compute_subnetwork" "production" {
+# --- Capa de aplicacion ------------------------------------------------------
+resource "google_compute_subnetwork" "aplicacion" {
   project                  = var.project_id
-  name                     = var.subnet_production
+  name                     = var.subnet_aplicacion
   region                   = var.region
   network                  = google_compute_network.vpc.id
-  ip_cidr_range            = var.subnet_production_cidr
+  ip_cidr_range            = var.subnet_aplicacion_cidr
   private_ip_google_access = true
-  description              = "Subred dedicada a vm-production-k3s (control-plane de K3s). Entorno productivo."
+  description              = "Capa de aplicacion de YoUSAC: VMs de servicio y desarrollo. ${var.subnet_aplicacion_cidr}"
+}
+
+# --- Capa de datos -----------------------------------------------------------
+resource "google_compute_subnetwork" "datos" {
+  project                  = var.project_id
+  name                     = var.subnet_datos
+  region                   = var.region
+  network                  = google_compute_network.vpc.id
+  ip_cidr_range            = var.subnet_datos_cidr
+  private_ip_google_access = true
+  description              = "Capa de datos de YoUSAC: ELK y bases de datos externas al cluster. ${var.subnet_datos_cidr}"
+}
+
+# --- Salida a internet sin IP publica ---------------------------------------
+# Las VMs no llevan IP publica: salen por Cloud Router + NAT. Asi apt, Docker
+# y los recolectores funcionan sin exponer puertos a internet.
+resource "google_compute_router" "yousac" {
+  project = var.project_id
+  name    = "router-yousac"
+  region  = var.region
+  network = google_compute_network.vpc.id
+}
+
+resource "google_compute_router_nat" "yousac" {
+  project                            = var.project_id
+  name                               = "nat-yousac"
+  router                             = google_compute_router.yousac.name
+  region                             = var.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+
+  log_config {
+    enable = true
+    filter = "ERRORS_ONLY"
+  }
+}
+
+# --- Integracion con la red del cluster GKE ----------------------------------
+# El cluster GKE Autopilot de produccion vive en la red `default` (adoptado por
+# Terraform en gke.tf). El peering permite que los pods (Fluent Bit, proxy de
+# Kibana, Prometheus) alcancen las VMs de vpc-yousac por IP privada, y que
+# Prometheus raspee node-exporter. Se declara en ambos sentidos: GCP exige un
+# objeto de peering por red para que la conexion quede ACTIVE.
+resource "google_compute_network_peering" "yousac_to_default" {
+  name         = "yousac-to-default"
+  network      = google_compute_network.vpc.id
+  peer_network = "projects/${var.project_id}/global/networks/${var.gke_network_name}"
+}
+
+resource "google_compute_network_peering" "default_to_yousac" {
+  name         = "default-to-yousac"
+  network      = "projects/${var.project_id}/global/networks/${var.gke_network_name}"
+  peer_network = google_compute_network.vpc.id
+
+  depends_on = [google_compute_network_peering.yousac_to_default]
 }
 
 # VM de desarrollo: corre Docker Compose.
@@ -59,7 +114,7 @@ resource "google_compute_instance" "development" {
 
   tags        = local.development_tags
   labels      = var.labels
-  description = "VM de desarrollo de Academix Pass. Hospeda Docker Compose con el frontend y los servicios de negocio."
+  description = "VM de desarrollo de YoUSAC. Hospeda Docker Compose con el entorno de pruebas."
 
   allow_stopping_for_update = true
   deletion_protection       = false
@@ -75,14 +130,11 @@ resource "google_compute_instance" "development" {
     }
   }
 
+  # Sin access_config = sin IP publica. Se llega por Identity-Aware Proxy
+  # (ver firewall.tf y el inventario que genera ansible.tf).
   network_interface {
-    subnetwork = google_compute_subnetwork.development.id
-
-    # IP interna estatica (network_ip es el nombre del atributo en el proveedor).
+    subnetwork = google_compute_subnetwork.aplicacion.id
     network_ip = var.development_internal_ip
-
-    # access_config vacio = IP publica efimera, liberada al destruir.
-    access_config {}
   }
 
   metadata = {
@@ -96,19 +148,22 @@ resource "google_compute_instance" "development" {
     enable_integrity_monitoring = true
   }
 
-  depends_on = [google_compute_subnetwork.development]
+  depends_on = [
+    google_compute_subnetwork.aplicacion,
+    google_compute_router_nat.yousac,
+  ]
 }
 
-# VM de produccion: aloja el control-plane del cluster K3s.
-resource "google_compute_instance" "production" {
+# VM de observabilidad: aloja Elasticsearch, Logstash y Kibana (stack ELK).
+resource "google_compute_instance" "observability" {
   project      = var.project_id
-  name         = var.production_instance_name
+  name         = var.observability_instance_name
   zone         = var.zone
-  machine_type = var.production_machine_type
+  machine_type = var.observability_machine_type
 
-  tags        = local.production_tags
+  tags        = local.observability_tags
   labels      = var.labels
-  description = "VM de produccion de Academix Pass. Aloja el control-plane del cluster K3s."
+  description = "VM de observabilidad de YoUSAC. Elasticsearch + Logstash + Kibana en la capa de datos."
 
   allow_stopping_for_update = true
   deletion_protection       = false
@@ -118,16 +173,15 @@ resource "google_compute_instance" "production" {
 
     initialize_params {
       image  = var.boot_disk_image
-      size   = var.boot_disk_size_gb
+      size   = var.observability_disk_size_gb
       type   = "pd-balanced"
       labels = var.labels
     }
   }
 
   network_interface {
-    subnetwork = google_compute_subnetwork.production.id
-    network_ip = var.production_internal_ip
-    access_config {}
+    subnetwork = google_compute_subnetwork.datos.id
+    network_ip = var.observability_internal_ip
   }
 
   metadata = {
@@ -140,5 +194,8 @@ resource "google_compute_instance" "production" {
     enable_integrity_monitoring = true
   }
 
-  depends_on = [google_compute_subnetwork.production]
+  depends_on = [
+    google_compute_subnetwork.datos,
+    google_compute_router_nat.yousac,
+  ]
 }

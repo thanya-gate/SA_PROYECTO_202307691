@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# Proxy TLS del dashboard de Kibana. Caddy obtiene el certificado Let's Encrypt
+# automaticamente para el dominio configurado.
+{
+    email {$ACME_EMAIL}
+}
+
+{$KIBANA_DOMAIN} {
+    encode gzip
+    reverse_proxy 127.0.0.1:5601
+}

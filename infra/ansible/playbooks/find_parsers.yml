@@ -1,0 +1,29 @@
+---
+- name: Localizar el archivo de parsers de Fluent Bit
+  hosts: development
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Buscar parsers.conf
+      ansible.builtin.find:
+        paths:
+          - /opt/fluent-bit
+          - /etc/fluent-bit
+        patterns: "parsers*.conf"
+        recurse: true
+      register: found
+      changed_when: false
+
+    - name: Ver resultados
+      ansible.builtin.debug:
+        msg: "{{ found.files | map(attribute='path') | list }}"
+
+    - name: Contenido del directorio de instalacion
+      ansible.builtin.command: ls -R /opt/fluent-bit
+      register: ls
+      changed_when: false
+      failed_when: false
+
+    - name: Ver layout
+      ansible.builtin.debug:
+        msg: "{{ ls.stdout_lines }}"

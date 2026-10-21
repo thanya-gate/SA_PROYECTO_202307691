@@ -7,3 +7,4 @@ metadata:
 spec:
   domains:
     - yousac-thany.duckdns.org
+    - kibana.yousac-thany.duckdns.org

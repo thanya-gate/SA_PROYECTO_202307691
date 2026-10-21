@@ -367,3 +367,45 @@ DROP TRIGGER IF EXISTS trg_invalidar_cache_eventos ON evento_vista;
 CREATE TRIGGER trg_invalidar_cache_eventos
     AFTER INSERT OR UPDATE ON evento_vista
     FOR EACH ROW EXECUTE FUNCTION fn_trg_invalidar_cache();
+
+-- ============================================================================
+-- Cronjob de Agregacion de Tendencias Academicas
+-- ----------------------------------------------------------------------------
+-- Recalcula el ranking de clases mas vistas para la ventana de las ultimas N
+-- horas (por defecto 24h) y actualiza el ranking en tendencia_semanal con la
+-- fecha del dia en curso. El cronjob invoca este procedimiento antes de los
+-- horarios pico y luego invalida las llaves de Redis para que la siguiente
+-- lectura se sirva fresca y rapida.
+-- ============================================================================
+
+CREATE OR REPLACE PROCEDURE sp_recalcular_tendencias_diarias(
+    INOUT p_clases_procesadas INT,
+    p_horas INT DEFAULT 24,
+    p_semana DATE DEFAULT CURRENT_DATE
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Idempotente por dia/semana: se limpia el corte del periodo antes de
+    -- reinsertar para no duplicar ni acumular.
+    DELETE FROM tendencia_semanal WHERE semana = p_semana;
+
+    INSERT INTO tendencia_semanal (clase_id, semana, total_vistas)
+    SELECT ev.clase_id, p_semana, COUNT(*)
+    FROM evento_vista ev
+    WHERE ev.fecha_evento >= NOW() - (p_horas || ' hours')::INTERVAL
+    GROUP BY ev.clase_id;
+
+    UPDATE tendencia_semanal ts SET ranking_posicion = r.pos
+    FROM (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY total_vistas DESC) AS pos
+        FROM tendencia_semanal
+        WHERE semana = p_semana
+    ) r
+    WHERE ts.id = r.id AND ts.semana = p_semana;
+
+    SELECT COUNT(*) INTO p_clases_procesadas
+    FROM tendencia_semanal WHERE semana = p_semana;
+END;
+$$;
+

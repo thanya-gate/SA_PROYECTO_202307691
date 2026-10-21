@@ -1,0 +1,452 @@
+# ============================================================================
+# CronJobs de mantenimiento y analitica de YoUSAC (Fase 3).
+# ----------------------------------------------------------------------------
+# Cada CronJob vive en su propio Pod con el/los sidecars Cloud SQL Auth Proxy
+# necesarios (la base de datos esta fuera del cluter; los pods solo reciben la
+# cadena de conexion por Secret). Las imagenes postgres:16-alpine y
+# redis:7-alpine son oficiales y solo aportan los clientes psql/redis-cli.
+#
+#   1. yousac-purge-security  -> purga JWT/sesiones/auditoria (medianoche)
+#   2. yousac-trends-recalc   -> recalcula tendencias + invalida cache Redis
+#   3. yousac-review-notify   -> encola correos de repaso por examenes proximos
+# ============================================================================
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: yousac-purge-security
+  labels:
+    app.kubernetes.io/name: yousac-purge-security
+    app.kubernetes.io/part-of: yousac
+    app.kubernetes.io/component: cronjob
+spec:
+  # Cada medianoche (hora del cluter, UTC).
+  schedule: "0 0 * * *"
+  timeZone: "America/Guatemala"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: yousac-purge-security
+            app.kubernetes.io/part-of: yousac
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: yousac-runtime
+          containers:
+            - name: purge
+              image: postgres:16-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  echo "Esperando a cloud-sql-proxy en 127.0.0.1:5432..."
+                  until pg_isready -h 127.0.0.1 -p 5432 -q; do sleep 2; done
+                  psql "$DATABASE_URL" --no-psqlrc --set=ON_ERROR_STOP=1 \
+                    -c "CALL sp_purgar_seguridad(NULL, NULL, NULL, NULL, 1, 90);"
+                  echo "Purga de seguridad completada."
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: yousac-runtime
+                      key: DATABASE_URL_AUTH
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 192Mi
+          # Native sidecar: el kubelet detiene el proxy cuando termina el contenedor principal y el Job completa.
+          initContainers:
+            - name: cloud-sql-proxy
+              restartPolicy: Always
+              image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+              args:
+                - "--structured-logs"
+                - "--address=0.0.0.0"
+                - "--port=5432"
+                - "$(CLOUD_SQL_CONNECTION_NAME_AUTH)"
+              env:
+                - name: CLOUD_SQL_CONNECTION_NAME_AUTH
+                  valueFrom:
+                    configMapKeyRef:
+                      name: yousac-cloudsql-config
+                      key: CLOUD_SQL_CONNECTION_NAME_AUTH
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: yousac-trends-recalc
+  labels:
+    app.kubernetes.io/name: yousac-trends-recalc
+    app.kubernetes.io/part-of: yousac
+    app.kubernetes.io/component: cronjob
+spec:
+  # Cada 6 horas: recalcula antes de los picos de estudio.
+  schedule: "0 */6 * * *"
+  timeZone: "America/Guatemala"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 900
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: yousac-trends-recalc
+            app.kubernetes.io/part-of: yousac
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: yousac-runtime
+          containers:
+            - name: recalc
+              image: postgres:16-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  echo "Esperando a cloud-sql-proxy en 127.0.0.1:5432..."
+                  until pg_isready -h 127.0.0.1 -p 5432 -q; do sleep 2; done
+                  echo "Recalculando tendencias de las ultimas 24h..."
+                  psql "$DATABASE_URL" --no-psqlrc --set=ON_ERROR_STOP=1 \
+                    -c "CALL sp_recalcular_tendencias_diarias(NULL, 24, CURRENT_DATE);"
+
+                  echo "Pre-calentando llaves de Redis (actualizacion predictiva)..."
+                  apk add --no-cache redis postgresql-client >/dev/null 2>&1 || true
+                  SEMANA_ACTUAL="$(psql "$DATABASE_URL" --no-psqlrc -At -c "SELECT fn_inicio_semana(CURRENT_DATE)")"
+                  for LIM in 20 10 5; do
+                    DATOS_MAS="$(psql "$DATABASE_URL" --no-psqlrc -At -F'|' -c "
+                      SELECT json_build_object(
+                        'semana', '$SEMANA_ACTUAL',
+                        'items', COALESCE(json_agg(json_build_object(
+                          'clase_id', r.clase_id,
+                          'total_vistas', r.total_vistas,
+                          'promedio_calificacion', r.promedio_calificacion,
+                          'total_calificaciones', r.total_calificaciones,
+                          'posicion', r.posicion
+                        ) ORDER BY r.posicion), '[]'::json)
+                      )
+                      FROM fn_clases_mas_vistas_semana('$SEMANA_ACTUAL'::date, $LIM) r
+                    " | tr -d '\n\r')"
+                    if [ -n "$DATOS_MAS" ]; then
+                      redis-cli -u "$REDIS_URL" SETEX "analitica:mas_vistas:$SEMANA_ACTUAL:$LIM" 300 "$DATOS_MAS" >/dev/null
+                      redis-cli -u "$REDIS_URL" SETEX "analitica:mas_vistas:actual:$LIM" 300 "$DATOS_MAS" >/dev/null
+                    fi
+
+                    DATOS_TEND="$(psql "$DATABASE_URL" --no-psqlrc -At -F'|' -c "
+                      SELECT json_build_object(
+                        'semana', '$SEMANA_ACTUAL',
+                        'items', COALESCE(json_agg(json_build_object(
+                          'clase_id', v.clase_id,
+                          'total_vistas', v.total_vistas,
+                          'promedio_calificacion', COALESCE(ca.promedio_calificacion, 0),
+                          'total_calificaciones', COALESCE(ca.total_calificaciones, 0),
+                          'posicion', v.ranking_posicion
+                        ) ORDER BY v.total_vistas DESC), '[]'::json)
+                      )
+                      FROM vw_tendencias_examenes v
+                      LEFT JOIN calificacion_agregada ca ON ca.clase_id = v.clase_id
+                      LIMIT $LIM
+                    " | tr -d '\n\r')"
+                    if [ -n "$DATOS_TEND" ]; then
+                      redis-cli -u "$REDIS_URL" SETEX "analitica:tendencias_examenes:$LIM:auto:auto" 600 "$DATOS_TEND" >/dev/null
+                    fi
+                  done
+
+                  for LIM in 20 10; do
+                    DATOS_RANK="$(psql "$DATABASE_URL" --no-psqlrc -At -F'|' -c "
+                      SELECT COALESCE(json_agg(json_build_object(
+                        'clase_id', r.clase_id,
+                        'total_vistas', r.total_vistas,
+                        'promedio_calificacion', r.promedio_calificacion,
+                        'total_calificaciones', r.total_calificaciones,
+                        'posicion', r.posicion
+                      ) ORDER BY r.posicion), '[]'::json)
+                      FROM vw_ranking_clases r
+                      LIMIT $LIM
+                    " | tr -d '\n\r')"
+                    if [ -n "$DATOS_RANK" ]; then
+                      redis-cli -u "$REDIS_URL" SETEX "analitica:ranking:$LIM" 900 "$DATOS_RANK" >/dev/null
+                    fi
+                  done
+                  echo "Pre-calentado completado (Redis listo para picos)."
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: yousac-runtime
+                      key: DATABASE_URL_ANALITICA
+                - name: REDIS_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: yousac-runtime
+                      key: REDIS_URL
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+          # Native sidecar: el kubelet detiene el proxy cuando termina el contenedor principal y el Job completa.
+          initContainers:
+            - name: cloud-sql-proxy
+              restartPolicy: Always
+              image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+              args:
+                - "--structured-logs"
+                - "--address=0.0.0.0"
+                - "--port=5432"
+                - "$(CLOUD_SQL_CONNECTION_NAME_ANALITICA)"
+              env:
+                - name: CLOUD_SQL_CONNECTION_NAME_ANALITICA
+                  valueFrom:
+                    configMapKeyRef:
+                      name: yousac-cloudsql-config
+                      key: CLOUD_SQL_CONNECTION_NAME_ANALITICA
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: yousac-review-notify
+  labels:
+    app.kubernetes.io/name: yousac-review-notify
+    app.kubernetes.io/part-of: yousac
+    app.kubernetes.io/component: cronjob
+spec:
+  # Todos los dias a las 8:00.
+  schedule: "0 8 * * *"
+  timeZone: "America/Guatemala"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 900
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: yousac-review-notify
+            app.kubernetes.io/part-of: yousac
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: yousac-runtime
+          containers:
+            - name: review
+              image: postgres:16-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  # Cada sidecar escucha en un puerto propio para poder consultar
+                  # las cuatro bases necesarias desde un solo contenedor.
+                  AUTH_URL="$(echo "$DATABASE_URL_AUTH" | sed 's/:5432/:5433/')"
+                  INSCRIPCION_URL="$(echo "$DATABASE_URL_INSCRIPCION" | sed 's/:5432/:5434/')"
+                  ANALITICA_URL="$(echo "$DATABASE_URL_ANALITICA" | sed 's/:5432/:5435/')"
+                  NOTIFICACIONES_URL="$(echo "$DATABASE_URL_NOTIFICACIONES" | sed 's/:5432/:5436/')"
+
+                  # Esperar a que los cuatro sidecars cloud-sql-proxy respondan.
+                  for port in 5433 5434 5435 5436; do
+                    echo "Esperando a cloud-sql-proxy en 127.0.0.1:$port..."
+                    until pg_isready -h 127.0.0.1 -p "$port" -q; do sleep 2; done
+                  done
+
+                  # 1. Evaluaciones de los proximos 7 dias con estudiantes
+                  #    matriculados (la vista ya filtra fecha futura y
+                  #    estado_matricula = 'MATRICULADO'):
+                  #    id_eval|curso|unidad|tipo|fecha|estudiante
+                  psql "$INSCRIPCION_URL" --no-psqlrc -At -F '|' -c "
+                    SELECT v.evaluacion_id, v.curso_nombre, COALESCE(v.unidad, ''),
+                           v.tipo, to_char(v.fecha_examen, 'YYYY-MM-DD HH24:MI'),
+                           v.estudiante_id
+                    FROM vw_evaluaciones_proximas v
+                    WHERE v.fecha_examen <= NOW() + INTERVAL '7 days'
+                  " > /tmp/evaluaciones.txt || true
+
+                  # 2. Para cada estudiante-curso, resolver el correo en auth,
+                  #    tomar las grabaciones mejor calificadas y encolar.
+                  while IFS='|' read -r eval_id curso unidad tipo fecha estudiante_id; do
+                    if [ -z "$estudiante_id" ]; then
+                      continue
+                    fi
+
+                    correo="$(psql "$AUTH_URL" --no-psqlrc -At -c \
+                      "SELECT correo_institucional FROM usuario WHERE id = '$estudiante_id'::uuid")"
+                    if [ -z "$correo" ]; then
+                      continue
+                    fi
+
+                    # Grabaciones mejor calificadas (promedio de la comunidad).
+                    grabaciones="$(psql "$ANALITICA_URL" --no-psqlrc -At -c "
+                      SELECT string_agg(' - Clase ' || rank.clase_id || ' (' || rank.promedio_calificacion || ' estrellas)', E'\n')
+                      FROM (
+                        SELECT cm.clase_id, COALESCE(ca.promedio_calificacion, 0) AS promedio_calificacion
+                        FROM clase_metrica cm
+                        LEFT JOIN calificacion_agregada ca ON ca.clase_id = cm.clase_id
+                        ORDER BY COALESCE(ca.promedio_calificacion, 0) DESC, cm.clase_id
+                        LIMIT 5
+                      ) rank
+                    ")"
+                    if [ -z "$grabaciones" ]; then
+                      grabaciones=' - (sin grabaciones calificadas aun)'
+                    fi
+
+                    psql "$NOTIFICACIONES_URL" --no-psqlrc -v ON_ERROR_STOP=1 -c "
+                      CALL sp_encolar_notificacion_repaso(
+                        '$estudiante_id'::uuid,
+                        '$correo',
+                        '$curso',
+                        '$unidad',
+                        '$tipo',
+                        '$fecha',
+                        'estudiante',
+                        \$grab\$$grabaciones\$grab\$,
+                        '$eval_id'
+                      );
+                    " || echo "aviso: no se pudo encolar repaso para $estudiante_id/$eval_id"
+                  done < /tmp/evaluaciones.txt
+
+                  echo "Cronjob de repaso completado."
+              env:
+                - name: DATABASE_URL_AUTH
+                  valueFrom:
+                    secretKeyRef:
+                      name: yousac-runtime
+                      key: DATABASE_URL_AUTH
+                - name: DATABASE_URL_INSCRIPCION
+                  valueFrom:
+                    secretKeyRef:
+                      name: yousac-runtime
+                      key: DATABASE_URL_INSCRIPCION
+                - name: DATABASE_URL_ANALITICA
+                  valueFrom:
+                    secretKeyRef:
+                      name: yousac-runtime
+                      key: DATABASE_URL_ANALITICA
+                - name: DATABASE_URL_NOTIFICACIONES
+                  valueFrom:
+                    secretKeyRef:
+                      name: yousac-runtime
+                      key: DATABASE_URL_NOTIFICACIONES
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 384Mi
+          # Native sidecar: el kubelet detiene el proxy cuando termina el contenedor principal y el Job completa.
+          initContainers:
+            - name: cloud-sql-proxy-auth
+              restartPolicy: Always
+              image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+              args:
+                - "--structured-logs"
+                - "--address=0.0.0.0"
+                - "--port=5433"
+                - "$(CLOUD_SQL_CONNECTION_NAME_AUTH)"
+              env:
+                - name: CLOUD_SQL_CONNECTION_NAME_AUTH
+                  valueFrom:
+                    configMapKeyRef:
+                      name: yousac-cloudsql-config
+                      key: CLOUD_SQL_CONNECTION_NAME_AUTH
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+            - name: cloud-sql-proxy-inscripcion
+              restartPolicy: Always
+              image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+              args:
+                - "--structured-logs"
+                - "--address=0.0.0.0"
+                - "--port=5434"
+                - "$(CLOUD_SQL_CONNECTION_NAME_INSCRIPCION)"
+              env:
+                - name: CLOUD_SQL_CONNECTION_NAME_INSCRIPCION
+                  valueFrom:
+                    configMapKeyRef:
+                      name: yousac-cloudsql-config
+                      key: CLOUD_SQL_CONNECTION_NAME_INSCRIPCION
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+            - name: cloud-sql-proxy-analitica
+              restartPolicy: Always
+              image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+              args:
+                - "--structured-logs"
+                - "--address=0.0.0.0"
+                - "--port=5435"
+                - "$(CLOUD_SQL_CONNECTION_NAME_ANALITICA)"
+              env:
+                - name: CLOUD_SQL_CONNECTION_NAME_ANALITICA
+                  valueFrom:
+                    configMapKeyRef:
+                      name: yousac-cloudsql-config
+                      key: CLOUD_SQL_CONNECTION_NAME_ANALITICA
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+            - name: cloud-sql-proxy-notificaciones
+              restartPolicy: Always
+              image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.25.4
+              args:
+                - "--structured-logs"
+                - "--address=0.0.0.0"
+                - "--port=5436"
+                - "$(CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES)"
+              env:
+                - name: CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES
+                  valueFrom:
+                    configMapKeyRef:
+                      name: yousac-cloudsql-config
+                      key: CLOUD_SQL_CONNECTION_NAME_NOTIFICACIONES
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi

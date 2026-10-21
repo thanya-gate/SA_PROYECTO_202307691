@@ -1,0 +1,25 @@
+---
+- name: Ver parsers disponibles y versión
+  hosts: development
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Listar nombres de parsers
+      ansible.builtin.command: grep -E '^\s*Name' /etc/fluent-bit/parsers.conf
+      register: p
+      changed_when: false
+      failed_when: false
+
+    - name: Ver parsers
+      ansible.builtin.debug:
+        msg: "{{ p.stdout_lines }}"
+
+    - name: Buscar parser docker
+      ansible.builtin.command: grep -i -A2 docker /etc/fluent-bit/parsers.conf
+      register: d
+      changed_when: false
+      failed_when: false
+
+    - name: Ver docker parser
+      ansible.builtin.debug:
+        msg: "{{ d.stdout_lines }}"

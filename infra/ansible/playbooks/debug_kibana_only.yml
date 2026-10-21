@@ -1,0 +1,19 @@
+---
+- name: Diagnostico de Kibana
+  hosts: observability
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Logs de Kibana (ultimas 60 lineas)
+      ansible.builtin.command: docker logs --tail 60 yousac-kibana
+      register: kib
+      changed_when: false
+      failed_when: false
+
+    - name: Ver logs Kibana
+      ansible.builtin.debug:
+        var: kib.stdout_lines
+
+    - name: Ver logs (stderr)
+      ansible.builtin.debug:
+        var: kib.stderr_lines

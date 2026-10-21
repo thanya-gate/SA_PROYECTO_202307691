@@ -151,6 +151,8 @@ while IFS= read -r image; do
   case "$image" in
     "$REGISTRY_BASE"/*:*) ;;
     gcr.io/cloud-sql-connectors/cloud-sql-proxy:*) ;;
+    postgres:*) ;;
+    redis:*) ;;
     *)
       echo "ERROR: imagen fuera de Artifact Registry: $image" >&2
       exit 1

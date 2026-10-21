@@ -19,7 +19,7 @@
 # (pasa en la e2-micro). Con esto apt corta y reintenta.
 - name: Configurar timeout y reintentos de apt
   ansible.builtin.copy:
-    dest: /etc/apt/apt.conf.d/80-academix-retries
+    dest: /etc/apt/apt.conf.d/80-yousac-retries
     content: |
       Acquire::Retries "5";
       Acquire::http::Timeout "30";

@@ -1,0 +1,28 @@
+---
+# Variables compartidas por todos los hosts (valores NO sensibles).
+# Cada rol tiene ademas sus defaults en roles/<rol>/defaults/main.yml.
+#
+# Los secretos (contrasenas de ELK) viven en secrets.yml, que esta en
+# .gitignore y NUNCA se sube al repositorio. Copia secrets.yml.example
+# a secrets.yml y rellenalo antes de ejecutar los playbooks.
+
+# Usuarios que se agregan al grupo docker (VM de desarrollo y de observabilidad).
+docker_users:
+  - "{{ ansible_user }}"
+
+# --- Observabilidad ---------------------------------------------------------
+# IP privada de la VM que aloja Elasticsearch, Logstash y Kibana. La usan los
+# recolectores (Fluent Bit) para reenviar los logs hacia Logstash.
+logstash_host: "10.20.3.10"
+logstash_port: 5044
+
+# Puerto de node-exporter: Prometheus del cluter GKE lo raspa por peering.
+node_exporter_port: 9100
+
+# Dominio publico del dashboard de Kibana (lo resuelve el DNS del grupo).
+kibana_domain: "kibana.yousac-thany.duckdns.org"
+acme_email: "yousac-ads@gmail.com"
+
+# --- Stack ELK (solo en la VM de observabilidad) ----------------------------
+# Version fija: la reconstruccion levanta exactamente el mismo stack.
+elk_version: "8.15.3"

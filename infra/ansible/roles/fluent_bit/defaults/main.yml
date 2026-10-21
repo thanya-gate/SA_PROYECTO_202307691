@@ -1,0 +1,9 @@
+---
+# Fluent Bit: recolecta los logs de los servicios (journald y contenedores
+# Docker) y los reenvia a Logstash en la VM de observabilidad.
+#
+# Se instala como servicio systemd (no como contenedor) para no depender de la
+# coleccion community.docker ni del socket de Docker.
+fluent_bit_config_dir: /etc/fluent-bit
+fluent_bit_db_dir: /var/lib/fluent-bit
+fluent_bit_td_agent_repo: "https://packages.fluentbit.io/ubuntu/{{ ansible_distribution_release }}"

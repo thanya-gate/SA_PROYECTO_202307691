@@ -1,0 +1,8 @@
+---
+# node-exporter: expone las metricas de la maquina (CPU, RAM, disco, red) en el
+# puerto 9100 en formato Prometheus. Prometheus, que corre en el cluter GKE,
+# lo raspa por el peering de red.
+node_exporter_version: "1.8.2"
+node_exporter_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+node_exporter_user: node_exporter
+node_exporter_install_dir: /usr/local/bin

@@ -1,0 +1,68 @@
+---
+- name: Generar actividad registrable en la VM de desarrollo
+  hosts: development
+  gather_facts: false
+  become: true
+  tasks:
+    # Un contenedor efimero deja una entrada en /var/lib/docker/containers/*/*.log,
+    # que es justo lo que Fluent Bit recolecta como logs de servicios.
+    - name: Ejecutar un contenedor que emite un log identificable
+      ansible.builtin.command: docker run --rm alpine echo "yousac-pipeline-check-202307691"
+      register: dc
+      changed_when: false
+
+    - name: Ver salida del contenedor
+      ansible.builtin.debug:
+        var: dc.stdout
+
+    - name: Esperar el flush de Fluent Bit (5s) y el envio a Logstash
+      ansible.builtin.pause:
+        seconds: 12
+
+- name: Comprobar el pipeline en la VM de observabilidad
+  hosts: observability
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Contar documentos en los indices de YoUSAC
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:9200/yousac-logs-*/_count"
+        user: elastic
+        password: "{{ elastic_password }}"
+        force_basic_auth: true
+        status_code: 200
+      register: cnt
+      changed_when: false
+      failed_when: false
+
+    - name: Ver total de documentos
+      ansible.builtin.debug:
+        msg: "docs={{ cnt.json.count | default('sin indice todavia (0)') }}"
+
+    - name: Listar indices yousac-*
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:9200/_cat/indices/yousac-*?v"
+        user: elastic
+        password: "{{ elastic_password }}"
+        force_basic_auth: true
+        status_code: 200
+        return_content: true
+      register: idx
+      changed_when: false
+      failed_when: false
+
+    - name: Ver indices
+      ansible.builtin.debug:
+        var: idx.content_lines | default(idx.content)
+
+    - name: Estado de Kibana
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:5601/api/status"
+        status_code: 200
+      register: kib
+      changed_when: false
+      failed_when: false
+
+    - name: Ver Kibana
+      ansible.builtin.debug:
+        msg: "Kibana HTTP {{ kib.status }}"

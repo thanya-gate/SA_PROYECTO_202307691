@@ -1,0 +1,5 @@
+---
+- name: Reiniciar stack ELK
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ elk_dir }}"
