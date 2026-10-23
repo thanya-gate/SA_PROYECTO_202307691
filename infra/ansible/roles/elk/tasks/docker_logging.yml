@@ -1,0 +1,35 @@
+---
+- name: Comprobar configuracion existente de Docker
+  ansible.builtin.stat:
+    path: /etc/docker/daemon.json
+  register: docker_daemon_stat
+
+- name: Leer configuracion existente de Docker
+  ansible.builtin.slurp:
+    src: /etc/docker/daemon.json
+  register: docker_daemon_file
+  when: docker_daemon_stat.stat.exists
+
+- name: Fusionar rotacion sin reemplazar otras opciones
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: "{{ (docker_daemon_file.content | default('e30=') | b64decode | from_json) | combine({'log-driver': 'json-file', 'log-opts': {'max-size': '10m', 'max-file': '3'}}, recursive=True) | to_nice_json }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+    validate: dockerd --validate --config-file=%s
+  register: docker_logging_config
+
+- name: Reiniciar Docker para aplicar rotacion
+  ansible.builtin.systemd_service:
+    name: docker
+    state: restarted
+  when: docker_logging_config is changed
+
+# Recrear tambien permite recuperar una ejecucion interrumpida tras reiniciar Docker.
+- name: Recrear los cuatro servicios ELK conservando datos
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate elasticsearch logstash kibana caddy
+    chdir: "{{ elk_dir }}"
+  changed_when: true

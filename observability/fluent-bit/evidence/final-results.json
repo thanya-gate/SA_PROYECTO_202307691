@@ -1,0 +1,162 @@
+{
+  "interval_utc": {
+    "from": "2026-10-23T14:04:50Z",
+    "to": "2026-10-23T14:06:00Z"
+  },
+  "http_status": 401,
+  "document_modified": false,
+  "gke": {
+    "took": 126,
+    "timed_out": false,
+    "_shards": {
+      "total": 4,
+      "successful": 4,
+      "skipped": 3,
+      "failed": 0
+    },
+    "hits": {
+      "total": {
+        "value": 80,
+        "relation": "eq"
+      },
+      "max_score": null,
+      "hits": [
+        {
+          "_index": "yousac-logs-2026.10.23",
+          "_id": "BLcUaaEBYRpTFWrBhCo_",
+          "_score": null,
+          "_source": {
+            "environment": "production",
+            "source": "yousac-gke",
+            "service": "yousac-gke",
+            "time": "2026-10-23T14:05:14.165787488Z",
+            "@timestamp": "2026-10-23T14:05:14.549783762Z",
+            "platform": "yousac",
+            "stream": "stderr",
+            "log": "{\"time\": \"2026-10-23T14:05:14.164989+00:00\", \"level\": \"INFO\", \"msg\": \"Loading incluster config...\"}",
+            "logtag": "F",
+            "message": "Loading incluster config...",
+            "@version": "1",
+            "kubernetes": {
+              "container_name": "grafana-sc-dashboard",
+              "docker_id": "5625f4d8232cce5d64978220d2b5c9b14f496840e0574d28bf634f2fda80fb7b",
+              "namespace_name": "yousac-prod",
+              "pod_name": "kube-prometheus-stack-grafana-5985b6d69f-8b2wg"
+            },
+            "level": "INFO",
+            "date": 1792764314.165787
+          },
+          "sort": [
+            1792764314549
+          ]
+        }
+      ]
+    }
+  },
+  "login": {
+    "took": 27,
+    "timed_out": false,
+    "_shards": {
+      "total": 4,
+      "successful": 4,
+      "skipped": 3,
+      "failed": 0
+    },
+    "hits": {
+      "total": {
+        "value": 1,
+        "relation": "eq"
+      },
+      "max_score": null,
+      "hits": [
+        {
+          "_index": "yousac-logs-2026.10.23",
+          "_id": "vbcUaaEBYRpTFWrBRin1",
+          "_score": null,
+          "_source": {
+            "tags": [
+              "_grokparsefailure",
+              "auth_failed"
+            ],
+            "environment": "production",
+            "source": "yousac-gke",
+            "service": "api-gateway",
+            "time": "2026-10-23T14:04:58.216945675Z",
+            "@timestamp": "2026-10-23T14:04:58.885120731Z",
+            "platform": "yousac",
+            "security_event": "login_no_autorizado",
+            "stream": "stderr",
+            "log": "[api-gateway] LOGIN_FALLIDO code=SESION_INVALIDA ruta=POST /api/auth/login ip=::ffff:35.191.17.63 detalle=\"Credenciales incorrectas\"",
+            "logtag": "F",
+            "message": "LOGIN_FALLIDO code=SESION_INVALIDA ruta=POST /api/auth/login ip=::ffff:35.191.17.63 detalle=\"Credenciales incorrectas\"",
+            "@version": "1",
+            "kubernetes": {
+              "container_name": "api-gateway",
+              "docker_id": "e56ac95859c6d8de8a5095a64fed8aae8acfc54de9faab7badeb55ea192e69fb",
+              "namespace_name": "yousac-prod",
+              "pod_name": "api-gateway-6b49d44948-xp47m"
+            },
+            "level": "ERROR",
+            "date": 1792764298.216946
+          },
+          "sort": [
+            1792764298885
+          ]
+        }
+      ]
+    }
+  },
+  "vm": {
+    "took": 15,
+    "timed_out": false,
+    "terminated_early": false,
+    "_shards": {
+      "total": 4,
+      "successful": 4,
+      "skipped": 0,
+      "failed": 0
+    },
+    "hits": {
+      "total": {
+        "value": 11,
+        "relation": "eq"
+      },
+      "max_score": null,
+      "hits": []
+    }
+  },
+  "document": {
+    "_index": "yousac-logs-2026.10.23",
+    "_id": "vbcUaaEBYRpTFWrBRin1",
+    "_version": 1,
+    "_seq_no": 18953,
+    "_primary_term": 3,
+    "found": true,
+    "_source": {
+      "tags": [
+        "_grokparsefailure",
+        "auth_failed"
+      ],
+      "environment": "production",
+      "source": "yousac-gke",
+      "service": "api-gateway",
+      "time": "2026-10-23T14:04:58.216945675Z",
+      "@timestamp": "2026-10-23T14:04:58.885120731Z",
+      "platform": "yousac",
+      "security_event": "login_no_autorizado",
+      "stream": "stderr",
+      "log": "[api-gateway] LOGIN_FALLIDO code=SESION_INVALIDA ruta=POST /api/auth/login ip=::ffff:35.191.17.63 detalle=\"Credenciales incorrectas\"",
+      "logtag": "F",
+      "message": "LOGIN_FALLIDO code=SESION_INVALIDA ruta=POST /api/auth/login ip=::ffff:35.191.17.63 detalle=\"Credenciales incorrectas\"",
+      "@version": "1",
+      "kubernetes": {
+        "container_name": "api-gateway",
+        "docker_id": "e56ac95859c6d8de8a5095a64fed8aae8acfc54de9faab7badeb55ea192e69fb",
+        "namespace_name": "yousac-prod",
+        "pod_name": "api-gateway-6b49d44948-xp47m"
+      },
+      "level": "ERROR",
+      "date": 1792764298.216946
+    }
+  }
+}

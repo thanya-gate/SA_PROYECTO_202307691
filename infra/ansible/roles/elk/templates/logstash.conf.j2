@@ -78,12 +78,12 @@ filter {
   #    Se infiere el nivel desde el stream (stderr => ERROR, si no INFO).
   # -------------------------------------------------------------------------
   if ![level] {
-    if [log] =~ /^\[(?<svc>[a-zA-Z0-9_-]+)\]\s*(?<msg>.+)/ {
-      mutate {
-        add_field => { "service" => "%{svc}" }
-        add_field => { "message" => "%{msg}" }
-      }
-    } else {
+    grok {
+      match => { "log" => "^\[%{DATA:service}\]\s*%{GREEDYDATA:message}$" }
+      overwrite => ["message"]
+      tag_on_failure => []
+    }
+    if ![message] {
       mutate { add_field => { "message" => "%{log}" } }
     }
     if [stream] == "stderr" {
@@ -135,6 +135,4 @@ output {
     password => "{{ elastic_password }}"
     index => "yousac-logs-%{+YYYY.MM.dd}"
   }
-  # Salida de depuracion en la consola del contenedor.
-  stdout { codec => rubydebug }
 }

@@ -4,7 +4,7 @@ Prometheus (kube-prometheus-stack) recolecta métricas del clúster `yousac-prod
 api-gateway; Grafana las muestra públicamente en modo solo lectura.
 
 - Grafana: <https://grafana.yousac-thany.duckdns.org> (Viewer anónimo; admin en el Secret `grafana-admin`).
-- Los logs siguen en ELK (Kibana); ver `kibana-dashboards/`.
+- Logs en ELK (Kibana): [recolector GKE y rotación Docker](fluent-bit/README.md), [evidencia](fluent-bit/evidence/VERIFICACION.md) y dashboards en `kibana-dashboards/`.
 
 | Dashboard | Qué mide |
 |---|---|
