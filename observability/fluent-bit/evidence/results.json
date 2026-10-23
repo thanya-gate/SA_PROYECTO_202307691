@@ -1,0 +1,89 @@
+{
+  "interval_utc": {
+    "from": "2026-10-23T13:50:00Z",
+    "to": "2026-10-23T14:00:00Z"
+  },
+  "note": "El evento de login fue normalizado puntualmente tras corregir el parser CRI inicial; no es evidencia de un segundo login con la configuracion final.",
+  "results": {
+    "gke": {
+      "count": 1820,
+      "hits": [
+        {
+          "_index": "yousac-logs-2026.10.23",
+          "_id": "7LcPaaEBYRpTFWrBRiRS",
+          "_score": null,
+          "_source": {
+            "tags": [
+              "_grokparsefailure"
+            ],
+            "environment": "production",
+            "source": "yousac-gke",
+            "service": "yousac-gke",
+            "time": "2026-10-23T13:59:27.82680249Z",
+            "@timestamp": "2026-10-23T13:59:31.046068071Z",
+            "platform": "yousac",
+            "stream": "stdout",
+            "log": "35.191.249.54 - - [23/Oct/2026:13:59:27 +0000] \"GET /healthz HTTP/1.1\" 200 0 \"-\" \"GoogleHC/1.0\" \"-\"",
+            "logtag": "F",
+            "message": "35.191.249.54 - - [23/Oct/2026:13:59:27 +0000] \"GET /healthz HTTP/1.1\" 200 0 \"-\" \"GoogleHC/1.0\" \"-\"",
+            "@version": "1",
+            "kubernetes": {
+              "container_name": "frontend",
+              "docker_id": "42ad85084d824aebce5b05b5e68367ce6c847b013f14d277a236339ccbfca6ff",
+              "namespace_name": "yousac-prod",
+              "pod_name": "frontend-86f66b459d-jkz97"
+            },
+            "level": "INFO",
+            "date": 1792763967.826802
+          },
+          "sort": [
+            1792763971046
+          ]
+        }
+      ]
+    },
+    "login": {
+      "count": 1,
+      "hits": [
+        {
+          "_index": "yousac-logs-2026.10.23",
+          "_id": "S7cMaaEBYRpTFWrBKhwR",
+          "_score": null,
+          "_source": {
+            "tags": [
+              "_grokparsefailure",
+              "auth_failed"
+            ],
+            "environment": "production",
+            "source": "yousac-gke",
+            "service": "api-gateway",
+            "time": "2026-10-23T13:56:04.290356264Z",
+            "@timestamp": "2026-10-23T13:56:04.926504121Z",
+            "platform": "yousac",
+            "security_event": "login_no_autorizado",
+            "stream": "stderr",
+            "message": "LOGIN_FALLIDO code=SESION_INVALIDA ruta=POST /api/auth/login ip=::ffff:35.191.17.214 detalle=\"Credenciales incorrectas\"",
+            "logtag": "F",
+            "@version": "1",
+            "kubernetes": {
+              "container_name": "api-gateway",
+              "docker_id": "d72ad4e9a9783bbea3ccb0e76bf7067fe2f0f1e7dfedbb5a2ead6a63f0dcebb6",
+              "namespace_name": "yousac-prod",
+              "pod_name": "api-gateway-6b49d44948-g4j4d"
+            },
+            "level": "ERROR",
+            "date": 1792763764.290356,
+            "log": "[api-gateway] LOGIN_FALLIDO code=SESION_INVALIDA ruta=POST /api/auth/login ip=::ffff:35.191.17.214 detalle=\"Credenciales incorrectas\""
+          },
+          "sort": [
+            1792763764926
+          ]
+        }
+      ]
+    },
+    "vm": {
+      "count": 843,
+      "hits": []
+    }
+  }
+}
