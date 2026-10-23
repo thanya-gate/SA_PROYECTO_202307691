@@ -1,0 +1,85 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="YOUSAC · CONSUMO FEDERADO" id="FlujoFederacion_F3">
+    <mxGraphModel dx="1600" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="850" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="student" value="Estudiante solicita búsqueda" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="105" width="500" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="frontend" value="Frontend combina catálogo local y federado" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="185" width="500" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" value="API Gateway · ruta de catálogo federado" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="265" width="500" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="adapter" value="HttpCatalogoExterno · X-API-Key · timeout 3 s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="345" width="500" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="ally" value="API G8 · GET /clases y GET /clases/{id}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="425" width="500" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="mapper" value="Validar esquema · mapear video, origen y capítulos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="505" width="500" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="player" value="UI etiqueta origen y abre reproductor externo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="585" width="500" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="fallback" value="404 · timeout · contrato inválido&lt;br&gt;Retorna vacío/null; la consulta local sigue disponible" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="360" width="380" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="student" target="frontend">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790.0" y="174.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="frontend" target="gateway">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790.0" y="254.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="gateway" target="adapter">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790.0" y="334.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="adapter" target="ally">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790.0" y="414.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="ally" target="mapper">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790.0" y="494.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="mapper" target="player">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790.0" y="574.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-7" value="error controlado" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="adapter" target="fallback">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1090" y="374" />
+              <mxPoint x="1110" y="374" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

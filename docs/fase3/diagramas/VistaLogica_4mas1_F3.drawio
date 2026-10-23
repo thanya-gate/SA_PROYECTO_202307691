@@ -1,0 +1,77 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="YOUSAC · VISTA LÓGICA 4+1" id="VistaLogica_4mas1_F3">
+    <mxGraphModel dx="1800" dy="1040" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1040" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="user" value="Estudiante /&lt;br&gt;Auxiliar / Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="45" y="205" width="165" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="frontend" value="Frontend Web&lt;br&gt;React + TypeScript" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="265" y="205" width="235" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" value="API Gateway&lt;br&gt;REST · sesión · RBAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="560" y="205" width="260" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="services" value="Microservicios gRPC&lt;br&gt;Auth · Catálogo · Inscripción&lt;br&gt;Reproducción · Analítica · Notificaciones" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="880" y="160" width="390" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="federation" value="Puerto/adaptador&lt;br&gt;Catálogo federado" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="115" width="360" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="academix" value="Cliente server-to-server&lt;br&gt;Academix / CertiHub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="245" width="360" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="sql" value="Cloud SQL PostgreSQL&lt;br&gt;6 bases lógicas · fuera de pods" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="250" y="480" width="360" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" value="Redis externo&lt;br&gt;Cache/tendencias" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="700" y="480" width="300" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="gcs" value="Cloud Storage&lt;br&gt;Videos y materiales privados" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="480" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="smtp" value="SMTP / EmailWorker&lt;br&gt;Notificaciones" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="480" width="250" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="observability" value="Prometheus + Grafana · métricas&lt;br&gt;Fluent Bit → Logstash → Elasticsearch → Kibana&lt;br&gt;CronJobs Kubernetes → SQL / Redis / EmailWorker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="730" width="1080" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="user" target="frontend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="frontend" target="gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-3" value="gRPC/HTTP2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="gateway" target="services">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-4" value="HTTPS + API key" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="gateway" target="federation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-5" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="gateway" target="academix">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-6" value="Cloud SQL Auth Proxy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="services" target="sql">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="services" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="gateway" target="gcs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="services" target="smtp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-10" value="logs / metrics" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="services" target="observability">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-11" value="exporter" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="redis" target="observability">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

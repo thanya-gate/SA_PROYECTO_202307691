@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1660" height="980" viewBox="0 0 1660 980" role="img" aria-labelledby="title desc">
+<title id="title">YOUSAC · INTEGRACIÓN ACADEMIX PASS &amp; CERTIHUB</title><desc id="desc">El navegador llama a YoUSAC; la identidad y el acceso al proveedor se gestionan en el Gateway</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker>
+<style>.edge{fill:none;stroke:#ffffff;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:square}.dash{stroke-dasharray:7 6}.card{fill:#121212;stroke:#ffffff;stroke-width:1.5}.boundary{fill:#1c2a3d;stroke:#3b587e;stroke-width:1.5;stroke-dasharray:8 6}.label{fill:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;text-anchor:middle}.labelbg{fill:#121212;opacity:.97}</style></defs>
+<rect x="0" y="0" width="1660" height="980" fill="#121212"/>
+<rect x="14" y="14" width="1632" height="952" rx="12" fill="#1c2a3d" stroke="#3b587e" stroke-width="1.5"/>
+<text x="830.0" y="43" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="24px" font-weight="700" text-anchor="middle">YOUSAC · INTEGRACIÓN ACADEMIX PASS &amp; CERTIHUB</text>
+<text x="830.0" y="68" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" text-anchor="middle">El navegador llama a YoUSAC; la identidad y el acceso al proveedor se gestionan en el Gateway</text>
+<path class="edge" d="M 830.0 158.0 L 830.0 167.0 L 830.0 176.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 830.0 234.0 L 830.0 243.0 L 830.0 252.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 830.0 310.0 L 830.0 319.0 L 830.0 328.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 830.0 386.0 L 830.0 395.0 L 830.0 404.0" marker-end="url(#arrow)"/>
+<path class="edge dash" d="M 1070.0 430.0 L 1090.0 430.0 L 1120.0 430.0 L 1140.0 430.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1081.5" y="407.0" width="47" height="20" rx="3"/>
+<text class="label" x="1105.0" y="422.0">async</text>
+<path class="edge" d="M 830.0 462.0 L 830.0 486.0 L 830.0 510.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 830.0 568.0 L 830.0 577.0 L 830.0 586.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 830.0 644.0 L 830.0 653.0 L 830.0 662.0" marker-end="url(#arrow)"/>
+<path class="edge dash" d="M 1070.0 280.0 L 1090.0 280.0 L 1115.0 280.0 L 1115.0 620.0 L 1140.0 620.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1075.5" y="438.0" width="103" height="20" rx="3"/>
+<text class="label" x="1127.0" y="453.0">si falla HTTP</text>
+<rect class="card" x="590" y="100" width="480" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="830.0" y="129.0">Estudiante autenticado</tspan></text>
+<rect class="card" x="590" y="176" width="480" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="830.0" y="205.0">Clase → consulta talleres relacionados al curso</tspan></text>
+<rect class="card" x="590" y="252" width="480" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="830.0" y="281.0">Gateway usa sesión para nombre/correo</tspan></text>
+<rect class="card" x="590" y="328" width="480" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="830.0" y="357.0">Academix catálogo → respuesta de talleres</tspan></text>
+<rect class="card" x="590" y="404" width="480" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="830.0" y="433.0">Reserva → HTTP 202 + trackingId</tspan></text>
+<rect class="card" x="1140" y="404" width="420" height="94" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1350.0" y="442.3">Procesamiento asíncrono en Academix</tspan><tspan x="1350.0" y="460.2">(RabbitMQ del proveedor)</tspan></text>
+<rect class="card" x="590" y="510" width="480" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="830.0" y="539.0">UI consulta estado con trackingId</tspan></text>
+<rect class="card" x="590" y="586" width="480" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="830.0" y="615.0">Perfil → consultar credenciales CertiHub</tspan></text>
+<rect class="card" x="590" y="662" width="480" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="830.0" y="691.0">Verificar código y descargar certificado</tspan></text>
+<rect class="card" x="1140" y="586" width="420" height="94" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1350.0" y="624.3">Timeout / proveedor no disponible</tspan><tspan x="1350.0" y="642.2">Mostrar error controlado; no confirmar reserva</tspan></text>
+</svg>

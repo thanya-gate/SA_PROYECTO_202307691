@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="900" viewBox="0 0 1800 900" role="img" aria-labelledby="title desc">
+<title id="title">YOUSAC · VISTA DE PROCESOS 4+1</title><desc id="desc">Interacciones síncronas y trabajo programado/asíncrono (Fase 3)</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker>
+<style>.edge{fill:none;stroke:#ffffff;stroke-width:1.8}.dash{stroke-dasharray:7 6}.card{fill:#121212;stroke:#ffffff;stroke-width:1.5}.boundary{fill:#121212;stroke:#ffffff;stroke-width:1.3;stroke-dasharray:8 6}.label{fill:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;text-anchor:middle}.labelbg{fill:#121212;opacity:.96}</style></defs>
+<rect x="0" y="0" width="1800" height="900" fill="#121212"/>
+<rect x="14" y="14" width="1772" height="872" fill="#121212" stroke="#ffffff" stroke-width="1"/>
+<text x="900.0" y="43" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="24px" font-weight="700" text-anchor="middle">YOUSAC · VISTA DE PROCESOS 4+1</text>
+<text x="900.0" y="68" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" text-anchor="middle">Interacciones síncronas y trabajo programado/asíncrono (Fase 3)</text>
+<path class="edge" d="M 270.0 197.0 L 340.0 197.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 560.0 197.0 L 630.0 197.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 850.0 197.0 L 920.0 197.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 1160.0 197.0 L 1240.0 197.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 746.2 239.0 L 750.0 265.0 L 750.0 370.0 L 920.0 371.7" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="670.5" y="358.0" width="159" height="20" rx="3"/>
+<text class="label" x="750.0" y="373.0">federación / Academix</text>
+<path class="edge" d="M 1180.0 373.0 L 1180.0 373.0 L 1240.0 373.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1146.0" y="361.0" width="68" height="20" rx="3"/>
+<text class="label" x="1180.0" y="376.0">tracking</text>
+<path class="edge" d="M 270.0 652.0 L 340.0 652.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 640.0 652.0 L 710.0 652.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 970.0 652.0 L 1040.0 652.0" marker-end="url(#arrow)"/>
+<path class="edge dash" d="M 588.8 694.0 L 650.0 720.0 L 1460.0 720.0 L 1494.4 694.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1408.5" y="708.0" width="103" height="20" rx="3"/>
+<text class="label" x="1460.0" y="723.0">logs / estado</text>
+<rect class="card" x="50" y="155" width="220" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="160.0" y="197.0">Cliente web</tspan></text>
+<rect class="card" x="340" y="155" width="220" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="450.0" y="197.0">Ingress HTTPS</tspan></text>
+<rect class="card" x="630" y="155" width="220" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="740.0" y="197.0">API Gateway</tspan></text>
+<rect class="card" x="920" y="155" width="240" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1040.0" y="188.3">Microservicios</tspan><tspan x="1040.0" y="206.2">gRPC / HTTP2</tspan></text>
+<rect class="card" x="1240" y="155" width="300" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1390.0" y="188.3">Cloud SQL / Redis</tspan><tspan x="1390.0" y="206.2">operaciones síncronas</tspan></text>
+<rect class="card" x="920" y="330" width="260" height="86" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1050.0" y="364.3">G8 / Academix</tspan><tspan x="1050.0" y="382.2">HTTPS externo</tspan></text>
+<rect class="card" x="1240" y="330" width="300" height="86" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1390.0" y="364.3">Reserva: HTTP 202 + tracking</tspan><tspan x="1390.0" y="382.2">consulta posterior de estado</tspan></text>
+<rect class="card" x="50" y="610" width="220" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="160.0" y="652.0">Reloj K8s</tspan></text>
+<rect class="card" x="340" y="610" width="300" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="490.0" y="643.3">CronJob → Job</tspan><tspan x="490.0" y="661.2">con backoff y concurrencia limitada</tspan></text>
+<rect class="card" x="710" y="610" width="260" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="840.0" y="643.3">Cloud SQL Auth Proxy</tspan><tspan x="840.0" y="661.2">sidecar del Job</tspan></text>
+<rect class="card" x="1040" y="610" width="300" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1190.0" y="643.3">PostgreSQL · Redis</tspan><tspan x="1190.0" y="661.2">EmailWorker</tspan></text>
+<rect class="card" x="1400" y="610" width="300" height="84" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1550.0" y="643.3">Fluent Bit / Prometheus</tspan><tspan x="1550.0" y="661.2">observan workloads</tspan></text>
+<rect class="card" x="330" y="760" width="1110" height="70" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="885.0" y="786.3">Errores remotos se aíslan; jobs fallidos se inspeccionan por estado, eventos y logs.</tspan><tspan x="885.0" y="804.2">La reserva se procesa en el broker del proveedor Academix, no dentro de YoUSAC.</tspan></text>
+</svg>

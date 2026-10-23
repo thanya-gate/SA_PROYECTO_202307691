@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="YOUSAC · CRONJOBS DE FASE 3" id="FlujoCronjobs_F3">
+    <mxGraphModel dx="1800" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="850" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="purgeTime" value="Diario&lt;br&gt;00:00" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="45" y="160" width="170" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="purge" value="yousac-purge-security" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="280" y="160" width="300" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="purgeDb" value="Cloud SQL Auth Proxy → Auth&lt;br&gt;sp_purgar_seguridad" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="650" y="160" width="350" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="purgeDone" value="Sesiones / tokens / auditoría&lt;br&gt;limpiados o archivados" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="160" width="380" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="trendTime" value="Cada 6 horas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="45" y="370" width="170" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="trend" value="yousac-trends-recalc" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="280" y="370" width="300" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="trendDb" value="Cloud SQL · agregados&lt;br&gt;últimas 24 h" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="650" y="370" width="350" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" value="Redis precalentado&lt;br&gt;ranking y tendencias TTL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="370" width="380" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="notifyTime" value="Diario&lt;br&gt;08:00" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="45" y="580" width="170" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="notify" value="yousac-review-notify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="280" y="580" width="300" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="notifyDb" value="Evaluaciones ≤7 días&lt;br&gt;matrícula + mejores clases" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="650" y="580" width="350" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="email" value="sp_encolar_notificacion_repaso&lt;br&gt;→ EmailWorker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="580" width="380" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="policy" value="Por Job: backoffLimit=2 · historial 3/3&lt;br&gt;Verificar ejecución real con kubectl get cronjobs,jobs,pods y logs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="330" y="720" width="980" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="purgeTime" target="purge">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="247.5" y="201.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="purge" target="purgeDb">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="615.0" y="201.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="purgeDb" target="purgeDone">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1040.0" y="201.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="trendTime" target="trend">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="247.5" y="411.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="trend" target="trendDb">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="615.0" y="411.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="trendDb" target="redis">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1040.0" y="411.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="notifyTime" target="notify">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="247.5" y="621.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="notify" target="notifyDb">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="615.0" y="621.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="notifyDb" target="email">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1040.0" y="621.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
