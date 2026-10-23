@@ -28,10 +28,9 @@ data:
   INSCRIPCION_GRPC_ADDR: inscripcion-service:50055
   NOTIFICACIONES_GRPC_ADDR: notificaciones-service:50056
 
-  # Federación (docs/federacion). Mientras el grupo aliado no publique su API,
-  # el consumidor apunta a nuestro propio /federation/v1 para probar el flujo.
-  FEDERATION_REMOTE_URL: http://api-gateway:8080/federation/v1
-  FEDERATION_REMOTE_NOMBRE: YoUSAC G4 (prueba)
+  # Federación (docs/federacion): consumimos el catálogo del grupo aliado G8.
+  FEDERATION_REMOTE_URL: https://yousac-g8.duckdns.org/federation/v1
+  FEDERATION_REMOTE_NOMBRE: YoUSAC G8
 
   # Academix Pass & CertiHub (K3s de las prácticas 9–10).
   ACADEMIX_BASE_URL: https://academix.34.123.206.113.sslip.io
