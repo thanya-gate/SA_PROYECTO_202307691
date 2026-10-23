@@ -3,3 +3,8 @@
   ansible.builtin.command:
     cmd: docker compose up -d --force-recreate
     chdir: "{{ elk_dir }}"
+
+- name: Reiniciar Logstash
+  ansible.builtin.command:
+    cmd: docker compose restart logstash
+    chdir: "{{ elk_dir }}"

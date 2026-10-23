@@ -61,10 +61,16 @@
   ansible.builtin.template:
     src: logstash.conf.j2
     dest: "{{ elk_dir }}/logstash.conf"
+    backup: true
     owner: root
     group: root
     mode: "0644"
-  notify: Reiniciar stack ELK
+  notify: Reiniciar Logstash
+  tags: [elk_pipeline]
+
+- name: Configurar rotacion de Docker
+  ansible.builtin.import_tasks: docker_logging.yml
+  tags: [elk_rotation]
 
 - name: Escribir la configuracion de Kibana
   ansible.builtin.template:
