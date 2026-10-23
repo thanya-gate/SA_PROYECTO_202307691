@@ -1,0 +1,107 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="YOUSAC · INTEGRACIÓN ACADEMIX PASS &amp; CERTIHUB" id="FlujoAcademix_F3">
+    <mxGraphModel dx="1660" dy="980" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1660" pageHeight="980" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="student" value="Estudiante autenticado" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="100" width="480" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="class" value="Clase → consulta talleres relacionados al curso" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="176" width="480" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" value="Gateway usa sesión para nombre/correo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="252" width="480" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="list" value="Academix catálogo → respuesta de talleres" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="328" width="480" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="reserve" value="Reserva → HTTP 202 + trackingId" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="404" width="480" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="queue" value="Procesamiento asíncrono en Academix&lt;br&gt;(RabbitMQ del proveedor)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="404" width="420" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="poll" value="UI consulta estado con trackingId" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="510" width="480" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="wallet" value="Perfil → consultar credenciales CertiHub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="586" width="480" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="verify" value="Verificar código y descargar certificado" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="662" width="480" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="error" value="Timeout / proveedor no disponible&lt;br&gt;Mostrar error controlado; no confirmar reserva" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="586" width="420" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="student" target="class">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="830.0" y="167.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="class" target="gateway">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="830.0" y="243.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="gateway" target="list">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="830.0" y="319.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="list" target="reserve">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="830.0" y="395.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-5" value="async" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="reserve" target="queue">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1090" y="430" />
+              <mxPoint x="1120" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="reserve" target="poll">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="830.0" y="486.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="poll" target="wallet">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="830.0" y="577.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="wallet" target="verify">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="830.0" y="653.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-9" value="si falla HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="gateway" target="error">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1090" y="280" />
+              <mxPoint x="1115" y="280" />
+              <mxPoint x="1115" y="620" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

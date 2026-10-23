@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="YOUSAC · MOTOR DE RECOMENDACIÓN" id="FlujoRecomendacion_F3">
+    <mxGraphModel dx="1800" dy="740" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="740" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="student" value="Estudiante&lt;br&gt;Home" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="45" y="235" width="205" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" value="API Gateway&lt;br&gt;/analitica/recomendaciones/me" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="285" y="235" width="270" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="python" value="Analítica Python&lt;br&gt;gRPC + cache Redis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="235" width="250" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="sql" value="Cloud SQL&lt;br&gt;fn_recomendaciones_estudiante" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="885" y="235" width="290" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="score" value="Puntaje 0–100&lt;br&gt;70% rating + hasta 30% vistas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="235" width="270" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ui" value="Home muestra tarjetas&lt;br&gt;y resuelve datos de clase" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1520" y="235" width="235" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cache" value="Redis cache&lt;br&gt;TTL configurable" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="660" y="440" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="gap" value="Brecha documentada: el id de estudiante identifica la consulta,&lt;br&gt;pero la función actual ordena clases por métricas agregadas." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#ffffff;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="330" y="585" width="1100" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="student" target="gateway">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="267.5" y="285.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="gateway" target="python">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="572.5" y="285.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="python" target="sql">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="862.5" y="285.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="sql" target="score">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1197.5" y="285.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="score" target="ui">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1505.0" y="285.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-6" value="leer/escribir" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="python" target="cache">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="715" y="360" />
+              <mxPoint x="715" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-7" value="cache hit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ffffff;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="cache" target="python">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="820" y="410" />
+              <mxPoint x="820" y="360" />
+              <mxPoint x="840" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

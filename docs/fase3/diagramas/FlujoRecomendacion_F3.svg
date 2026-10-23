@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="740" viewBox="0 0 1800 740" role="img" aria-labelledby="title desc">
+<title id="title">YOUSAC · MOTOR DE RECOMENDACIÓN</title><desc id="desc">Recorrido actual desde Home; la fórmula SQL observada es agregada, no personalizada por historial individual</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker>
+<style>.edge{fill:none;stroke:#ffffff;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:square}.dash{stroke-dasharray:7 6}.card{fill:#121212;stroke:#ffffff;stroke-width:1.5}.boundary{fill:#1c2a3d;stroke:#3b587e;stroke-width:1.5;stroke-dasharray:8 6}.label{fill:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;text-anchor:middle}.labelbg{fill:#121212;opacity:.97}</style></defs>
+<rect x="0" y="0" width="1800" height="740" fill="#121212"/>
+<rect x="14" y="14" width="1772" height="712" rx="12" fill="#1c2a3d" stroke="#3b587e" stroke-width="1.5"/>
+<text x="900.0" y="43" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="24px" font-weight="700" text-anchor="middle">YOUSAC · MOTOR DE RECOMENDACIÓN</text>
+<text x="900.0" y="68" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" text-anchor="middle">Recorrido actual desde Home; la fórmula SQL observada es agregada, no personalizada por historial individual</text>
+<path class="edge" d="M 250.0 285.0 L 267.5 285.0 L 285.0 285.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 555.0 285.0 L 572.5 285.0 L 590.0 285.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 840.0 285.0 L 862.5 285.0 L 885.0 285.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 1175.0 285.0 L 1197.5 285.0 L 1220.0 285.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 1490.0 285.0 L 1505.0 285.0 L 1520.0 285.0" marker-end="url(#arrow)"/>
+<path class="edge dash" d="M 715.0 335.0 L 715.0 360.0 L 715.0 410.0 L 715.0 440.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="675.5" y="373.0" width="103" height="20" rx="3"/>
+<text class="label" x="727.0" y="388.0">leer/escribir</text>
+<path class="edge dash" d="M 820.0 440.0 L 820.0 410.0 L 820.0 360.0 L 840.0 360.0 L 840.0 335.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="794.5" y="373.0" width="75" height="20" rx="3"/>
+<text class="label" x="832.0" y="388.0">cache hit</text>
+<rect class="card" x="45" y="235" width="205" height="100" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="147.5" y="276.3">Estudiante</tspan><tspan x="147.5" y="294.2">Home</tspan></text>
+<rect class="card" x="285" y="235" width="270" height="100" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="420.0" y="276.3">API Gateway</tspan><tspan x="420.0" y="294.2">/analitica/recomendaciones/me</tspan></text>
+<rect class="card" x="590" y="235" width="250" height="100" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="715.0" y="276.3">Analítica Python</tspan><tspan x="715.0" y="294.2">gRPC + cache Redis</tspan></text>
+<rect class="card" x="885" y="235" width="290" height="100" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1030.0" y="276.3">Cloud SQL</tspan><tspan x="1030.0" y="294.2">fn_recomendaciones_estudiante</tspan></text>
+<rect class="card" x="1220" y="235" width="270" height="100" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1355.0" y="276.3">Puntaje 0–100</tspan><tspan x="1355.0" y="294.2">70% rating + hasta 30% vistas</tspan></text>
+<rect class="card" x="1520" y="235" width="235" height="100" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1637.5" y="276.3">Home muestra tarjetas</tspan><tspan x="1637.5" y="294.2">y resuelve datos de clase</tspan></text>
+<rect class="card" x="660" y="440" width="250" height="90" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="785.0" y="476.3">Redis cache</tspan><tspan x="785.0" y="494.2">TTL configurable</tspan></text>
+<rect class="card" x="330" y="585" width="1100" height="68" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="880.0" y="610.3">Brecha documentada: el id de estudiante identifica la consulta,</tspan><tspan x="880.0" y="628.2">pero la función actual ordena clases por métricas agregadas.</tspan></text>
+</svg>

@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="YOUSAC · CASOS DE USO FASE 3" id="CasosUso_F3">
+    <mxGraphModel dx="1640" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1640" pageHeight="850" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="system" value="Sistema YoUSAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;dashed=1;fontStyle=1;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="310" y="105" width="1190" height="710" as="geometry" />
+        </mxCell>
+        <mxCell id="student" value="Estudiante" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fillColor=#121212;" vertex="1" parent="1">
+          <mxGeometry x="65" y="255" width="130" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="operator" value="Administrador /&lt;br&gt;DevOps" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fillColor=#121212;" vertex="1" parent="1">
+          <mxGeometry x="65" y="620" width="140" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="scheduler" value="Reloj K8s" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fillColor=#121212;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="620" width="105" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="group8" value="Grupo federado&lt;br&gt;YoUSAC G8" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fillColor=#121212;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="140" width="105" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="academix" value="Academix Pass &amp;amp;&lt;br&gt;CertiHub" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeColor=#FFFFFF;fontColor=#FFFFFF;fillColor=#121212;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="355" width="105" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="federated" value="Buscar y reproducir&lt;br&gt;clases federadas" style="ellipse;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="390" y="175" width="350" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="academixCase" value="Consultar talleres,&lt;br&gt;reservar y ver certificados" style="ellipse;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="895" y="175" width="430" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="recommend" value="Consultar recomendaciones&lt;br&gt;académicas en Home" style="ellipse;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="390" y="385" width="350" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cron" value="Ejecutar purga, tendencias&lt;br&gt;y avisos de repaso" style="ellipse;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="895" y="385" width="430" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="operate" value="Aprovisionar y observar&lt;br&gt;la plataforma cloud" style="ellipse;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="625" y="600" width="430" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="student" target="federated">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="student" target="academixCase">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="student" target="recommend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="group8" target="federated">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="academix" target="academixCase">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="scheduler" target="cron">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="operator" target="operate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,70 +1,100 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- Render companion for P7_G4 -->
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1300" height="1040" viewBox="0 0 1300 1040" role="img" aria-labelledby="title desc">
-  <title id="title">VISTA LÓGICA · PRÁCTICA 7</title>
-  <desc id="desc">CU-P7-01–CU-P7-05 · Academix Pass &amp; CertiHub</desc>
-  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#FFFFFF"/></marker></defs>
-  <style>
-    .canvas{fill:#121212;stroke:#FFFFFF;stroke-width:1}.round{fill:#1c2a3d;stroke:#3b587e;stroke-width:1.4}.box{fill:#121212;stroke:#FFFFFF;stroke-width:1.5}.text,.actorLabel{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700}.title{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700}.subtitle{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px}.line{stroke:#FFFFFF;stroke-width:1;stroke-dasharray:6 6}.activation{fill:#121212;stroke:#FFFFFF;stroke-width:1.2}.message{stroke:#FFFFFF;stroke-width:1.4;marker-end:url(#arrow)}.return{stroke:#FFFFFF;stroke-width:1.2;stroke-dasharray:6 6;marker-end:url(#arrow)}.separator{stroke:#FFFFFF;stroke-width:1;stroke-dasharray:5 5}.labelText{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px;text-anchor:middle;paint-order:stroke;stroke:#121212;stroke-width:4px;stroke-linejoin:round}.actor{fill:none;stroke:#FFFFFF;stroke-width:1.2}.foot{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px}
-  </style>
-  <rect class="canvas" x="0" y="20" width="1300" height="1000"/>
-  <rect class="round" x="0" y="20" width="1300" height="1000" rx="58" ry="58"/>
-  <text class="title" x="650" y="58" text-anchor="middle">VISTA LÓGICA · PRÁCTICA 7</text>
-  <text class="subtitle" x="650" y="88" text-anchor="middle">CU-P7-01–CU-P7-05 · Academix Pass &amp; CertiHub</text>
-  <rect class="box" x="5" y="112" width="180" height="48"/>
-  <text class="text" x="75" y="137" text-anchor="middle">Actores</text>
-  <line class="line" x1="75" y1="160" x2="75" y2="990"/>
-  <rect class="box" x="195" y="112" width="180" height="48"/>
-  <text class="text" x="285" y="137" text-anchor="middle">Frontend</text>
-  <line class="line" x1="285" y1="160" x2="285" y2="990"/>
-  <rect class="box" x="405" y="112" width="180" height="48"/>
-  <text class="text" x="495" y="137" text-anchor="middle">API Gateway</text>
-  <line class="line" x1="495" y1="160" x2="495" y2="990"/>
-  <rect class="box" x="615" y="112" width="180" height="48"/>
-  <text class="text" x="705" y="137" text-anchor="middle">Talleres</text>
-  <line class="line" x1="705" y1="160" x2="705" y2="990"/>
-  <rect class="box" x="825" y="112" width="180" height="48"/>
-  <text class="text" x="915" y="137" text-anchor="middle">Reservas/Ticketing</text>
-  <line class="line" x1="915" y1="160" x2="915" y2="990"/>
-  <rect class="box" x="1035" y="112" width="180" height="48"/>
-  <text class="text" x="1125" y="137" text-anchor="middle">Certificados / BD</text>
-  <line class="line" x1="1125" y1="160" x2="1125" y2="990"/>
-  <rect class="activation" x="279" y="210.0" width="12" height="583.3"/>
-  <rect class="activation" x="489" y="242.3" width="12" height="475.0"/>
-  <rect class="activation" x="699" y="280.3" width="12" height="57.0"/>
-  <rect class="activation" x="909" y="432.3" width="12" height="171.0"/>
-  <rect class="activation" x="1119" y="698.3" width="12" height="57.0"/>
-  <circle class="actor" cx="75" cy="182" r="7"/><path class="actor" d="M75 189 V207 M63 196 H87 M75 207 L64 222 M75 207 L86 222"/>
-  <text class="actorLabel" x="75" y="240" text-anchor="middle">Estudiante / Verificador</text>
-  <line class="message" x1="75" y1="210" x2="285" y2="210"/>
-  <text class="labelText" x="180" y="203">1. Consulta catálogo o detalle</text>
-  <line class="message" x1="285" y1="248" x2="495" y2="248"/>
-  <text class="labelText" x="390" y="241">2. GET eventos / detalle</text>
-  <line class="message" x1="495" y1="286" x2="705" y2="286"/>
-  <text class="labelText" x="600" y="279">3. Solicita catálogo y cupos</text>
-  <line class="return" x1="705" y1="324" x2="285" y2="324"/>
-  <text class="labelText" x="495" y="317">4. Retorna eventos y disponibilidad</text>
-  <line class="separator" x1="55" y1="346" x2="1545" y2="346"/>
-  <line class="message" x1="75" y1="362" x2="285" y2="362"/>
-  <text class="labelText" x="180" y="355">5. Solicita reserva o verificación</text>
-  <line class="message" x1="285" y1="400" x2="495" y2="400"/>
-  <text class="labelText" x="390" y="393">6. Envía POST reserva / consulta</text>
-  <line class="message" x1="495" y1="438" x2="915" y2="438"/>
-  <text class="labelText" x="705" y="431">7. Crea solicitud PENDIENTE</text>
-  <line class="return" x1="915" y1="476" x2="495" y2="476"/>
-  <text class="labelText" x="705" y="469">8. Procesa cupo y reglas</text>
-  <line class="return" x1="495" y1="514" x2="285" y2="514"/>
-  <text class="labelText" x="390" y="507">9. Retorna estado y ticket</text>
-  <line class="separator" x1="55" y1="612" x2="1125" y2="612"/>
-  <line class="message" x1="75" y1="628" x2="285" y2="628"/>
-  <text class="labelText" x="180" y="621">10. Consulta credencial</text>
-  <line class="message" x1="285" y1="666" x2="495" y2="666"/>
-  <text class="labelText" x="390" y="659">11. GET credentials/verify</text>
-  <line class="message" x1="495" y1="704" x2="1125" y2="704"/>
-  <text class="labelText" x="810" y="697">12. Busca credencial pública</text>
-  <line class="return" x1="1125" y1="742" x2="285" y2="742"/>
-  <text class="labelText" x="705" y="735">13. Retorna VÁLIDA / INVÁLIDA / NO_ENCONTRADA</text>
-  <line class="return" x1="285" y1="780" x2="75" y2="780"/>
-  <text class="labelText" x="180" y="773">14. Muestra resultado al actor</text>
-  <text class="foot" x="650" y="1000" text-anchor="middle">Secuencia consolidada de catálogo, reservas y verificación pública.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1220" viewBox="0 0 1800 1220" role="img">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker></defs>
+<rect width="1800" height="1220" fill="#121212"/>
+<rect x="15" y="15" width="1770" height="1190" rx="12" fill="#1c2a3d" stroke="#3b587e" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="23px" font-weight="700" text-anchor="middle"><tspan x="900.0" y="48.0">VISTA LÓGICA · SECUENCIA DE INTEGRACIÓN</tspan></text>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="400" text-anchor="middle"><tspan x="900.0" y="75.0">YoUSAC media las llamadas; Academix Pass, RabbitMQ/worker y CertiHub son externos</tspan></text>
+<rect x="40" y="105" width="220" height="54" rx="5" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="150.0" y="131.0">Estudiante</tspan></text>
+<path d="M150 159 V1170" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="7 6"/>
+<rect x="340" y="105" width="220" height="54" rx="5" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="450.0" y="122.9">Frontend</tspan><tspan x="450.0" y="139.6">YoUSAC</tspan></text>
+<path d="M450 159 V1170" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="7 6"/>
+<rect x="640" y="105" width="220" height="54" rx="5" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="750.0" y="122.9">API Gateway</tspan><tspan x="750.0" y="139.6">YoUSAC</tspan></text>
+<path d="M750 159 V1170" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="7 6"/>
+<rect x="940" y="105" width="220" height="54" rx="5" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1050.0" y="122.9">Academix Pass</tspan><tspan x="1050.0" y="139.6">API externa</tspan></text>
+<path d="M1050 159 V1170" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="7 6"/>
+<rect x="1240" y="105" width="220" height="54" rx="5" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1350.0" y="122.9">RabbitMQ / worker</tspan><tspan x="1350.0" y="139.6">proveedor externo</tspan></text>
+<path d="M1350 159 V1170" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="7 6"/>
+<rect x="1540" y="105" width="220" height="54" rx="5" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1650.0" y="122.9">CertiHub</tspan><tspan x="1650.0" y="139.6">API externa</tspan></text>
+<path d="M1650 159 V1170" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="7 6"/>
+<path d="M45 380 H1755" stroke="#ffffff" stroke-width="1" stroke-dasharray="7 6"/>
+<rect x="53" y="368" width="210" height="20" rx="3" fill="#1c2a3d"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="700" text-anchor="middle"><tspan x="158.0" y="383.0">RESERVA ASÍNCRONA</tspan></text>
+<path d="M45 840 H1755" stroke="#ffffff" stroke-width="1" stroke-dasharray="7 6"/>
+<rect x="53" y="828" width="210" height="20" rx="3" fill="#1c2a3d"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="700" text-anchor="middle"><tspan x="158.0" y="843.0">CONSULTA DE CREDENCIALES</tspan></text>
+<path d="M159 190 H441" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="212.6" y="173" width="174.8" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="300.0" y="186.0">Abrir talleres del curso</tspan></text>
+<path d="M459 232 H741" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="519.3" y="215" width="161.4" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="228.0">GET /academix/talleres</tspan></text>
+<path d="M759 274 H1041" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="802.5" y="257" width="194.9" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="900.0" y="270.0">HTTPS · identidad de sesión</tspan></text>
+<path d="M1041 316 H759" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="805.9" y="299" width="188.2" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="900.0" y="312.0">200 · talleres disponibles</tspan></text>
+<path d="M741 358 H459" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="539.4" y="341" width="121.2" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="354.0">Mostrar catálogo</tspan></text>
+<path d="M159 400 H441" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="236.1" y="383" width="127.9" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="300.0" y="396.0">Solicitar reserva</tspan></text>
+<path d="M459 442 H741" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="516.0" y="425" width="168.1" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="438.0">POST /academix/reservas</tspan></text>
+<path d="M759 484 H1041" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="802.5" y="467" width="194.9" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="900.0" y="480.0">POST · usuario de la sesión</tspan></text>
+<path d="M1059 526 H1341" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="1119.3" y="509" width="161.4" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="1200.0" y="522.0">Publicar evento · AMQP</tspan></text>
+<path d="M1041 568 H759" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="809.2" y="551" width="181.5" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="900.0" y="564.0">202 Accepted · trackingId</tspan></text>
+<path d="M741 610 H459" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="529.4" y="593" width="141.3" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="606.0">Devolver trackingId</tspan></text>
+<path d="M459 652 H741" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="502.6" y="635" width="194.9" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="648.0">GET /academix/reservas/{id}</tspan></text>
+<path d="M759 694 H1041" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="795.9" y="677" width="208.3" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="900.0" y="690.0">Consultar estado al proveedor</tspan></text>
+<path d="M1041 736 H759" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="779.1" y="719" width="241.8" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="900.0" y="732.0">Pendiente / confirmada / rechazada</tspan></text>
+<path d="M741 778 H459" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="509.2" y="761" width="181.5" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="774.0">Mostrar estado consultado</tspan></text>
+<path d="M741 820 H459" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="485.8" y="803" width="228.4" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="816.0">Timeout / 5xx · error controlado</tspan></text>
+<path d="M159 862 H441" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="219.3" y="845" width="161.4" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="300.0" y="858.0">Abrir mis certificados</tspan></text>
+<path d="M459 904 H741" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="505.9" y="887" width="188.2" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="900.0">GET /academix/certificados</tspan></text>
+<path d="M759 946 H1641" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="1092.5" y="929" width="215.0" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="1200.0" y="942.0">HTTPS · consultar certificados</tspan></text>
+<path d="M459 988 H741" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="460.0" y="971" width="280.0" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="984.0">GET /academix/certificados/{codigo}/verificar</tspan></text>
+<path d="M759 1030 H1641" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="1112.6" y="1013" width="174.8" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="1200.0" y="1026.0">HTTPS · verificar código</tspan></text>
+<path d="M1641 1072 H759" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="1102.5" y="1055" width="194.9" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="1200.0" y="1068.0">200 · certificado / validez</tspan></text>
+<path d="M741 1114 H459" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="502.6" y="1097" width="194.9" height="18" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="11px" font-weight="400" text-anchor="middle"><tspan x="600.0" y="1110.0">Mostrar y permitir descarga</tspan></text>
 </svg>
