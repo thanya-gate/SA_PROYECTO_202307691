@@ -13,6 +13,7 @@ spec:
         app: fluent-bit
     spec:
       automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
@@ -30,11 +31,11 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-              ephemeral-storage: 128Mi
+              ephemeral-storage: 640Mi
             limits:
               cpu: 200m
               memory: 256Mi
-              ephemeral-storage: 256Mi
+              ephemeral-storage: 768Mi
           volumeMounts:
             - name: logs
               mountPath: /var/log
@@ -59,4 +60,4 @@ spec:
             name: fluent-bit
         - name: buffers
           emptyDir:
-            sizeLimit: 128Mi
+            sizeLimit: 512Mi

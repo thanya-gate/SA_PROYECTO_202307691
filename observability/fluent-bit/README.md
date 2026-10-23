@@ -16,7 +16,7 @@ kubectl --context "$CTX" -n logging rollout status ds/fluent-bit --timeout=180s
 kubectl --context "$CTX" -n logging exec ds/fluent-bit -- /fluent-bit/bin/fluent-bit --dry-run -c /fluent-bit/etc/fluent-bit.conf
 ```
 
-Los archivos nuevos se leen desde el final. Checkpoints y almacenamiento de reintentos están en `emptyDir` (128 MiB); la cola de salida se limita a 64 MB, con reintentos ilimitados. Al llenar la cola se descartan chunks antiguos; reemplazar el pod pierde los pendientes. TCP `json_lines` a `10.20.3.10:5044` no confirma indexación. El DaemonSet consume recursos por nodo.
+Los archivos nuevos se leen desde el final. Checkpoints y cola están en `emptyDir` (512 MiB); la cola de salida se limita a 448 MB, con reintentos ilimitados. Al llenar la cola se descartan chunks antiguos. Se sincroniza el buffer a disco, se intenta vaciar al apagar y Kubernetes concede hasta 60 s al pod para cerrar. Esto mitiga interrupciones breves y terminaciones ordenadas; una pérdida abrupta del nodo o una caída de ELK más larga que la capacidad del buffer todavía puede perder logs pendientes. El transporte TCP `json_lines` a `10.20.3.10:5044` no confirma indexación. El DaemonSet consume más almacenamiento efímero por nodo; persistir a través de la pérdida total de un nodo requiere almacenamiento duradero y añadiría costo de Filestore.
 
 ## ELK y rotación
 

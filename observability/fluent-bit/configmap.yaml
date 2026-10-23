@@ -7,10 +7,12 @@ data:
   fluent-bit.conf: |
     [SERVICE]
         Flush 5
+        Grace 45
         Log_Level info
         Parsers_File /fluent-bit/etc/parsers-yousac.conf
         storage.path /buffers/storage
-        storage.sync normal
+        storage.sync full
+        storage.backlog.flush_on_shutdown On
         storage.backlog.mem_limit 8M
     [INPUT]
         Name tail
@@ -43,7 +45,7 @@ data:
         Port 5044
         Format json_lines
         Retry_Limit False
-        storage.total_limit_size 64M
+        storage.total_limit_size 448M
   parsers-yousac.conf: |
     [PARSER]
         Name cri

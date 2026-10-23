@@ -56,6 +56,10 @@ La ventana aún estaba abierta cuando se consultó; los totales de GKE y VM aume
 
 ![Login real, documento normalizado](login-fallido.png)
 
+## Mitigación del buffer
+
+El **23/10/2026 a las 14:12 UTC** se amplió la cola por nodo de 64 a 448 MB dentro de 512 MiB de `emptyDir`, se activó sincronización `full` y vaciado de cola al cerrar. Fluent Bit dispone de 45 s de gracia y Kubernetes de 60 s antes de forzar el cierre. Rollout final: DaemonSet 3/3, pods Running 1/1 y lectores de archivos inicializados. Esto reduce el riesgo durante caídas cortas de Logstash o terminaciones ordenadas. No protege contra pérdida abrupta del nodo ni una interrupción más larga que el buffer; eso requeriría almacenamiento persistente Filestore con costo adicional.
+
 ## Infraestructura y pruebas
 
 - DaemonSet: 3 deseados, 3 listos, 3 disponibles en los tres nodos Linux, imagen `cr.fluentbit.io/fluent/fluent-bit:5.1.5`.
