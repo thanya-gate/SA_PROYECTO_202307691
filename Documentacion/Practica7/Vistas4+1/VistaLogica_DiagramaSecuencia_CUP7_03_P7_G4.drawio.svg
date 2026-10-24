@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Render companion for CUP7_03_P7_G4 -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1200" height="1040" viewBox="0 0 1200 1040" role="img" aria-labelledby="title desc">
+  <title id="title">CU-P7-03 · Solicitar reserva de cupo</title>
+  <desc id="desc">Flujo lógico de solicitud de reserva y retorno de estado</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#FFFFFF"/></marker></defs>
+  <style>
+    .canvas{fill:#121212;stroke:#FFFFFF;stroke-width:1}.round{fill:#1c2a3d;stroke:#3b587e;stroke-width:1.4}.box{fill:#121212;stroke:#FFFFFF;stroke-width:1.5}.text,.actorLabel{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700}.title{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700}.subtitle{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:12px}.line{stroke:#FFFFFF;stroke-width:1;stroke-dasharray:6 6}.activation{fill:#121212;stroke:#FFFFFF;stroke-width:1.2}.message{stroke:#FFFFFF;stroke-width:1.4;marker-end:url(#arrow)}.return{stroke:#FFFFFF;stroke-width:1.2;stroke-dasharray:6 6;marker-end:url(#arrow)}.separator{stroke:#FFFFFF;stroke-width:1;stroke-dasharray:5 5}.labelText{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px;text-anchor:middle;paint-order:stroke;stroke:#121212;stroke-width:4px;stroke-linejoin:round}.actor{fill:none;stroke:#FFFFFF;stroke-width:1.2}.foot{fill:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:11px}
+  </style>
+  <rect class="canvas" x="0" y="20" width="1200" height="1000"/>
+  <rect class="round" x="0" y="20" width="1200" height="1000" rx="58" ry="58"/>
+  <text class="title" x="600" y="58" text-anchor="middle">CU-P7-03 · Solicitar reserva de cupo</text>
+  <text class="subtitle" x="600" y="88" text-anchor="middle">Solicitud de reserva y respuesta PENDIENTE</text>
+  <rect class="box" x="0" y="112" width="200" height="48"/>
+  <text class="text" x="100" y="137" text-anchor="middle">Actores</text>
+  <line class="line" x1="100" y1="160" x2="100" y2="990"/>
+  <rect class="box" x="230" y="112" width="200" height="48"/>
+  <text class="text" x="330" y="137" text-anchor="middle">Frontend</text>
+  <line class="line" x1="330" y1="160" x2="330" y2="990"/>
+  <rect class="box" x="460" y="112" width="200" height="48"/>
+  <text class="text" x="560" y="137" text-anchor="middle">API Gateway</text>
+  <line class="line" x1="560" y1="160" x2="560" y2="990"/>
+  <rect class="box" x="690" y="112" width="200" height="48"/>
+  <text class="text" x="790" y="137" text-anchor="middle">Talleres</text>
+  <line class="line" x1="790" y1="160" x2="790" y2="990"/>
+  <rect class="box" x="920" y="112" width="200" height="48"/>
+  <text class="text" x="1020" y="137" text-anchor="middle">Reservas/Ticketing</text>
+  <line class="line" x1="1020" y1="160" x2="1020" y2="990"/>
+  <rect class="activation" x="324" y="210.0" width="12" height="544.8"/>
+  <rect class="activation" x="554" y="298.8" width="12" height="168.0"/>
+  <rect class="activation" x="784" y="346.8" width="12" height="72.0"/>
+  <rect class="activation" x="1014" y="442.8" width="12" height="264.0"/>
+  <circle class="actor" cx="100" cy="182" r="7"/><path class="actor" d="M100 189 V207 M88 196 H112 M100 207 L89 222 M100 207 L111 222"/>
+  <text class="actorLabel" x="100" y="240" text-anchor="middle">Estudiante</text>
+  <line class="message" x1="100" y1="210" x2="330" y2="210"/>
+  <text class="labelText" x="215" y="203">1. Selecciona reservar</text>
+  <line class="message" x1="100" y1="258" x2="330" y2="258"/>
+  <text class="labelText" x="215" y="251">2. Confirma datos mínimos</text>
+  <line class="message" x1="330" y1="306" x2="560" y2="306"/>
+  <text class="labelText" x="445" y="299">3. POST /mock/reservations</text>
+  <line class="message" x1="560" y1="354" x2="790" y2="354"/>
+  <text class="labelText" x="675" y="347">4. Verifica evento y cupo</text>
+  <line class="return" x1="790" y1="402" x2="560" y2="402"/>
+  <text class="labelText" x="675" y="395">5. Confirma disponibilidad</text>
+  <line class="message" x1="560" y1="450" x2="1020" y2="450"/>
+  <text class="labelText" x="790" y="443">6. Crea reservationId · PENDIENTE</text>
+  <line class="return" x1="1020" y1="498" x2="560" y2="498"/>
+  <text class="labelText" x="790" y="491">7. Retorna reservationId · PENDIENTE</text>
+  <path class="message" d="M1027 546 H1092 Q1112 546 1112 564 Q1112 582 1092 582 H1027"/>
+  <text class="labelText" x="1070" y="540">8. Procesa cupo y reglas</text>
+  <line class="return" x1="1020" y1="594" x2="560" y2="594"/>
+  <text class="labelText" x="790" y="587">9. Actualiza estado y ticket</text>
+  <line class="return" x1="560" y1="642" x2="330" y2="642"/>
+  <text class="labelText" x="445" y="635">10. Retorna solicitud registrada</text>
+  <line class="return" x1="330" y1="690" x2="100" y2="690"/>
+  <text class="labelText" x="215" y="683">11. Muestra estado inicial PENDIENTE</text>
+  <line class="separator" x1="55" y1="712" x2="1120" y2="712"/>
+  <text class="foot" x="600" y="1000" text-anchor="middle">La respuesta inmediata es PENDIENTE; el ticket aparece después del procesamiento.</text>
+</svg>

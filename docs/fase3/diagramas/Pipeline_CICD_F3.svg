@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2100" height="1140" viewBox="0 0 2100 1140" role="img" aria-labelledby="title desc">
+<title id="title">YOUSAC · PIPELINE CI/CD FASE 3</title><desc id="desc">Tests ≥75% → build/push → despliegue VM/GKE → verificaciones; GKE productivo solo desde main</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker>
+<style>.edge{fill:none;stroke:#ffffff;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:square}.dash{stroke-dasharray:7 6}.card{fill:#121212;stroke:#ffffff;stroke-width:1.5}.boundary{fill:#1c2a3d;stroke:#3b587e;stroke-width:1.5;stroke-dasharray:8 6}.label{fill:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;text-anchor:middle}.labelbg{fill:#121212;opacity:.97}</style></defs>
+<rect x="0" y="0" width="2100" height="1140" fill="#121212"/>
+<rect x="14" y="14" width="2072" height="1112" rx="12" fill="#1c2a3d" stroke="#3b587e" stroke-width="1.5"/>
+<text x="1050.0" y="43" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="24px" font-weight="700" text-anchor="middle">YOUSAC · PIPELINE CI/CD FASE 3</text>
+<text x="1050.0" y="68" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" text-anchor="middle">Tests ≥75% → build/push → despliegue VM/GKE → verificaciones; GKE productivo solo desde main</text>
+<path class="edge" d="M 160.0 205.0 L 160.0 240.0 L 330.0 240.0 L 330.0 300.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="207.5" y="217.0" width="75" height="20" rx="3"/>
+<text class="label" x="245.0" y="232.0">PR: tests</text>
+<path class="edge" d="M 465.0 205.0 L 465.0 252.5 L 460.0 252.5 L 460.0 300.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="418.5" y="216.8" width="117" height="20" rx="3"/>
+<text class="label" x="477.0" y="231.8">push/tag/manual</text>
+<path class="edge" d="M 600.0 357.5 L 640.0 357.5 L 640.0 352.5 L 680.0 352.5" marker-end="url(#arrow)"/>
+<path class="edge" d="M 740.0 400.0 L 740.0 435.0 L 740.0 475.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="735.0" y="443.0" width="34" height="20" rx="3"/>
+<text class="label" x="752.0" y="458.0">no</text>
+<path class="edge" d="M 800.0 352.5 L 850.0 352.5 L 850.0 357.5 L 900.0 357.5" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="808.0" y="329.5" width="34" height="20" rx="3"/>
+<text class="label" x="825.0" y="344.5">sí</text>
+<path class="edge" d="M 1190.0 352.5 L 1230.0 352.5 L 1270.0 352.5" marker-end="url(#arrow)"/>
+<path class="edge" d="M 1550.0 352.5 L 1590.0 352.5 L 1630.0 352.5" marker-end="url(#arrow)"/>
+<path class="edge" d="M 1780.0 405.0 L 1780.0 460.0 L 1410.0 460.0 L 1410.0 520.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1536.5" y="437.0" width="117" height="20" rx="3"/>
+<text class="label" x="1595.0" y="452.0">push/tag/manual</text>
+<path class="edge" d="M 1780.0 405.0 L 1780.0 460.0 L 1780.0 520.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1730.0" y="478.0" width="124" height="20" rx="3"/>
+<text class="label" x="1792.0" y="493.0">main/manual main</text>
+<path class="edge" d="M 1780.0 635.0 L 1780.0 672.5 L 1780.0 710.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 1780.0 800.0 L 1780.0 835.0 L 1780.0 870.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 1780.0 960.0 L 1780.0 990.0 L 1780.0 1020.0" marker-end="url(#arrow)"/>
+<path class="edge dash" d="M 1630.0 570.0 L 1600.0 570.0 L 1510.0 570.0 L 1510.0 835.0 L 1490.0 835.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1498.5" y="690.5" width="47" height="20" rx="3"/>
+<text class="label" x="1522.0" y="705.5">falla</text>
+<rect class="card" x="55" y="125" width="210" height="80" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="160.0" y="156.3">Pull Request</tspan><tspan x="160.0" y="174.2">main / develop</tspan></text>
+<rect class="card" x="330" y="125" width="260" height="80" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="460.0" y="156.3">Push main · tag vX.Y.Z</tspan><tspan x="460.0" y="174.2">workflow_dispatch main</tspan></text>
+<rect class="card" x="330" y="300" width="270" height="105" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="465.0" y="335.1">Tests en matriz</tspan><tspan x="465.0" y="353.1">Jest · Go · pytest</tspan><tspan x="465.0" y="371.0">coverage ≥75%</tspan></text>
+<polygon class="card" points="740.0,315 800,357.5 740.0,400 680,357.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="700" text-anchor="middle"><tspan x="740.0" y="348.8">¿Tests</tspan><tspan x="740.0" y="366.7">aprobados?</tspan></text>
+<rect class="card" x="560" y="475" width="270" height="72" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="695.0" y="502.3">Notificar / detener</tspan><tspan x="695.0" y="520.2">No publicar</tspan></text>
+<rect class="card" x="900" y="300" width="290" height="105" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1045.0" y="335.1">Resolver alias</tspan><tspan x="1045.0" y="353.1">main / vX.Y.Z</tspan><tspan x="1045.0" y="371.0">commit-SHA inmutable</tspan></text>
+<rect class="card" x="1270" y="300" width="280" height="105" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1410.0" y="335.1">Build de 8 imágenes</tspan><tspan x="1410.0" y="353.1">Frontend + Gateway</tspan><tspan x="1410.0" y="371.0">6 microservicios</tspan></text>
+<rect class="card" x="1630" y="300" width="300" height="105" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1780.0" y="343.8">WIF → Artifact Registry</tspan><tspan x="1780.0" y="361.7">alias + commit-&lt;SHA&gt;</tspan></text>
+<rect class="card" x="1250" y="520" width="320" height="115" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1410.0" y="560.1">Deploy VM desarrollo</tspan><tspan x="1410.0" y="578.1">SSH · Compose pull</tspan><tspan x="1410.0" y="596.0">health local + API pública</tspan></text>
+<rect class="card" x="1630" y="520" width="300" height="115" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1780.0" y="560.1">Solo main/manual main</tspan><tspan x="1780.0" y="578.1">Preflight → Secrets/ConfigMap</tspan><tspan x="1780.0" y="596.0">Kustomize apply -k</tspan></text>
+<rect class="card" x="1630" y="710" width="300" height="90" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1780.0" y="746.3">8 rollouts · cert Active</tspan><tspan x="1780.0" y="764.2">backends Ingress HEALTHY</tspan></text>
+<rect class="card" x="1630" y="870" width="300" height="90" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1780.0" y="906.3">Smoke HTTPS</tspan><tspan x="1780.0" y="924.2">/ · /healthz · /api/health</tspan></text>
+<rect class="card" x="1630" y="1020" width="300" height="72" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="700" text-anchor="middle"><tspan x="1780.0" y="1047.3">Deploy completado</tspan><tspan x="1780.0" y="1065.2">Commit e imagen trazables</tspan></text>
+<rect class="card" x="1120" y="790" width="370" height="110" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1305.0" y="827.6">Si falla: parar y recopilar</tspan><tspan x="1305.0" y="845.6">pods · eventos · logs</tspan><tspan x="1305.0" y="863.5">Rollback GKE manual con rollout undo</tspan></text>
+<rect class="card" x="55" y="720" width="430" height="120" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="270.0" y="762.6">PR: solo suites de prueba.</tspan><tspan x="270.0" y="780.6">Tag release: publica y actualiza VM;</tspan><tspan x="270.0" y="798.5">GKE productivo no se despliega por tag.</tspan></text>
+</svg>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="p7-cu05">
+    <mxGraphModel dx="1239" dy="697" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1350" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cu05-boundary" parent="1" style="html=1;whiteSpace=wrap;" value="" vertex="1">
+          <mxGeometry x="180" y="30" width="1060" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-title" parent="1" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="CU-P7-05 — Verificar credencial digital" vertex="1">
+          <mxGeometry x="470" y="50" width="480" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-actor" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Verificador público" vertex="1">
+          <mxGeometry x="70" y="240" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-main" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="CU-P7-05&lt;br&gt;Verificar credencial digital" vertex="1">
+          <mxGeometry x="350" y="220" width="285" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-validate" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Validar identificador o hash" vertex="1">
+          <mxGeometry x="710" y="105" width="275" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-query" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Consultar Servicio de Certificados" vertex="1">
+          <mxGeometry x="710" y="220" width="275" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-valid" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Mostrar credencial VÁLIDA" vertex="1">
+          <mxGeometry x="270" y="440" width="250" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-invalid" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Mostrar credencial INVÁLIDA" vertex="1">
+          <mxGeometry x="570" y="440" width="250" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-not-found" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Mostrar NO_ENCONTRADA" vertex="1">
+          <mxGeometry x="870" y="440" width="250" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-edge-actor" edge="1" parent="1" source="cu05-actor" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-edge-validate" value="«include»" edge="1" parent="1" source="cu05-main" target="cu05-validate" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-edge-query" value="«include»" edge="1" parent="1" source="cu05-main" target="cu05-query" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-edge-valid" value="«extend»" edge="1" parent="1" source="cu05-valid" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-edge-invalid" value="«extend»" edge="1" parent="1" source="cu05-invalid" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-edge-not-found" value="«extend»" edge="1" parent="1" source="cu05-not-found" target="cu05-main" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;fontSize=9;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cu05-note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=10;" value="Componente interno: Servicio de Certificados" vertex="1">
+          <mxGeometry x="420" y="550" width="520" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -10,6 +10,7 @@ configMapGenerator:
       - sql/02_inscripcion_cronjob_repaso.sql
       - sql/03_notificaciones_cronjob_repaso.sql
       - sql/04_analitica_cronjob_tendencias.sql
+      - sql/05_analitica_recomendacion_personalizada.sql
     options:
       disableNameSuffixHash: true
 

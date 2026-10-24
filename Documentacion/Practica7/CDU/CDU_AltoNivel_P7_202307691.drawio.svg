@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="850" viewBox="0 0 1640 850" role="img" aria-labelledby="title desc">
+<title id="title">YOUSAC · CASOS DE USO FASE 3</title><desc id="desc">Escenarios nuevos: federación, Academix, tareas programadas, recomendaciones e infraestructura</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker>
+<style>.edge{fill:none;stroke:#ffffff;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:square}.dash{stroke-dasharray:7 6}.card{fill:#121212;stroke:#ffffff;stroke-width:1.5}.boundary{fill:#1c2a3d;stroke:#3b587e;stroke-width:1.5;stroke-dasharray:8 6}.label{fill:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;text-anchor:middle}.labelbg{fill:#121212;opacity:.97}</style></defs>
+<rect x="0" y="0" width="1640" height="850" fill="#121212"/>
+<rect x="14" y="14" width="1612" height="822" rx="12" fill="#1c2a3d" stroke="#3b587e" stroke-width="1.5"/>
+<text x="820.0" y="43" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="24px" font-weight="700" text-anchor="middle">YOUSAC · CASOS DE USO FASE 3</text>
+<text x="820.0" y="68" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" text-anchor="middle">Escenarios nuevos: federación, Academix, tareas programadas, recomendaciones e infraestructura</text>
+<rect class="boundary" x="310" y="105" width="1190" height="710" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="16px" font-weight="700" text-anchor="middle"><tspan x="905.0" y="129.0">Sistema YoUSAC</tspan></text>
+<path class="edge" d="M 195.0 255.0 L 292.5 255.0 L 292.5 275.0 L 390.0 275.0"/>
+<path class="edge" d="M 195.0 300.0 L 200.0 300.0 L 875.0 300.0 L 895.0 300.0 L 895.0 275.0"/>
+<path class="edge" d="M 195.0 390.0 L 292.5 390.0 L 292.5 385.0 L 390.0 385.0"/>
+<path class="edge" d="M 1510.0 275.0 L 1480.0 275.0 L 1480.0 300.0 L 775.0 300.0 L 740.0 300.0 L 740.0 275.0"/>
+<path class="edge" d="M 1510.0 355.0 L 1417.5 355.0 L 1417.5 275.0 L 1325.0 275.0"/>
+<path class="edge" d="M 1510.0 620.0 L 1417.5 620.0 L 1417.5 485.0 L 1325.0 485.0"/>
+<path class="edge" d="M 205.0 650.0 L 415.0 650.0 L 415.0 687.5 L 625.0 687.5"/>
+<circle cx="130.0" cy="280" r="13" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M 130.0 293 V 328 M 110.0 305 H 150.0 M 130.0 328 L 112.0 350 M 130.0 328 L 148.0 350" fill="none" stroke="#ffffff" stroke-width="2"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="130.0" y="378.0">Estudiante</tspan></text>
+<circle cx="135.0" cy="645" r="13" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M 135.0 658 V 693 M 115.0 670 H 155.0 M 135.0 693 L 117.0 715 M 135.0 693 L 153.0 715" fill="none" stroke="#ffffff" stroke-width="2"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="135.0" y="734.9">Administrador /</tspan><tspan x="135.0" y="751.6">DevOps</tspan></text>
+<circle cx="1562.5" cy="645" r="13" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M 1562.5 658 V 693 M 1542.5 670 H 1582.5 M 1562.5 693 L 1544.5 715 M 1562.5 693 L 1580.5 715" fill="none" stroke="#ffffff" stroke-width="2"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1562.5" y="743.0">Reloj K8s</tspan></text>
+<circle cx="1562.5" cy="165" r="13" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M 1562.5 178 V 213 M 1542.5 190 H 1582.5 M 1562.5 213 L 1544.5 235 M 1562.5 213 L 1580.5 235" fill="none" stroke="#ffffff" stroke-width="2"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1562.5" y="254.9">Grupo federado</tspan><tspan x="1562.5" y="271.6">YoUSAC G8</tspan></text>
+<circle cx="1562.5" cy="380" r="13" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M 1562.5 393 V 428 M 1542.5 405 H 1582.5 M 1562.5 428 L 1544.5 450 M 1562.5 428 L 1580.5 450" fill="none" stroke="#ffffff" stroke-width="2"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1562.5" y="469.9">Academix Pass &amp;</tspan><tspan x="1562.5" y="486.6">CertiHub</tspan></text>
+<ellipse class="card" cx="565.0" cy="225.0" rx="175.0" ry="50.0"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="565.0" y="216.3">Buscar y reproducir</tspan><tspan x="565.0" y="234.2">clases federadas</tspan></text>
+<ellipse class="card" cx="1110.0" cy="225.0" rx="215.0" ry="50.0"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1110.0" y="216.3">Consultar talleres,</tspan><tspan x="1110.0" y="234.2">reservar y ver certificados</tspan></text>
+<ellipse class="card" cx="565.0" cy="435.0" rx="175.0" ry="50.0"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="565.0" y="426.3">Consultar recomendaciones</tspan><tspan x="565.0" y="444.2">académicas en Home</tspan></text>
+<ellipse class="card" cx="1110.0" cy="435.0" rx="215.0" ry="50.0"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1110.0" y="426.3">Ejecutar purga, tendencias</tspan><tspan x="1110.0" y="444.2">y avisos de repaso</tspan></text>
+<ellipse class="card" cx="840.0" cy="650.0" rx="215.0" ry="50.0"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="840.0" y="641.3">Aprovisionar y observar</tspan><tspan x="840.0" y="659.2">la plataforma cloud</tspan></text>
+</svg>

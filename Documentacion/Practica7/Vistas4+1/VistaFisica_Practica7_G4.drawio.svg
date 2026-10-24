@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1180" viewBox="0 0 1900 1180" role="img" aria-labelledby="title desc">
+<title id="title">YOUSAC · VISTA FÍSICA 4+1</title><desc id="desc">GKE/Redis permanecen en la VPC default; las VMs privadas usan vpc-yousac y peering para observabilidad</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#121212"/></marker>
+<style>.edge{fill:none;stroke:#121212;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:square}.dash{stroke-dasharray:7 6}.card{fill:#121212;stroke:#ffffff;stroke-width:1.5}.boundary{fill:#e1d5e7;stroke:#9673a6;stroke-width:1.5;stroke-dasharray:8 6}.label{fill:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;text-anchor:middle}.labelbg{fill:#121212;opacity:.97}</style></defs>
+<rect x="0" y="0" width="1900" height="1180" fill="#121212"/>
+<rect x="14" y="14" width="1872" height="1152" rx="12" fill="#e1d5e7" stroke="#9673a6" stroke-width="1.5"/>
+<text x="950.0" y="43" fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="24px" font-weight="700" text-anchor="middle">YOUSAC · VISTA FÍSICA 4+1</text>
+<text x="950.0" y="68" fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="13px" text-anchor="middle">GKE/Redis permanecen en la VPC default; las VMs privadas usan vpc-yousac y peering para observabilidad</text>
+<rect class="boundary" x="575" y="100" width="650" height="285" rx="12"/>
+<text fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="16px" font-weight="700" text-anchor="middle"><tspan x="900.0" y="124.0">VPC default · GKE de producción</tspan></text>
+<rect class="boundary" x="230" y="420" width="1430" height="700" rx="12"/>
+<text fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="16px" font-weight="700" text-anchor="middle"><tspan x="945.0" y="444.0">VPC vpc-yousac · 10.20.0.0/16 · routing regional</tspan></text>
+<rect x="260" y="500" width="320" height="390" rx="8" fill="none" stroke="#9673a6" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="420.0" y="505.9">subnet-yousac-perimetral</tspan><tspan x="420.0" y="522.5">10.20.1.0/24</tspan><tspan x="420.0" y="539.2">Capa lógica de borde; sin VM</tspan></text>
+<rect x="610" y="500" width="430" height="390" rx="8" fill="none" stroke="#9673a6" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="825.0" y="522.0">subnet-yousac-aplicacion · 10.20.2.0/24</tspan></text>
+<rect x="1070" y="500" width="560" height="390" rx="8" fill="none" stroke="#9673a6" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1350.0" y="522.0">subnet-yousac-datos · 10.20.3.0/24</tspan></text>
+<path class="edge" d="M 230.0 220.0 L 265.0 220.0 L 265.0 218.0 L 300.0 218.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="203.0" y="197.0" width="89" height="20" rx="3"/>
+<text class="label" x="247.5" y="212.0">HTTPS · 443</text>
+<path class="edge" d="M 535.0 217.5 L 575.0 217.5 L 575.0 220.0 L 615.0 220.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="500.0" y="194.5" width="110" height="20" rx="3"/>
+<text class="label" x="555.0" y="209.5">rutas / y /api</text>
+<path class="edge dash" d="M 895.0 217.5 L 912.5 217.5 L 930.0 217.5" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="841.8" y="194.5" width="124" height="20" rx="3"/>
+<text class="label" x="903.8" y="209.5">Redis · TCP/6379</text>
+<path class="edge dash" d="M 895.0 270.0 L 900.0 270.0 L 900.0 300.0 L 1240.0 300.0 L 1290.0 300.0 L 1290.0 295.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="980.0" y="277.0" width="180" height="20" rx="3"/>
+<text class="label" x="1070.0" y="292.0">HTTPS · Auth Proxy · GCS</text>
+<path class="edge dash" d="M 755.0 270.0 L 755.0 300.0 L 755.0 455.0 L 1350.0 455.0 L 1350.0 590.0 L 1350.0 605.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="945.0" y="432.0" width="215" height="20" rx="3"/>
+<text class="label" x="1052.5" y="447.0">VPC Peering · tráfico privado</text>
+<path class="edge dash" d="M 825.0 720.0 L 825.0 740.0 L 825.0 900.0 L 825.0 945.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="810.0" y="808.0" width="54" height="20" rx="3"/>
+<text class="label" x="837.0" y="823.0">egress</text>
+<path class="edge dash" d="M 1350.0 720.0 L 1350.0 900.0 L 880.0 900.0 L 880.0 945.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1088.0" y="877.0" width="54" height="20" rx="3"/>
+<text class="label" x="1115.0" y="892.0">egress</text>
+<rect class="card" x="40" y="175" width="190" height="86" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="135.0" y="209.3">Usuarios</tspan><tspan x="135.0" y="227.2">HTTPS</tspan></text>
+<rect class="card" x="300" y="170" width="235" height="100" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="417.5" y="202.6">GKE Ingress + TLS</tspan><tspan x="417.5" y="220.6">IP global yousac-prod-ip</tspan><tspan x="417.5" y="238.5">/ → Frontend · /api → Gateway</tspan></text>
+<rect class="card" x="615" y="165" width="280" height="105" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="700" text-anchor="middle"><tspan x="755.0" y="200.1">GKE Autopilot · yousac-prod</tspan><tspan x="755.0" y="218.1">Frontend + Gateway + servicios</tspan><tspan x="755.0" y="236.0">CronJobs y observabilidad</tspan></text>
+<rect class="card" x="930" y="165" width="260" height="105" rx="2"/>
+<path d="M 1147 173 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1060.0" y="208.8">VM Redis preexistente</tspan><tspan x="1060.0" y="226.7">yousac-vm-nube · 10.128.0.3:6379</tspan></text>
+<rect class="card" x="1290" y="135" width="550" height="160" rx="2"/>
+<path d="M 1797 143 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1565.0" y="197.6">Servicios gestionados / aliados</tspan><tspan x="1565.0" y="215.6">Cloud SQL (Auth Proxy) · GCS · Artifact Registry</tspan><tspan x="1565.0" y="233.5">API G8 · Academix Pass · CertiHub</tspan></text>
+<rect class="card" x="655" y="605" width="340" height="115" rx="2"/>
+<path d="M 952 613 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="825.0" y="645.1">VM vm-dev-yousac</tspan><tspan x="825.0" y="663.1">10.20.2.10 · Docker Compose</tspan><tspan x="825.0" y="681.0">Sin IP pública · administración IAP</tspan></text>
+<rect class="card" x="1105" y="605" width="490" height="115" rx="2"/>
+<path d="M 1552 613 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1350.0" y="645.1">VM vm-observability-yousac</tspan><tspan x="1350.0" y="663.1">10.20.3.10 · Elasticsearch / Logstash / Kibana</tspan><tspan x="1350.0" y="681.0">Fluent Bit · node-exporter</tspan></text>
+<rect class="card" x="1105" y="755" width="490" height="95" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1350.0" y="793.8">Puertos de telemetría autorizados</tspan><tspan x="1350.0" y="811.7">GKE → VM: 9200, 5044, 5000, 9100, 9115 y 5601/TCP</tspan></text>
+<rect class="card" x="270" y="945" width="400" height="105" rx="2"/>
+<path d="M 627 953 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="470.0" y="988.8">Rutas VPC</tspan><tspan x="470.0" y="1006.7">Subredes locales · 0.0.0.0/0 → Internet Gateway</tspan></text>
+<rect class="card" x="710" y="945" width="340" height="105" rx="2"/>
+<path d="M 1007 953 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="880.0" y="980.1">Cloud Router + NAT</tspan><tspan x="880.0" y="998.1">NAT para rangos de las 3 subredes</tspan><tspan x="880.0" y="1016.0">Solo salida; VM sin IP pública</tspan></text>
+<rect class="card" x="1090" y="945" width="520" height="105" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1350.0" y="980.1">Firewall / administración</tspan><tspan x="1350.0" y="998.1">SSH TCP/22 por IAP · Kibana TCP/80,443</tspan><tspan x="1350.0" y="1016.0">Ingresos de telemetría limitados a GKE</tspan></text>
+</svg>

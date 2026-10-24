@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="YOUSAC · VISTA DE DESPLIEGUE 4+1" id="VistaDespliegue_4mas1_F3">
+    <mxGraphModel dx="1900" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1180" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="browser" value="Usuarios&lt;br&gt;HTTPS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="125" width="190" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="ingress" value="Ingress GKE + TLS&lt;br&gt;IP global yousac-prod-ip" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="300" y="125" width="280" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="gke" value="GKE Autopilot · yousac-prod&lt;br&gt;VPC default · Ingress · 8 Deployments&lt;br&gt;CronJobs · Prometheus/Grafana · Fluent Bit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="105" width="540" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="external" value="Dependencias externas a pods&lt;br&gt;Cloud SQL (Auth Proxy) · Redis (VM/Memorystore)&lt;br&gt;GCS · Artifact Registry · API G8 · Academix" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="105" width="560" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="vpc" value="VPC vpc-yousac · 10.20.0.0/16" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;dashed=1;fontStyle=1;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="235" y="355" width="1420" height="700" as="geometry" />
+        </mxCell>
+        <mxCell id="perim" value="Perimetral&lt;br&gt;10.20.1.0/24&lt;br&gt;Capa lógica; Ingress GKE está en VPC default" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="290" y="440" width="370" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="app" value="Aplicación · 10.20.2.0/24&lt;br&gt;vm-dev-yousac · 10.20.2.10&lt;br&gt;Docker Compose · SSH por IAP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="730" y="440" width="430" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="data" value="Datos · 10.20.3.0/24&lt;br&gt;vm-observability-yousac · 10.20.3.10&lt;br&gt;ELK · Caddy/TLS · Fluent Bit · node-exporter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="440" width="390" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="nat" value="Cloud Router + NAT&lt;br&gt;Salida de VMs sin IP pública" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="350" y="670" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="peering" value="VPC Peering&lt;br&gt;default ↔ vpc-yousac" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="785" y="670" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="flow" value="GKE → Fluent Bit/Logstash 5044&lt;br&gt;GKE → Kibana proxy 5601&lt;br&gt;Prometheus → node-exporter 9100" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="680" width="420" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="registry" value="GitHub Actions WIF&lt;br&gt;Artifact Registry&lt;br&gt;commit-SHA → Deploy GKE/VM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="660" y="890" width="560" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="browser" target="ingress">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="ingress" target="gke">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-3" value="SQL proxy / Redis / GCS / APIs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="gke" target="external">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-4" value="telemetry" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="gke" target="peering">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="930" y="275" />
+              <mxPoint x="930" y="640" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-5" value="red privada" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="peering" target="data">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1080" y="720" />
+              <mxPoint x="1410" y="720" />
+              <mxPoint x="1410" y="585" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-6" value="egress" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="app" target="nat">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="800" y="570" />
+              <mxPoint x="500" y="570" />
+              <mxPoint x="500" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-7" value="deploy immutable" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="registry" target="gke">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="940" y="875" />
+              <mxPoint x="940" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

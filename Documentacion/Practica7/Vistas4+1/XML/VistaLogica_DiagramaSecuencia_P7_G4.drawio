@@ -1,0 +1,206 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Vista lógica · secuencia YoUSAC–Academix" id="logical-sequence-f3">
+    <mxGraphModel dx="1800" dy="1220" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1220" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1c2a3d;strokeColor=#3b587e;" vertex="1" parent="1">
+          <mxGeometry x="15" y="15" width="1770" height="1190" as="geometry" />
+        </mxCell>
+        <mxCell id="title" value="VISTA LÓGICA · SECUENCIA DE INTEGRACIÓN" style="text;html=1;align=center;verticalAlign=middle;fontColor=#FFFFFF;fontSize=23;fontStyle=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="120" y="28" width="1560" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="YoUSAC media las llamadas; Academix Pass, RabbitMQ/worker y CertiHub son externos" style="text;html=1;align=center;verticalAlign=middle;fontColor=#FFFFFF;fontSize=13;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="120" y="58" width="1560" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-0" value="Estudiante" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="105" width="220" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="lifeline-0" value="" style="line;strokeColor=#FFFFFF;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="159" width="1" height="1011" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-1" value="Frontend&lt;br&gt;YoUSAC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="340" y="105" width="220" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="lifeline-1" value="" style="line;strokeColor=#FFFFFF;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="159" width="1" height="1011" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-2" value="API Gateway&lt;br&gt;YoUSAC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="640" y="105" width="220" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="lifeline-2" value="" style="line;strokeColor=#FFFFFF;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="750" y="159" width="1" height="1011" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-3" value="Academix Pass&lt;br&gt;API externa" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="940" y="105" width="220" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="lifeline-3" value="" style="line;strokeColor=#FFFFFF;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="159" width="1" height="1011" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-4" value="RabbitMQ / worker&lt;br&gt;proveedor externo" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="105" width="220" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="lifeline-4" value="" style="line;strokeColor=#FFFFFF;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="159" width="1" height="1011" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-5" value="CertiHub&lt;br&gt;API externa" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="105" width="220" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="lifeline-5" value="" style="line;strokeColor=#FFFFFF;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1650" y="159" width="1" height="1011" as="geometry" />
+        </mxCell>
+        <mxCell id="separator-0" value="" style="line;strokeColor=#FFFFFF;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="380" width="1710" height="1" as="geometry" />
+        </mxCell>
+        <mxCell id="section-0" value="RESERVA ASÍNCRONA" style="text;html=1;align=center;verticalAlign=middle;fontColor=#FFFFFF;fontSize=11;fontStyle=1;strokeColor=none;fillColor=#1c2a3d;" vertex="1" parent="1">
+          <mxGeometry x="53" y="363" width="210" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="separator-1" value="" style="line;strokeColor=#FFFFFF;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="840" width="1710" height="1" as="geometry" />
+        </mxCell>
+        <mxCell id="section-1" value="CONSULTA DE CREDENCIALES" style="text;html=1;align=center;verticalAlign=middle;fontColor=#FFFFFF;fontSize=11;fontStyle=1;strokeColor=none;fillColor=#1c2a3d;" vertex="1" parent="1">
+          <mxGeometry x="53" y="823" width="210" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="message-1" value="Abrir talleres del curso" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="159" y="190" as="sourcePoint" />
+            <mxPoint x="441" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-2" value="GET /academix/talleres" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="459" y="232" as="sourcePoint" />
+            <mxPoint x="741" y="232" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-3" value="HTTPS · identidad de sesión" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="759" y="274" as="sourcePoint" />
+            <mxPoint x="1041" y="274" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-4" value="200 · talleres disponibles" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1041" y="316" as="sourcePoint" />
+            <mxPoint x="759" y="316" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-5" value="Mostrar catálogo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="741" y="358" as="sourcePoint" />
+            <mxPoint x="459" y="358" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-6" value="Solicitar reserva" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="159" y="400" as="sourcePoint" />
+            <mxPoint x="441" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-7" value="POST /academix/reservas" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="459" y="442" as="sourcePoint" />
+            <mxPoint x="741" y="442" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-8" value="POST · usuario de la sesión" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="759" y="484" as="sourcePoint" />
+            <mxPoint x="1041" y="484" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-9" value="Publicar evento · AMQP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1059" y="526" as="sourcePoint" />
+            <mxPoint x="1341" y="526" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-10" value="202 Accepted · trackingId" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1041" y="568" as="sourcePoint" />
+            <mxPoint x="759" y="568" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-11" value="Devolver trackingId" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="741" y="610" as="sourcePoint" />
+            <mxPoint x="459" y="610" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-12" value="GET /academix/reservas/{id}" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="459" y="652" as="sourcePoint" />
+            <mxPoint x="741" y="652" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-13" value="Consultar estado al proveedor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="759" y="694" as="sourcePoint" />
+            <mxPoint x="1041" y="694" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-14" value="Pendiente / confirmada / rechazada" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1041" y="736" as="sourcePoint" />
+            <mxPoint x="759" y="736" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-15" value="Mostrar estado consultado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="741" y="778" as="sourcePoint" />
+            <mxPoint x="459" y="778" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-16" value="Timeout / 5xx · error controlado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="741" y="820" as="sourcePoint" />
+            <mxPoint x="459" y="820" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-17" value="Abrir mis certificados" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="159" y="862" as="sourcePoint" />
+            <mxPoint x="441" y="862" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-18" value="GET /academix/certificados" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="459" y="904" as="sourcePoint" />
+            <mxPoint x="741" y="904" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-19" value="HTTPS · consultar certificados" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="759" y="946" as="sourcePoint" />
+            <mxPoint x="1641" y="946" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-20" value="GET /academix/certificados/{codigo}/verificar" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="459" y="988" as="sourcePoint" />
+            <mxPoint x="741" y="988" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-21" value="HTTPS · verificar código" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="759" y="1030" as="sourcePoint" />
+            <mxPoint x="1641" y="1030" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-22" value="200 · certificado / validez" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1641" y="1072" as="sourcePoint" />
+            <mxPoint x="759" y="1072" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="message-23" value="Mostrar y permitir descarga" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="741" y="1114" as="sourcePoint" />
+            <mxPoint x="459" y="1114" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

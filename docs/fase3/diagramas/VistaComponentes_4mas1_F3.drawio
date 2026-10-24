@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="YOUSAC · VISTA DE COMPONENTES 4+1" id="VistaComponentes_4mas1_F3">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1000" math="0" shadow="0" background="#121212">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="web" value="Frontend&lt;br&gt;Catálogo · player · Home&lt;br&gt;Talleres · billetera" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="180" width="300" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="http" value="API Gateway&lt;br&gt;REST · autenticación · RBAC&lt;br&gt;validación y manejo de errores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="430" y="180" width="330" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="federation" value="Federation Adapter&lt;br&gt;CatalogoExterno&lt;br&gt;HTTP + API key + mapper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="850" y="105" width="330" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="academix" value="Academix Client&lt;br&gt;talleres · reservas · certificados" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="850" y="275" width="330" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="services" value="Servicios gRPC&lt;br&gt;Auth · Catálogo · Inscripción&lt;br&gt;Reproducción · Analítica · Notificaciones" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="180" width="450" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="cron" value="CronJobs&lt;br&gt;purga · tendencias · repaso" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="490" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="Repositorios / SQL&lt;br&gt;funciones · SPs · vistas · triggers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="430" y="490" width="330" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cache" value="Redis Adapter&lt;br&gt;TTL · ranking · tendencias" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="850" y="490" width="330" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="storage" value="Storage Adapter&lt;br&gt;GCS: video / materiales" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="430" width="450" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="obs" value="Observabilidad transversal&lt;br&gt;Métricas → Prometheus/Grafana&lt;br&gt;Logs → Fluent Bit/Logstash/Elasticsearch/Kibana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#121212;strokeColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="730" width="900" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="web" target="http">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="http" target="federation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="http" target="academix">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="http" target="services">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="services" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="services" target="cache">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="http" target="storage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="cron" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="cron" target="cache">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-10" value="logs / métricas" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="cron" target="obs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-11" value="logs / métricas" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="services" target="obs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

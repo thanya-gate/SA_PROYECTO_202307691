@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1680" viewBox="0 0 1900 1680" role="img">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker></defs>
+<rect width="1900" height="1680" fill="#121212"/>
+<rect x="12" y="12" width="1876" height="1656" rx="12" fill="#152718" stroke="#3b6436" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="23px" font-weight="700" text-anchor="middle"><tspan x="950.0" y="45.0">VISTA DE PROCESOS · RESERVA ASÍNCRONA</tspan></text>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="400" text-anchor="middle"><tspan x="950.0" y="73.0">El procesamiento y el broker pertenecen al proveedor Academix; YoUSAC conserva el tracking de la solicitud</tspan></text>
+<rect x="25" y="105" width="370" height="1535" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="25" y="105" width="370" height="42" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="210.0" y="131.0">Estudiante</tspan></text>
+<rect x="395" y="105" width="370" height="1535" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="395" y="105" width="370" height="42" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="580.0" y="131.0">Frontend YoUSAC</tspan></text>
+<rect x="765" y="105" width="370" height="1535" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="765" y="105" width="370" height="42" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="950.0" y="131.0">API Gateway YoUSAC</tspan></text>
+<rect x="1135" y="105" width="370" height="1535" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="1135" y="105" width="370" height="42" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1320.0" y="131.0">Academix Pass (externo)</tspan></text>
+<rect x="1505" y="105" width="370" height="1535" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="1505" y="105" width="370" height="42" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1690.0" y="131.0">RabbitMQ / worker del proveedor</tspan></text>
+<circle cx="210.0" cy="189.0" r="24.0" fill="#ffffff" stroke="#ffffff"/>
+<rect x="450.0" y="230" width="260" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="580.0" y="257.9">Abrir talleres</tspan><tspan x="580.0" y="274.6">relacionados al curso</tspan></text>
+<rect x="810.0" y="350" width="280" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="950.0" y="377.9">GET /academix/talleres</tspan><tspan x="950.0" y="394.6">con identidad de sesión</tspan></text>
+<rect x="1178.0" y="470" width="284" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1320.0" y="497.9">Consultar catálogo</tspan><tspan x="1320.0" y="514.6">y disponibilidad</tspan></text>
+<rect x="450.0" y="590" width="260" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="580.0" y="617.9">Mostrar talleres</tspan><tspan x="580.0" y="634.6">y permitir reservar</tspan></text>
+<rect x="80.0" y="680" width="260" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="210.0" y="707.9">Seleccionar evento</tspan><tspan x="210.0" y="724.6">y solicitar reserva</tspan></text>
+<rect x="450.0" y="770" width="260" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="580.0" y="806.0">POST /academix/reservas</tspan></text>
+<rect x="810.0" y="860" width="280" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="950.0" y="887.9">Gateway envía POST</tspan><tspan x="950.0" y="904.6">al proveedor</tspan></text>
+<rect x="790.0" y="1010" width="320" height="58" rx="8" fill="#152718" stroke="#3b6436" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="12px" font-weight="400" text-anchor="middle"><tspan x="950.0" y="1031.6">Timeout / 5xx: error controlado;</tspan><tspan x="950.0" y="1046.9">no afirmar que la reserva fue confirmada.</tspan></text>
+<rect x="1178.0" y="950" width="284" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1320.0" y="977.9">Respuesta inmediata</tspan><tspan x="1320.0" y="994.6">202 + trackingId</tspan></text>
+<rect x="1178.0" y="1060" width="284" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1320.0" y="1087.9">Publicar reserva_solicitada</tspan><tspan x="1320.0" y="1104.6">AMQP interno del proveedor</tspan></text>
+<rect x="1545.0" y="1060" width="290" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1690.0" y="1087.9">Consumir evento y validar</tspan><tspan x="1690.0" y="1104.6">cupo y reglas</tspan></text>
+<polygon points="1690.0,1160 1780.0,1210.0 1690.0,1260 1600.0,1210.0" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1690.0" y="1201.9">¿Cupo y reglas</tspan><tspan x="1690.0" y="1218.6">válidas?</tspan></text>
+<rect x="1145.0" y="1285" width="160" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1225.0" y="1312.9">CONFIRMADA</tspan><tspan x="1225.0" y="1329.6">Generar ticket</tspan></text>
+<rect x="1335.0" y="1285" width="160" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1415.0" y="1312.9">RECHAZADA</tspan><tspan x="1415.0" y="1329.6">Registrar motivo</tspan></text>
+<rect x="450.0" y="1390" width="260" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="580.0" y="1417.9">GET estado usando</tspan><tspan x="580.0" y="1434.6">el trackingId</tspan></text>
+<rect x="810.0" y="1390" width="280" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="950.0" y="1417.9">Gateway consulta estado</tspan><tspan x="950.0" y="1434.6">al proveedor</tspan></text>
+<rect x="1178.0" y="1390" width="284" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="1320.0" y="1417.9">Estado de reserva</tspan><tspan x="1320.0" y="1434.6">pendiente / final</tspan></text>
+<rect x="450.0" y="1490" width="260" height="72" rx="8" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="700" text-anchor="middle"><tspan x="580.0" y="1517.9">Actualizar estado</tspan><tspan x="580.0" y="1534.6">visible al estudiante</tspan></text>
+<circle cx="210.0" cy="1594.0" r="24.0" fill="#152718" stroke="#ffffff" stroke-width="3"/>
+<path d="M 210.0 213.0 L 210.0 230.0 L 580.0 230.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M 580.0 302.0 L 580.0 320.0 L 950.0 320.0 L 950.0 350.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="736.0" y="299.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="765.0" y="312.0">GET</tspan></text>
+<path d="M 950.0 422.0 L 950.0 440.0 L 1322.0 440.0 L 1322.0 470.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="1107.0" y="419.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="1136.0" y="432.0">HTTPS</tspan></text>
+<path d="M 1322.0 542.0 L 1322.0 560.0 L 580.0 560.0 L 580.0 590.0" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="901.6" y="539.0" width="98.8" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="951.0" y="552.0">200 · catálogo</tspan></text>
+<path d="M 580.0 662.0 L 580.0 650.0 L 210.0 650.0 L 210.0 680.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="348.7" y="629.0" width="92.6" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="395.0" y="642.0">elegir taller</tspan></text>
+<path d="M 210.0 752.0 L 210.0 760.0 L 580.0 760.0 L 580.0 770.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M 580.0 842.0 L 580.0 835.0 L 950.0 835.0 L 950.0 860.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="736.0" y="814.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="765.0" y="827.0">POST</tspan></text>
+<path d="M 950.0 932.0 L 950.0 925.0 L 1322.0 925.0 L 1322.0 950.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="1107.0" y="904.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="1136.0" y="917.0">HTTPS</tspan></text>
+<path d="M 950.0 932.0 L 950.0 1010.0" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="961.7" y="958.0" width="92.6" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="1008.0" y="971.0">timeout / 5xx</tspan></text>
+<path d="M 1322.0 1022.0 L 1322.0 1060.0" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="1351.0" y="1028.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="1380.0" y="1041.0">encolar</tspan></text>
+<path d="M 1462.0 1096.0 L 1545.0 1096.0" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="1474.5" y="1075.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="1503.5" y="1088.0">AMQP</tspan></text>
+<path d="M 1690.0 1132.0 L 1690.0 1160.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M 1600.0 1210.0 L 1530.0 1210.0 L 1225.0 1210.0 L 1225.0 1285.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="1536.0" y="1189.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="1565.0" y="1202.0">Sí</tspan></text>
+<path d="M 1690.0 1260.0 L 1690.0 1265.0 L 1405.0 1265.0 L 1405.0 1285.0" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="1518.5" y="1244.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="1547.5" y="1257.0">No</tspan></text>
+<path d="M 1225.0 1357.0 L 1225.0 1360.0 L 580.0 1360.0 L 580.0 1390.0" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="843.8" y="1339.0" width="117.4" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="902.5" y="1352.0">estado disponible</tspan></text>
+<path d="M 1405.0 1357.0 L 1405.0 1374.0 L 580.0 1374.0 L 580.0 1390.0" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="933.8" y="1353.0" width="117.4" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="992.5" y="1366.0">estado disponible</tspan></text>
+<path d="M 710.0 1426.0 L 810.0 1426.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="729.2" y="1405.0" width="61.6" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="760.0" y="1418.0">consulta</tspan></text>
+<path d="M 1090.0 1426.0 L 1178.0 1426.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="1105.0" y="1405.0" width="58.0" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="1134.0" y="1418.0">HTTPS</tspan></text>
+<path d="M 1322.0 1462.0 L 1322.0 1465.0 L 580.0 1465.0 L 580.0 1490.0" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="917.1" y="1444.0" width="67.8" height="17" rx="3" fill="#121212"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="10px" font-weight="400" text-anchor="middle"><tspan x="951.0" y="1457.0">respuesta</tspan></text>
+<path d="M 580.0 1562.0 L 580.0 1565.0 L 210.0 1565.0 L 210.0 1570.0" fill="none" stroke="#ffffff" stroke-width="1.5" marker-end="url(#arrow)"/>
+</svg>

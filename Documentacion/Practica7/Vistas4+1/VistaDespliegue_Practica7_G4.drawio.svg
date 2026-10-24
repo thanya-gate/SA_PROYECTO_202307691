@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000" role="img" aria-labelledby="title desc">
+<title id="title">YOUSAC · VISTA DE COMPONENTES 4+1</title><desc id="desc">Frontend y servicios en GKE · clientes REST a proveedores externos</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#121212"/></marker>
+<style>.edge{fill:none;stroke:#121212;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:square}.dash{stroke-dasharray:7 6}.card{fill:#121212;stroke:#ffffff;stroke-width:1.5}.boundary{fill:#f8cecc;stroke:#b85450;stroke-width:1.5;stroke-dasharray:8 6}.label{fill:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;text-anchor:middle}.labelbg{fill:#121212;opacity:.97}</style></defs>
+<rect x="0" y="0" width="1800" height="1000" fill="#121212"/>
+<rect x="14" y="14" width="1772" height="972" rx="12" fill="#f8cecc" stroke="#b85450" stroke-width="1.5"/>
+<text x="900.0" y="43" fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="24px" font-weight="700" text-anchor="middle">YOUSAC · VISTA DE COMPONENTES 4+1</text>
+<text x="900.0" y="68" fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="13px" text-anchor="middle">Frontend y servicios en GKE · clientes REST a proveedores externos</text>
+<rect class="boundary" x="45" y="105" width="1190" height="790" rx="12"/>
+<text fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="16px" font-weight="700" text-anchor="middle"><tspan x="640.0" y="129.0">YoUSAC · GKE</tspan></text>
+<rect class="boundary" x="1270" y="105" width="485" height="790" rx="12"/>
+<text fill="#121212" font-family="Arial,Helvetica,sans-serif" font-size="16px" font-weight="700" text-anchor="middle"><tspan x="1512.5" y="129.0">Proveedores externos</tspan></text>
+<path class="edge" d="M 350.0 255.0 L 380.0 255.0 L 410.0 255.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="324.0" y="232.0" width="82" height="20" rx="3"/>
+<text class="label" x="365.0" y="247.0">HTTPS /api</text>
+<path class="edge" d="M 710.0 252.5 L 750.0 252.5 L 750.0 255.0 L 790.0 255.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="682.0" y="229.5" width="96" height="20" rx="3"/>
+<text class="label" x="730.0" y="244.5">gRPC / HTTP2</text>
+<path class="edge" d="M 410.0 255.0 L 380.0 255.0 L 380.0 452.0 L 350.0 452.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="333.5" y="341.5" width="117" height="20" rx="3"/>
+<text class="label" x="392.0" y="356.5">HTTPS + API key</text>
+<path class="edge" d="M 560.0 305.0 L 560.0 325.0 L 560.0 405.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="552.0" y="353.0" width="40" height="20" rx="3"/>
+<text class="label" x="572.0" y="368.0">REST</text>
+<path class="edge" d="M 710.0 455.0 L 1190.0 455.0 L 1190.0 252.0 L 1335.0 252.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="926.5" y="432.0" width="47" height="20" rx="3"/>
+<text class="label" x="950.0" y="447.0">HTTPS</text>
+<path class="edge dash" d="M 1512.5 300.0 L 1512.5 345.0 L 1512.5 390.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1469.5" y="310.5" width="110" height="20" rx="3"/>
+<text class="label" x="1524.5" y="325.5">AMQP · interno</text>
+<path class="edge" d="M 710.0 510.0 L 730.0 510.0 L 730.0 540.0 L 1510.0 540.0 L 1510.0 575.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1096.5" y="517.0" width="47" height="20" rx="3"/>
+<text class="label" x="1120.0" y="532.0">HTTPS</text>
+<path class="edge" d="M 790.0 320.0 L 870.0 320.0 L 870.0 340.0 L 870.0 570.0 L 870.0 625.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="820.0" y="443.0" width="124" height="20" rx="3"/>
+<text class="label" x="882.0" y="458.0">SQL / Auth Proxy</text>
+<path class="edge" d="M 1170.0 320.0 L 1080.0 320.0 L 1080.0 340.0 L 1080.0 570.0 L 1080.0 625.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1068.5" y="443.0" width="47" height="20" rx="3"/>
+<text class="label" x="1092.0" y="458.0">cache</text>
+<path class="edge" d="M 410.0 255.0 L 380.0 255.0 L 380.0 684.0 L 350.0 684.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="351.0" y="457.5" width="82" height="20" rx="3"/>
+<text class="label" x="392.0" y="472.5">materiales</text>
+<path class="edge" d="M 350.0 452.0 L 380.0 452.0 L 380.0 800.0 L 1335.0 800.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="834.0" y="777.0" width="47" height="20" rx="3"/>
+<text class="label" x="857.5" y="792.0">HTTPS</text>
+<rect class="card" x="100" y="205" width="250" height="100" rx="2"/>
+<path d="M 307 213 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="225.0" y="237.6">Frontend Web · pod GKE</tspan><tspan x="225.0" y="255.6">React + TypeScript + Vite</tspan><tspan x="225.0" y="273.5">Catálogo · Home · reservas</tspan></text>
+<rect class="card" x="410" y="205" width="300" height="100" rx="2"/>
+<path d="M 667 213 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="560.0" y="237.6">API Gateway · pod GKE</tspan><tspan x="560.0" y="255.6">REST · sesión · RBAC</tspan><tspan x="560.0" y="273.5">valida y adapta respuestas</tspan></text>
+<rect class="card" x="790" y="185" width="380" height="135" rx="2"/>
+<path d="M 1127 193 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="980.0" y="226.5">Microservicios · pods GKE</tspan><tspan x="980.0" y="244.4">gRPC · Auth · Catálogo</tspan><tspan x="980.0" y="262.3">Inscripción · Reproducción</tspan><tspan x="980.0" y="280.2">Analítica · notificaciones</tspan></text>
+<rect class="card" x="100" y="405" width="250" height="95" rx="2"/>
+<path d="M 307 413 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="225.0" y="435.1">Adaptador de federación</tspan><tspan x="225.0" y="453.1">X-API-Key · mapeador</tspan><tspan x="225.0" y="471.0">componente del Gateway</tspan></text>
+<rect class="card" x="410" y="405" width="300" height="105" rx="2"/>
+<path d="M 667 413 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="560.0" y="440.1">Cliente Academix</tspan><tspan x="560.0" y="458.1">REST server-to-server</tspan><tspan x="560.0" y="476.0">talleres · reservas · certificados</tspan></text>
+<path d="M790 641 C790 617.0 955 617.0 955 641 V721 C955 745.0 790 745.0 790 721 Z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<path d="M790 641 C790 668.2 955 668.2 955 641" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="400" text-anchor="middle"><tspan x="872.5" y="672.9">Cloud SQL</tspan><tspan x="872.5" y="689.6">PostgreSQL</tspan></text>
+<path d="M1000 641 C1000 617.0 1165 617.0 1165 641 V721 C1165 745.0 1000 745.0 1000 721 Z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<path d="M1000 641 C1000 668.2 1165 668.2 1165 641" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="400" text-anchor="middle"><tspan x="1082.5" y="672.9">Redis</tspan><tspan x="1082.5" y="689.6">VM yousac-vm-nube</tspan></text>
+<rect class="card" x="100" y="640" width="250" height="88" rx="2"/>
+<path d="M 307 648 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="225.0" y="675.3">Cloud Storage</tspan><tspan x="225.0" y="693.2">materiales y archivos</tspan></text>
+<rect class="card" x="1335" y="205" width="355" height="95" rx="2"/>
+<path d="M 1647 213 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1512.5" y="243.8">Academix Pass API</tspan><tspan x="1512.5" y="261.7">catálogo y reservas</tspan></text>
+<polygon class="card" points="1359,390 1666,390 1690,437.5 1666,485 1359,485 1335,437.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" font-weight="400" text-anchor="middle"><tspan x="1512.5" y="421.4">RabbitMQ + worker</tspan><tspan x="1512.5" y="438.0">procesamiento interno</tspan><tspan x="1512.5" y="454.7">del proveedor</tspan></text>
+<rect class="card" x="1335" y="575" width="355" height="95" rx="2"/>
+<path d="M 1647 583 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1512.5" y="613.8">CertiHub API</tspan><tspan x="1512.5" y="631.7">consulta y verificación</tspan></text>
+<rect class="card" x="1335" y="750" width="355" height="85" rx="2"/>
+<path d="M 1647 758 h 31 v 20 h -31 v -4 h -8 v -12 h 8 z" fill="#121212" stroke="#ffffff" stroke-width="1.5"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1512.5" y="783.8">API federada G8</tspan><tspan x="1512.5" y="801.7">catálogo de clases</tspan></text>
+</svg>

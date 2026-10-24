@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="850" viewBox="0 0 1600 850" role="img" aria-labelledby="title desc">
+<title id="title">YOUSAC · CONSUMO FEDERADO</title><desc id="desc">Búsqueda por HTTP con contrato validado y degradación segura al catálogo local</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker>
+<style>.edge{fill:none;stroke:#ffffff;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:square}.dash{stroke-dasharray:7 6}.card{fill:#121212;stroke:#ffffff;stroke-width:1.5}.boundary{fill:#1c2a3d;stroke:#3b587e;stroke-width:1.5;stroke-dasharray:8 6}.label{fill:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;text-anchor:middle}.labelbg{fill:#121212;opacity:.97}</style></defs>
+<rect x="0" y="0" width="1600" height="850" fill="#121212"/>
+<rect x="14" y="14" width="1572" height="822" rx="12" fill="#1c2a3d" stroke="#3b587e" stroke-width="1.5"/>
+<text x="800.0" y="43" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="24px" font-weight="700" text-anchor="middle">YOUSAC · CONSUMO FEDERADO</text>
+<text x="800.0" y="68" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="13px" text-anchor="middle">Búsqueda por HTTP con contrato validado y degradación segura al catálogo local</text>
+<path class="edge" d="M 790.0 163.0 L 790.0 174.0 L 790.0 185.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 790.0 243.0 L 790.0 254.0 L 790.0 265.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 790.0 323.0 L 790.0 334.0 L 790.0 345.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 790.0 403.0 L 790.0 414.0 L 790.0 425.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 790.0 483.0 L 790.0 494.0 L 790.0 505.0" marker-end="url(#arrow)"/>
+<path class="edge" d="M 790.0 563.0 L 790.0 574.0 L 790.0 585.0" marker-end="url(#arrow)"/>
+<path class="edge dash" d="M 1040.0 374.0 L 1090.0 374.0 L 1110.0 374.0 L 1130.0 374.0" marker-end="url(#arrow)"/>
+<rect class="labelbg" x="1003.0" y="351.0" width="124" height="20" rx="3"/>
+<text class="label" x="1065.0" y="366.0">error controlado</text>
+<rect class="card" x="540" y="105" width="500" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="790.0" y="134.0">Estudiante solicita búsqueda</tspan></text>
+<rect class="card" x="540" y="185" width="500" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="790.0" y="214.0">Frontend combina catálogo local y federado</tspan></text>
+<rect class="card" x="540" y="265" width="500" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="790.0" y="294.0">API Gateway · ruta de catálogo federado</tspan></text>
+<rect class="card" x="540" y="345" width="500" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="790.0" y="374.0">HttpCatalogoExterno · X-API-Key · timeout 3 s</tspan></text>
+<rect class="card" x="540" y="425" width="500" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="790.0" y="454.0">API G8 · GET /clases y GET /clases/{id}</tspan></text>
+<rect class="card" x="540" y="505" width="500" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="790.0" y="534.0">Validar esquema · mapear video, origen y capítulos</tspan></text>
+<rect class="card" x="540" y="585" width="500" height="58" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="790.0" y="614.0">UI etiqueta origen y abre reproductor externo</tspan></text>
+<rect class="card" x="1130" y="360" width="380" height="112" rx="12"/>
+<text fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="14px" font-weight="400" text-anchor="middle"><tspan x="1320.0" y="407.3">404 · timeout · contrato inválido</tspan><tspan x="1320.0" y="425.2">Retorna vacío/null; la consulta local sigue disponible</tspan></text>
+</svg>
