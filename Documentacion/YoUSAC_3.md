@@ -1,5 +1,13 @@
 # Proyecto YoUSAC — Documento técnico consolidado de Fases 1, 2 y 3
 
+## Integrantes
+
+| Nombre | Carné |
+|---|---|
+| Marcos Geovani Barrios Lopez | 202300396 |
+| Thanya Lisseth Mazariegos Morales | 202307691 |
+| Abdiel Fernando Jose Otzoy Otzin | 202300350 |
+
 ## Índice
 1. [Introducción](#introducción)
 2. [Descripción del problema](#descripción-del-problema)
@@ -235,7 +243,7 @@ validación en producción.
 | RF-F3-07 | Sistema | Ejecutar diariamente la purga de sesiones inactivas, tokens expirados y auditoría antigua. | CronJob `yousac-purge-security`, `sp_purgar_seguridad`, hora `America/Guatemala`. | Manifiesto/código presentes; ejecuciones deben comprobarse en el clúster. |
 | RF-F3-08 | Sistema | Recalcular tendencias cada seis horas y actualizar claves de ranking/tendencias en Redis. | CronJob `yousac-trends-recalc`, vistas/procedimientos SQL y `redis-cli SETEX`. | Manifiesto/código presentes; ejecuciones deben comprobarse en el clúster. |
 | RF-F3-09 | Sistema | Detectar evaluaciones de los siguientes siete días y encolar avisos de repaso evitando duplicados. | CronJob `yousac-review-notify`, `vw_evaluaciones_proximas`, `sp_encolar_notificacion_repaso`. | Manifiesto/código presentes; comprobar Job y entrega SMTP en producción. |
-| RF-F3-10 | Estudiante | Consultar recomendaciones y ver el puntaje junto a las clases en Home. | API analítica, función SQL `fn_calcular_porcentaje_recomendacion` y `HomePage.tsx`. | Parcial frente a “personalizado”: el cálculo SQL encontrado pondera promedio de calificación y vistas de la clase, no usa historial individual como factor. |
+| RF-F3-10 | Estudiante | Consultar recomendaciones y ver el puntaje junto a las clases en Home. | API analítica, función SQL `fn_calcular_porcentaje_recomendacion` y `HomePage.tsx`. | Implementado: `fn_recomendaciones_estudiante` combina la base de la comunidad (calificación y vistas) con filtrado colaborativo ítem-ítem sobre el historial del estudiante. |
 | RF-F3-11 | Administrador/DevOps | Declarar red, subredes, reglas, NAT, VMs y recursos cloud administrados mediante Terraform. | `infra/terraform/*.tf`; bloques `import` para GKE, Cloud SQL, buckets, Registry e IP. | Implementado como IaC; ejecutar plan/apply y revisar deriva con acceso cloud. |
 | RF-F3-12 | Administrador/DevOps | Configurar de manera repetible las VMs con paquetes, hardening, Docker/Compose y agentes de observabilidad. | `infra/ansible/site.yml` y roles base, docker, node-exporter, Fluent Bit y ELK. | Implementado como playbooks; requiere validar contra inventario/VM autorizados. |
 | RF-F3-13 | Operador | Consultar métricas del clúster, Gateway, Redis y tareas programadas en los tableros de Grafana. | `observability/grafana-dashboard-*`, ServiceMonitor y kube-prometheus-stack. | Manifiestos/configuración presentes; accesibilidad/targets deben validarse en cloud. |
@@ -261,8 +269,7 @@ Los criterios porcentuales y temporales de esta sección son requisitos de
 aceptación del PDF y configuración del repositorio; no representan mediciones
 de disponibilidad o rendimiento que no estén respaldadas por un reporte.
 
-**Brechas funcionales observadas:** el cálculo de recomendaciones aún no usa el
-historial individual del estudiante. Además, el panel Admin revisado muestra
+**Brechas funcionales observadas:** el panel Admin revisado muestra
 resúmenes y rankings, pero no se encontró una acción de exportación de esos
 reportes a CSV/PDF ni una pantalla de auditoría de triggers. La importación de
 clases desde CSV sí está implementada y no equivale a exportar reportes. Estas
@@ -1569,16 +1576,27 @@ el manifiesto.
 
 **Actor principal:** Estudiante autenticado. Home pide recomendaciones al
 Gateway; el servicio Python de Analítica consulta la función SQL y utiliza
-Redis para resultados cacheados. La función observada calcula un puntaje de
-0–100 con peso de 70% para promedio de calificaciones (normalizado sobre 5) y
-hasta 30% por cantidad de vistas. El Gateway devuelve el resultado y Home
+Redis para resultados cacheados. El Gateway devuelve el resultado y Home
 resuelve los datos de clase para representarlos.
 
-**Límite conocido del comportamiento actual:** aunque el endpoint está bajo el
-perfil del estudiante y la pantalla lo rotula como recomendación de su
-preparación, la función SQL revisada no emplea el historial individual para
-personalizar el puntaje. La narrativa no presenta filtrado colaborativo como
-implementado; esa diferencia queda registrada en RF-F3-10.
+**Algoritmo (filtrado colaborativo ítem-ítem).** `fn_recomendaciones_estudiante`
+calcula para cada clase un puntaje de 0 a 100:
+
+1. **Base de la comunidad** (`fn_calcular_porcentaje_recomendacion`): 70 % por
+   promedio de calificaciones normalizado sobre 5 y hasta 30 % por vistas en
+   escala logarítmica (`min(30, log2(vistas + 1) * 5)`).
+2. **Vecinos:** estudiantes que vieron al menos una de las clases que vio el
+   estudiante, pesados por cuántas clases comparten con él.
+3. **Afinidad:** suma de los pesos de los vecinos que vieron cada clase,
+   normalizada entre 0 y 1.
+4. **Puntaje final:** `0.6 × base + 40 × afinidad`. Las clases que el
+   estudiante ya vio se multiplican por 0.3 para priorizar contenido nuevo.
+5. **Arranque en frío:** si el estudiante no tiene historial se usa solo la base
+   de la comunidad.
+
+La función se aplica con la migración idempotente
+`k8s/migrations/sql/05_analitica_recomendacion_personalizada.sql` y el
+resultado se cachea por estudiante en Redis durante 600 s.
 
 ![Flujo de cálculo y presentación de recomendaciones](../docs/fase3/diagramas/FlujoRecomendacion_F3.svg)
 [Fuente Draw.io editable](../docs/fase3/diagramas/FlujoRecomendacion_F3.drawio)
@@ -1817,7 +1835,7 @@ se interpreta como una comparación universal de productos.
 | Prometheus | Prometheus gestionado/kube-prometheus-stack, ServiceMonitors y exporters. | Obtener series temporales consultables con descubrimiento de targets de Kubernetes. | Métricas de pods/nodos, Gateway, tareas y Redis; alimentar tableros. |
 | Grafana | Dos dashboards: infraestructura y negocio/tareas. | Facilitar lectura visual de métricas con paneles reutilizables y filtros temporales. | Supervisar salud/recursos y actividad/tendencias; el acceso Viewer no debe exponer secretos. |
 | Smoke Tests | Peticiones HTTP y estado del Ingress después del rollout. | Las pruebas unitarias no demuestran que Ingress, certificado, Gateway y frontend sean alcanzables en el destino. | Detener el CD si `/`, `/healthz`, `/api/health` o backends no están sanos. |
-| Recomendación | Puntaje SQL explicable por rating y volumen de vistas, servido por Analítica y cacheado en Redis. | Reutiliza datos disponibles y es auditable; no atribuye al proyecto un modelo entrenado externo no presente en el código. | Ordenar clases recomendadas en Home. La personalización por historial individual es una brecha del cálculo actual. |
+| Algoritmo de recomendación | Filtrado colaborativo ítem-ítem en SQL (`fn_recomendaciones_estudiante`) sobre la base de comunidad (rating y vistas), servido por Analítica vía gRPC y cacheado en Redis. | Usa datos que ya existen (vistas y calificaciones), es explicable y auditable, y no requiere entrenar ni desplegar un modelo externo. | Mostrar en Home “Clases recomendadas para tu preparación de exámenes” distintas para cada estudiante según lo que vieron estudiantes con historial parecido. |
 
 ## Matriz de aplicación SOLID en integraciones
 
