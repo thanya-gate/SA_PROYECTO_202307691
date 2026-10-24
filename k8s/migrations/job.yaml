@@ -70,6 +70,7 @@ spec:
               apply "$INSCRIPCION_URL" 02_inscripcion_cronjob_repaso.sql
               apply "$NOTIFICACIONES_URL" 03_notificaciones_cronjob_repaso.sql
               apply "$ANALITICA_URL" 04_analitica_cronjob_tendencias.sql
+              apply "$ANALITICA_URL" 05_analitica_recomendacion_personalizada.sql
 
               echo "Migraciones aplicadas correctamente."
           env:
