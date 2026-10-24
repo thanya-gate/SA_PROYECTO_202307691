@@ -57,7 +57,9 @@ export default function GestionCursosPage() {
         {tab === 'cursos' && <CursosCatalogoTab token={tokenActual} />}
         {tab === 'semestres' && <SemestresTab token={tokenActual} />}
         {tab === 'escuelas' && <EscuelasTab token={tokenActual} />}
-        {tab === 'asignar' && <AsignarCursosTab token={tokenActual} />}
+        {tab === 'asignar' && (
+          <AsignarCursosTab token={tokenActual} isAdmin={user?.roles.includes('ROLE_ADMIN') ?? false} />
+        )}
       </div>
     </AppLayout>
   );
