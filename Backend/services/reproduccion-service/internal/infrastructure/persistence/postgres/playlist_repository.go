@@ -34,8 +34,8 @@ func (r *ReproduccionRepository) ListarPlaylists(ctx context.Context, estudiante
 		       COALESCE(p.enlace_publico::text, ''),
 		       (SELECT COUNT(*) FROM playlist_item pi WHERE pi.playlist_id = p.id)::int,
 		       p.fecha_creacion::text, p.fecha_actualizacion::text,
-		       (SELECT pi.clase_id FROM playlist_item pi WHERE pi.playlist_id = p.id
-		        ORDER BY pi.orden ASC LIMIT 1)::text AS clase_portada
+		       COALESCE((SELECT pi.clase_id FROM playlist_item pi WHERE pi.playlist_id = p.id
+		        ORDER BY pi.orden ASC LIMIT 1)::text, '') AS clase_portada
 		FROM playlist p
 		WHERE p.estudiante_id = $1
 		ORDER BY p.fecha_actualizacion DESC`, estudianteID)
@@ -66,8 +66,8 @@ func (r *ReproduccionRepository) ListarPlaylistsPublicas(ctx context.Context, es
 		       COALESCE(p.enlace_publico::text, ''),
 		       (SELECT COUNT(*) FROM playlist_item pi WHERE pi.playlist_id = p.id)::int,
 		       p.fecha_creacion::text, p.fecha_actualizacion::text,
-		       (SELECT pi.clase_id FROM playlist_item pi WHERE pi.playlist_id = p.id
-		        ORDER BY pi.orden ASC LIMIT 1)::text AS clase_portada
+		       COALESCE((SELECT pi.clase_id FROM playlist_item pi WHERE pi.playlist_id = p.id
+		        ORDER BY pi.orden ASC LIMIT 1)::text, '') AS clase_portada
 		FROM playlist p
 		WHERE p.es_publica = TRUE AND p.estudiante_id <> $1
 		ORDER BY p.fecha_actualizacion DESC`, estudianteID)
@@ -99,8 +99,8 @@ func (r *ReproduccionRepository) ObtenerPlaylist(ctx context.Context, estudiante
 		       COALESCE(p.enlace_publico::text, ''),
 		       (SELECT COUNT(*) FROM playlist_item pi WHERE pi.playlist_id = p.id)::int,
 		       p.fecha_creacion::text, p.fecha_actualizacion::text,
-		       (SELECT pi.clase_id FROM playlist_item pi WHERE pi.playlist_id = p.id
-		        ORDER BY pi.orden ASC LIMIT 1)::text AS clase_portada
+		       COALESCE((SELECT pi.clase_id FROM playlist_item pi WHERE pi.playlist_id = p.id
+		        ORDER BY pi.orden ASC LIMIT 1)::text, '') AS clase_portada
 		FROM playlist p
 		WHERE p.id = $1 AND p.estudiante_id = $2`, playlistID, estudianteID).
 		Scan(&playlist.PlaylistID, &playlist.EstudianteID, &playlist.Nombre, &playlist.EsPublica,
@@ -126,8 +126,8 @@ func (r *ReproduccionRepository) ObtenerPlaylistPublica(ctx context.Context, enl
 		       COALESCE(p.enlace_publico::text, ''),
 		       (SELECT COUNT(*) FROM playlist_item pi WHERE pi.playlist_id = p.id)::int,
 		       p.fecha_creacion::text, p.fecha_actualizacion::text,
-		       (SELECT pi.clase_id FROM playlist_item pi WHERE pi.playlist_id = p.id
-		        ORDER BY pi.orden ASC LIMIT 1)::text AS clase_portada
+		       COALESCE((SELECT pi.clase_id FROM playlist_item pi WHERE pi.playlist_id = p.id
+		        ORDER BY pi.orden ASC LIMIT 1)::text, '') AS clase_portada
 		FROM playlist p
 		WHERE p.enlace_publico = $1 AND p.es_publica = TRUE`, enlacePublico).
 		Scan(&playlist.PlaylistID, &playlist.EstudianteID, &playlist.Nombre, &playlist.EsPublica,
