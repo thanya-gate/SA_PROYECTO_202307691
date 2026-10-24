@@ -1157,8 +1157,10 @@ export function RolesTab({ token }: { token: string }) {
   );
 }
 
-export function AsignarCursosTab({ token }: { token: string }) {
+export function AsignarCursosTab({ token, isAdmin = false }: { token: string; isAdmin?: boolean }) {
   const [cursos, setCursos] = useState<CursoRegistrado[]>([]);
+  const [cursosCatalogo, setCursosCatalogo] = useState<CursoAdminItem[]>([]);
+  const [semestresCatalogo, setSemestresCatalogo] = useState<SemestreAdminItem[]>([]);
   const [usuarios, setUsuarios] = useState<PublicUser[]>([]);
   const [auxiliares, setAuxiliares] = useState<AuxiliarInscripcion[]>([]);
   const [asignaciones, setAsignaciones] = useState<AsignacionDocenteItem[]>([]);
@@ -1166,6 +1168,7 @@ export function AsignarCursosTab({ token }: { token: string }) {
   const [cargaError, setCargaError] = useState<string | null>(null);
   const [estado, setEstado] = useState<EstadoCrud>({ mensaje: null, error: null, ocupado: false });
 
+  const [formCursoSemestre, setFormCursoSemestre] = useState({ cursoId: '', semestreId: '' });
   const [formDocente, setFormDocente] = useState({ cursoId: '', semestre: '', usuarioId: '' });
   const [formAuxiliar, setFormAuxiliar] = useState({ asignacionId: '', auxiliarId: '' });
 
@@ -1173,13 +1176,18 @@ export function AsignarCursosTab({ token }: { token: string }) {
     setCargando(true);
     setCargaError(null);
     try {
-      const [resCursos, resUsuarios, resAuxiliares, resAsignaciones] = await Promise.all([
-        inscripcionApi.listarCursos(token),
-        authApi.listarUsuariosPorRol(token, ['ROLE_CATEDRATICO', 'ROLE_AUXILIAR']),
-        inscripcionApi.listarAuxiliares(token),
-        inscripcionApi.listarAsignaciones(token),
-      ]);
+      const [resCursos, resCursosCatalogo, resSemestres, resUsuarios, resAuxiliares, resAsignaciones] =
+        await Promise.all([
+          inscripcionApi.listarCursos(token),
+          isAdmin ? adminApi.listarCursos(token) : Promise.resolve({ cursos: [] as CursoAdminItem[] }),
+          isAdmin ? adminApi.listarSemestres(token) : Promise.resolve({ semestres: [] as SemestreAdminItem[] }),
+          authApi.listarUsuariosPorRol(token, ['ROLE_CATEDRATICO', 'ROLE_AUXILIAR']),
+          inscripcionApi.listarAuxiliares(token),
+          inscripcionApi.listarAsignaciones(token),
+        ]);
       setCursos(resCursos.cursos);
+      setCursosCatalogo(resCursosCatalogo.cursos);
+      setSemestresCatalogo(resSemestres.semestres);
       setUsuarios(resUsuarios.usuarios);
       setAuxiliares(resAuxiliares.auxiliares);
       setAsignaciones(resAsignaciones.asignaciones);
@@ -1199,13 +1207,67 @@ export function AsignarCursosTab({ token }: { token: string }) {
     } catch (err: unknown) {
       setCargaError(formatearMensaje(err, 'No se pudieron cargar los datos de asignación'));
       setCursos([]);
+      setCursosCatalogo([]);
+      setSemestresCatalogo([]);
       setUsuarios([]);
       setAuxiliares([]);
       setAsignaciones([]);
     } finally {
       setCargando(false);
     }
-  }, [token]);
+  }, [token, isAdmin]);
+
+  const semestresValidos = semestresCatalogo.filter(
+    (semestre) => /^\d{4}-[12]$/.test(semestre.nombre) && Number(semestre.nombre.slice(0, 4)) === semestre.anio,
+  );
+
+  async function registrarCursoSemestre() {
+    const cursoCatalogo = cursosCatalogo.find((curso) => curso.cursoId === formCursoSemestre.cursoId);
+    const semestre = semestresValidos.find((item) => item.semestreId === formCursoSemestre.semestreId);
+    if (!cursoCatalogo || !semestre) {
+      setEstado({ mensaje: null, error: 'Selecciona un curso del catálogo y un semestre válido.', ocupado: false });
+      return;
+    }
+
+    const yaRegistrado = cursos.find((curso) => curso.codigo.toUpperCase() === cursoCatalogo.codigo.toUpperCase());
+    if (yaRegistrado) {
+      setEstado({
+        mensaje: null,
+        error: `${cursoCatalogo.codigo} ya está registrado en Inscripciones para ${semestreCorto(yaRegistrado.semestre)}. No se modificó.`,
+        ocupado: false,
+      });
+      return;
+    }
+
+    setEstado({ mensaje: null, error: null, ocupado: true });
+    try {
+      const res = await inscripcionApi.registrarCurso(token, {
+        codigo: cursoCatalogo.codigo,
+        nombre: cursoCatalogo.nombre,
+        escuela: cursoCatalogo.escuela,
+        semestre: semestre.nombre,
+        anio: semestre.anio,
+      });
+      if (res.curso.semestre !== semestre.nombre || res.curso.anio !== semestre.anio) {
+        setEstado({
+          mensaje: null,
+          error: `El curso ya existía en Inscripciones para ${semestreCorto(res.curso.semestre)}; no se cambió su semestre.`,
+          ocupado: false,
+        });
+        await cargar();
+        return;
+      }
+      setFormCursoSemestre({ cursoId: '', semestreId: '' });
+      setEstado({
+        mensaje: `${cursoCatalogo.codigo} · ${cursoCatalogo.nombre} quedó disponible para ${semestreCorto(semestre.nombre)}.`,
+        error: null,
+        ocupado: false,
+      });
+      await cargar();
+    } catch (err: unknown) {
+      setEstado({ mensaje: null, error: formatearMensaje(err, 'No se pudo registrar el curso para el semestre'), ocupado: false });
+    }
+  }
 
   useEffect(() => {
     void cargar();
@@ -1273,6 +1335,69 @@ export function AsignarCursosTab({ token }: { token: string }) {
         detalle="Asigna catedráticos a los cursos del semestre y vincula auxiliares con cada catedrático."
       />
       <Notificaciones estado={estado} />
+
+      {isAdmin && !cargando && (
+        <section className="gcursos__panel" aria-label="Registrar curso para un semestre">
+          <h2 className="gcursos__panel-titulo">Habilitar curso para el semestre</h2>
+          <p className="catalogo__subtitle">
+            Vincula un curso ya creado en el catálogo con un semestre. Esto no crea ni sube una grabación;
+            después podrás seleccionarlo al publicar una clase.
+          </p>
+          {cursosCatalogo.length === 0 ? (
+            <p className="catalogo__estado">Primero registra el curso en la pestaña Cursos.</p>
+          ) : semestresValidos.length === 0 ? (
+            <p className="catalogo__estado">
+              Registra primero un semestre con formato AAAA-1 o AAAA-2 (por ejemplo, 2026-1) en la pestaña Semestres.
+            </p>
+          ) : (
+            <>
+              <div className="gcursos__form">
+                <label className="catalogo__campo">
+                  <span className="catalogo__campo-label">Curso del catálogo</span>
+                  <select
+                    className="catalogo__select"
+                    value={formCursoSemestre.cursoId}
+                    onChange={(e) => setFormCursoSemestre((prev) => ({ ...prev, cursoId: e.target.value }))}
+                  >
+                    <option value="">Selecciona un curso…</option>
+                    {cursosCatalogo.map((curso) => {
+                      const existente = cursos.find(
+                        (registrado) => registrado.codigo.toUpperCase() === curso.codigo.toUpperCase(),
+                      );
+                      return (
+                        <option key={curso.cursoId} value={curso.cursoId} disabled={Boolean(existente)}>
+                          {curso.codigo} · {curso.nombre}
+                          {existente ? ` (ya está en ${semestreCorto(existente.semestre)})` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </label>
+                <label className="catalogo__campo">
+                  <span className="catalogo__campo-label">Semestre</span>
+                  <select
+                    className="catalogo__select"
+                    value={formCursoSemestre.semestreId}
+                    onChange={(e) => setFormCursoSemestre((prev) => ({ ...prev, semestreId: e.target.value }))}
+                  >
+                    <option value="">Selecciona un semestre…</option>
+                    {semestresValidos.map((semestre) => (
+                      <option key={semestre.semestreId} value={semestre.semestreId}>
+                        {semestreCorto(semestre.nombre)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="gcursos__form-acciones">
+                <Button onClick={registrarCursoSemestre} loading={estado.ocupado}>
+                  Habilitar curso
+                </Button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       {cargaError && (
         <Alert tone="error">

@@ -21,9 +21,13 @@ func valoresPlaylist(enlace string) []any {
 }
 
 func valoresPlaylistCompleta(enlace string, cantidad int32) []any {
+	return valoresPlaylistConPortada(enlace, cantidad, "clase-1")
+}
+
+func valoresPlaylistConPortada(enlace string, cantidad int32, clasePortada string) []any {
 	return []any{
 		"playlist-1", "estudiante-1", "Repaso parcial", true, enlace,
-		cantidad, "2026-09-10T10:00:00Z", "2026-09-10T10:00:00Z", "clase-1",
+		cantidad, "2026-09-10T10:00:00Z", "2026-09-10T10:00:00Z", clasePortada,
 	}
 }
 
@@ -157,6 +161,90 @@ func TestListarPlaylistsPortadaEsPrimerElemento(t *testing.T) {
 			// La portada debe ser la clase del primer elemento (menor orden).
 			if !strings.Contains(consulta, "ORDER BY pi.orden ASC LIMIT 1") || !strings.Contains(consulta, "AS clase_portada") {
 				t.Fatalf("%s: consulta sin portada del primer elemento: %q", tt.name, consulta)
+			}
+		})
+	}
+}
+
+func TestPlaylistsSinItemsDevuelvenPortadaVacia(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*testing.T, *ReproduccionRepository) string
+	}{
+		{
+			name: "listar propias",
+			run: func(t *testing.T, r *ReproduccionRepository) string {
+				filas, err := r.ListarPlaylists(context.Background(), "estudiante-1")
+				if err != nil {
+					t.Fatalf("ListarPlaylists() error = %v", err)
+				}
+				if len(filas) != 1 {
+					t.Fatalf("cantidad de playlists = %d, want 1", len(filas))
+				}
+				return filas[0].ClasePortada
+			},
+		},
+		{
+			name: "listar públicas",
+			run: func(t *testing.T, r *ReproduccionRepository) string {
+				filas, err := r.ListarPlaylistsPublicas(context.Background(), "estudiante-1")
+				if err != nil {
+					t.Fatalf("ListarPlaylistsPublicas() error = %v", err)
+				}
+				if len(filas) != 1 {
+					t.Fatalf("cantidad de playlists = %d, want 1", len(filas))
+				}
+				return filas[0].ClasePortada
+			},
+		},
+		{
+			name: "obtener propia",
+			run: func(t *testing.T, r *ReproduccionRepository) string {
+				playlist, _, err := r.ObtenerPlaylist(context.Background(), "estudiante-1", "playlist-1")
+				if err != nil {
+					t.Fatalf("ObtenerPlaylist() error = %v", err)
+				}
+				return playlist.ClasePortada
+			},
+		},
+		{
+			name: "obtener pública",
+			run: func(t *testing.T, r *ReproduccionRepository) string {
+				playlist, _, err := r.ObtenerPlaylistPublica(context.Background(), "enlace-1")
+				if err != nil {
+					t.Fatalf("ObtenerPlaylistPublica() error = %v", err)
+				}
+				return playlist.ClasePortada
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var consultaPortada string
+			filas := nuevasFilasFalsas(valoresPlaylistConPortada("enlace-1", 0, ""))
+			db := &dbFalsa{
+				query: func(_ context.Context, sql string, _ ...any) (pgx.Rows, error) {
+					if strings.Contains(sql, "FROM playlist p") {
+						consultaPortada = sql
+						return filas, nil
+					}
+					return nuevasFilasFalsas(), nil
+				},
+				queryRow: func(_ context.Context, sql string, _ ...any) pgx.Row {
+					consultaPortada = sql
+					return filaFalsa{valores: valoresPlaylistConPortada("enlace-1", 0, "")}
+				},
+			}
+			repositorio := NewReproduccionRepository(db)
+
+			clasePortada := tt.run(t, repositorio)
+			if clasePortada != "" {
+				t.Fatalf("ClasePortada = %q, want vacío", clasePortada)
+			}
+			indicePortada := strings.Index(consultaPortada, "AS clase_portada")
+			if indicePortada < 0 || !strings.Contains(consultaPortada[:indicePortada], "COALESCE((SELECT pi.clase_id") {
+				t.Fatalf("consulta no convierte una portada NULL a texto vacío: %q", consultaPortada)
 			}
 		})
 	}

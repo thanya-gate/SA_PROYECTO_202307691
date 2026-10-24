@@ -32,8 +32,8 @@ function SubirContenidoTab({ token }: { token: string }) {
     setCargando(true);
     setCargaError(null);
     try {
-      let items = (await inscripcionApi.cursosCatedratico(token)).items;
-      if (items.length === 0 && isAdmin) {
+      let items: CursoCatedraticoItem[];
+      if (isAdmin) {
         const todos = await inscripcionApi.listarCursos(token);
         items = todos.cursos.map((c) => ({
           cursoId: c.cursoId,
@@ -43,6 +43,8 @@ function SubirContenidoTab({ token }: { token: string }) {
           anio: c.anio,
           auxiliares: [],
         }));
+      } else {
+        items = (await inscripcionApi.cursosCatedratico(token)).items;
       }
       setCursos(items);
     } catch (err: unknown) {
